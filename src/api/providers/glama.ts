@@ -5,7 +5,6 @@ import { ApiHandler, SingleCompletionHandler } from "../"
 import { ApiHandlerOptions, ModelInfo, glamaDefaultModelId, glamaDefaultModelInfo } from "../../shared/api"
 import { convertToOpenAiMessages } from "../transform/openai-format"
 import { ApiStream } from "../transform/stream"
-import delay from "delay"
 
 export class GlamaHandler implements ApiHandler, SingleCompletionHandler {
 	private options: ApiHandlerOptions
