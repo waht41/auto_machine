@@ -1,0 +1,187 @@
+@font-face {
+    font-family: "JetBrains Sans";
+    src: url("fonts/JetBrainsSans-Regular.woff2");
+}
+
+@font-face {
+    font-family: "JetBrains Mono";
+    src: url("fonts/JetBrainsMono-Regular.woff2");
+}
+
+:root {
+    font-family: "JetBrains Sans", Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+    font-weight: 300;
+    color: rgba(255, 255, 255, 0.87);
+    background-color: #000000;
+    text-align: center;
+}
+
+body {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-width: 320px;
+    min-height: 100vh;
+    align-items: center;
+
+    background-image: url("background.svg");
+    background-repeat: no-repeat;
+    background-size: contain;
+}
+
+h1 {
+    font-size: 29px;
+    line-height: 39px;
+    font-weight: 300;
+}
+
+.title {
+    margin-bottom: 40px;
+}
+
+#app {
+    max-width: 1280px;
+}
+
+.logo {
+    margin-top: 45px;
+    margin-left: 20%;
+    align-self: flex-start;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+.counter {
+    font-family: "JetBrains Mono", Inter, system-ui, sans-serif;
+    font-weight: 400;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    padding: 60px;
+    color: rgba(255, 255, 255, 1);
+}
+
+.counter-interaction {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 20px 0;
+    width: 470px;
+    justify-content: space-between;
+}
+
+.counter-interaction button {
+    width: 48%;
+    height: 47%;
+    align-content: space-between;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 120px;
+    font-size: 68px;
+    text-align: center;
+}
+
+.counter-interaction button:nth-child(2n+1) {
+    margin-right: 14px;
+}
+
+.counter-interaction button:disabled {
+    color: rgba(255, 255, 255, 0.5);
+    background-image: none;
+    border-color: inherit;
+}
+
+.counter-info {
+    width: 360px;
+    height: 345px;
+    margin-right: 27px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background-color: rgba(25, 25, 28, 0.5);
+    border-radius: 29px;
+}
+
+.counter-text {
+    text-transform: uppercase;
+    font-weight: 500;
+    font-size: 24px;
+    margin-top: 60px;
+    margin-bottom: 28px;
+
+}
+
+.counter-value {
+    font-weight: 200;
+    font-size: 170px;
+    margin: 0;
+    padding: 0;
+    line-height: 1;
+}
+
+button {
+    font-family: "JetBrains Mono", Inter, system-ui, sans-serif;
+    background-color: rgba(25, 25, 28, 0.5);
+    cursor: pointer;
+    color: rgba(255, 255, 255, 1);
+}
+
+button:hover {
+    background-image: radial-gradient(
+            farthest-corner at 77% 83%,
+            rgba(1, 197, 245, 0.5) 2%,
+            rgba(1, 126, 254, 0.5) 28%,
+            rgba(25, 25, 28, 0) 70%
+    );
+    border: 1px solid rgba(76, 166, 255, 0.2);
+    background-clip: padding-box;
+}
+
+.technologies {
+    margin-bottom: 36px;
+    align-self: center;
+}
+
+.technologies img {
+    max-width: fit-content;
+}
+
+
+@media (max-width: 875px) {
+
+    .logo {
+        margin-top: 10px;
+    }
+
+    .title {
+        margin-bottom: 30px;
+    }
+
+    .counter {
+        flex-direction: column;
+        padding: 0;
+        margin-bottom: 0;
+    }
+
+    .counter-info {
+        width: 100%;
+        height: 300px;
+        margin-right: 0;
+        margin-bottom: 15px;
+    }
+
+    .counter-interaction {
+        display: flex;
+        flex-direction: row;
+        height: auto;
+        width: auto;
+    }
+
+    .counter-interaction button {
+        width: 47%;
+        height: 100px;
+        margin-right: 0;
+        margin-bottom: 15px;
+    }
+}
