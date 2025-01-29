@@ -1,17 +1,7 @@
 import * as vscode from "vscode"
 
-const fadedOverlayDecorationType = vscode.window.createTextEditorDecorationType({
-	backgroundColor: "rgba(255, 255, 0, 0.1)",
-	opacity: "0.4",
-	isWholeLine: true,
-})
-
-const activeLineDecorationType = vscode.window.createTextEditorDecorationType({
-	backgroundColor: "rgba(255, 255, 0, 0.3)",
-	opacity: "1",
-	isWholeLine: true,
-	border: "1px solid rgba(255, 255, 0, 0.5)",
-})
+const fadedOverlayDecorationType = undefined
+const activeLineDecorationType = undefined
 
 type DecorationType = "fadedOverlay" | "activeLine"
 
