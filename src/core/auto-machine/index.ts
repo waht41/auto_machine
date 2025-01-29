@@ -27,12 +27,14 @@ import {defaultModeSlug, getModeBySlug, isToolAllowedForMode} from "@/shared/mod
 import {arePathsEqual} from "@/utils/path";
 import {TerminalManager} from "@/integrations/terminal/TerminalManager";
 import {listFiles} from "@/services/glob/list-files";
+import {MachineProvider} from "@core/auto-machine/machine-provider";
 
 const cwd = process.cwd()
 type ToolResponse = string | Array<Anthropic.TextBlockParam | Anthropic.ImageBlockParam>
 type UserContent = Array<
     Anthropic.TextBlockParam | Anthropic.ImageBlockParam | Anthropic.ToolUseBlockParam | Anthropic.ToolResultBlockParam
 >
+const machineProvider = new MachineProvider()
 
 class MachineContext {
     api: ApiHandler
@@ -42,7 +44,7 @@ class MachineContext {
     consecutiveMistakeCount: number = 0
     clineMessages: ClineMessage[] = []
     lastMessageTs: number = 0
-    providerRef: { deref: () => any } = { deref: () => undefined }
+    providerRef: WeakRef<MachineProvider>
     readonly taskId: string
     didEditFile: boolean = false
     customInstructions?: string
@@ -76,6 +78,7 @@ class MachineContext {
         this.diffViewProvider = new DiffViewProvider(cwd)
         this.urlContentFetcher = new UrlContentFetcher({globalStorageUri:{fsPath: cwd}})
         this.terminalManager = new TerminalManager()
+        this.providerRef = new WeakRef(machineProvider)
     }
     async addToClineMessages(message: ClineMessage) {
         this.clineMessages.push(message)
@@ -157,29 +160,12 @@ class MachineContext {
         let details = ""
 
         // It could be useful for cline to know if the user went from one or no file to another between messages, so we always include this context
-        details += "\n\n# VSCode Visible Files"
-        const visibleFiles = vscode.window.visibleTextEditors
-            ?.map((editor) => editor.document?.uri?.fsPath)
-            .filter(Boolean)
-            .map((absolutePath) => path.relative(cwd, absolutePath).toPosix())
-            .join("\n")
+        details += "\n\n# Visible Files"
+        const visibleFiles = "E:\\project\\javascript\\auto_machine\\src\\a.txt"  //todo waht
         if (visibleFiles) {
             details += `\n${visibleFiles}`
         } else {
             details += "\n(No visible files)"
-        }
-
-        details += "\n\n# VSCode Open Tabs"
-        const openTabs = vscode.window.tabGroups.all
-            .flatMap((group) => group.tabs)
-            .map((tab) => (tab.input as vscode.TabInputText)?.uri?.fsPath)
-            .filter(Boolean)
-            .map((absolutePath) => path.relative(cwd, absolutePath).toPosix())
-            .join("\n")
-        if (openTabs) {
-            details += `\n${openTabs}`
-        } else {
-            details += "\n(No open tabs)"
         }
 
         const busyTerminals = this.terminalManager.getTerminals(true)
@@ -789,6 +775,7 @@ class Chatter {
                             }
                             // present content to user
                             // this.context.presentAssistantMessage() // todo waht presentAssistantMessage
+                            console.log(chunk.text)
                             break
                     }
 
