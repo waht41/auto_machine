@@ -25,6 +25,6 @@
       "@core/*": ["src/core/*"],
     }
   },
-  "include": ["src/**/*", "scripts/**/*", ".changeset/**/*"],
+  "include": ["src/**/*", "scripts/**/*", ".changeset/**/*","electron-preload/**/*.ts"],
   "exclude": ["node_modules", ".vscode-test", "webview-ui"]
 }

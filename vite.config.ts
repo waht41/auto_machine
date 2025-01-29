@@ -24,7 +24,7 @@ export default defineConfig({
     ],
     build: {
         outDir: 'dist', // 输出目录
-        assetsDir: 'public', // 资源目录
+        assetsDir: 'assets', // 资源目录
         rollupOptions: { input: 'src/main.js' } // rollup的入口文件，应为 main.js，而非 main.ts，因为 Electron 的主进程应使用 .js 文件。
     }
 })
