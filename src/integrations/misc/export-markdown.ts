@@ -1,6 +1,7 @@
 import { Anthropic } from "@anthropic-ai/sdk"
 import os from "os"
 import * as path from "path"
+import * as vscode from "vscode"
 
 export async function downloadTask(dateTs: number, conversationHistory: Anthropic.MessageParam[]) {
 	// File name
@@ -28,17 +29,16 @@ export async function downloadTask(dateTs: number, conversationHistory: Anthropi
 		.join("---\n\n")
 
 	// Prompt user for save location
-	// const saveUri = await vscode.window.showSaveDialog({
-	// 	filters: { Markdown: ["md"] },
-	// 	defaultUri: vscode.Uri.file(path.join(os.homedir(), "Downloads", fileName)),
-	// })
-	//
-	// if (saveUri) {
-	// 	// Write content to the selected location
-	// 	await vscode.workspace.fs.writeFile(saveUri, Buffer.from(markdownContent))
-	// 	vscode.window.showTextDocument(saveUri, { preview: true })
-	// }
-	//todo waht to do with the markdown content
+	const saveUri = await vscode.window.showSaveDialog({
+		filters: { Markdown: ["md"] },
+		defaultUri: vscode.Uri.file(path.join(os.homedir(), "Downloads", fileName)),
+	})
+
+	if (saveUri) {
+		// Write content to the selected location
+		await vscode.workspace.fs.writeFile(saveUri, Buffer.from(markdownContent))
+		vscode.window.showTextDocument(saveUri, { preview: true })
+	}
 }
 
 export function formatContentBlockToMarkdown(

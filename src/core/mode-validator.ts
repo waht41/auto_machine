@@ -1,5 +1,5 @@
-import { Mode, isToolAllowedForMode, getModeConfig, ModeConfig, FileRestrictionError } from "@/shared/modes"
-import { ToolName } from "@/shared/tool-groups"
+import { Mode, isToolAllowedForMode, getModeConfig, ModeConfig, FileRestrictionError } from "../shared/modes"
+import { ToolName } from "../shared/tool-groups"
 
 export { isToolAllowedForMode }
 export type { ToolName }

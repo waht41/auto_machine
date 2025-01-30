@@ -1,11 +1,13 @@
 import { DiffStrategy } from "../../diff/DiffStrategy"
+import { modes, ModeConfig } from "../../../shared/modes"
+import * as vscode from "vscode"
 import * as path from "path"
 
 export function getRulesSection(
 	cwd: string,
 	supportsComputerUse: boolean,
 	diffStrategy?: DiffStrategy,
-	context?: any,
+	context?: vscode.ExtensionContext,
 ): string {
 	const settingsDir = context ? path.join(context.globalStorageUri.fsPath, "settings") : "<settings directory>"
 	const customModesPath = path.join(settingsDir, "cline_custom_modes.json")

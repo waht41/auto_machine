@@ -9,7 +9,7 @@ import { Anthropic } from "@anthropic-ai/sdk"
 import { ApiHandler, SingleCompletionHandler } from "../"
 import { ApiHandlerOptions, BedrockModelId, ModelInfo, bedrockDefaultModelId, bedrockModels } from "../../shared/api"
 import { ApiStream } from "../transform/stream"
-import { convertToBedrockConverseMessages } from "../transform/bedrock-converse-format"
+import { convertToBedrockConverseMessages, convertToAnthropicMessage } from "../transform/bedrock-converse-format"
 
 // Define types for stream events based on AWS SDK
 export interface StreamEvent {

@@ -7,6 +7,9 @@ import {
 	MistralModelId,
 	mistralModels,
 	ModelInfo,
+	openAiNativeDefaultModelId,
+	OpenAiNativeModelId,
+	openAiNativeModels,
 } from "../../shared/api"
 import { convertToMistralMessages } from "../transform/mistral-format"
 import { ApiStream } from "../transform/stream"

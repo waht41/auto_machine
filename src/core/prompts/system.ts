@@ -11,6 +11,7 @@ import {
 import { DiffStrategy } from "../diff/DiffStrategy"
 import { McpHub } from "../../services/mcp/McpHub"
 import { getToolDescriptionsForMode } from "./tools"
+import * as vscode from "vscode"
 import {
 	getRulesSection,
 	getSystemInfoSection,
@@ -26,7 +27,7 @@ import fs from "fs/promises"
 import path from "path"
 
 async function generatePrompt(
-	context: any,
+	context: vscode.ExtensionContext,
 	cwd: string,
 	supportsComputerUse: boolean,
 	mode: Mode,
@@ -89,7 +90,7 @@ ${await addCustomInstructions(promptComponent?.customInstructions || modeConfig.
 }
 
 export const SYSTEM_PROMPT = async (
-	context: any,
+	context: vscode.ExtensionContext,
 	cwd: string,
 	supportsComputerUse: boolean,
 	mcpHub?: McpHub,
