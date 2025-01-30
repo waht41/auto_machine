@@ -2,6 +2,7 @@ import { resolve } from 'path'
 // 使用 defineConfig 工具函数，这样不用 jsdoc 注解也可以获取类型提示
 import { defineConfig } from 'vite'
 import electron from 'vite-plugin-electron'
+import react from '@vitejs/plugin-react';
 
 /** 当前执行 node 命令时文件夹的地址（工作目录） */
 const root: string = process.cwd()
@@ -21,6 +22,7 @@ export default defineConfig({
         electron({
             entry: resolve(__dirname, 'src/main.ts'),
         }),
+        react()
     ],
     build: {
         outDir: 'dist', // 输出目录

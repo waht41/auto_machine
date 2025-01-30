@@ -22,8 +22,9 @@
     "baseUrl": "./",
     "paths": {
       "@/*": ["src/*"],
-      "@core/*": ["src/core/*"],
-    }
+      "@core/*": ["src/core/*"]
+    },
+    "jsx": "react-jsx"
   },
   "include": ["src/**/*", "scripts/**/*", ".changeset/**/*","electron-preload/**/*.ts"],
   "exclude": ["node_modules", ".vscode-test", "webview-ui"]
