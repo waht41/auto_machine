@@ -2,9 +2,10 @@ import {OutputChannel} from "./output-channel";
 import {MockFileSystemWatcher} from "./fileSystemWatcher";
 import MockUri from "./Uri";
 
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+import {fileURLToPath} from 'url';
+import {dirname} from 'path';
 import path from 'path';
+import {Disposable} from "vscode";
 
 // Get file and directory paths
 const __filename = fileURLToPath(import.meta.url);
@@ -26,8 +27,8 @@ global.__dirname = __dirname;
 export const window = {
     createOutputChannel: (name: string) => new OutputChannel(name),
     createTextEditorDecorationType: ({}) => ({}),
-    tabGroups : {
-        all : []
+    tabGroups: {
+        all: []
     }
 }
 
@@ -35,11 +36,12 @@ export const window = {
 export const workspace = {
     workspaceFolders: [],
     createFileSystemWatcher: () => new MockFileSystemWatcher(),
-    onDidSaveTextDocument: () => {},
+    onDidSaveTextDocument: () => {
+    },
 
     // 新增 mock 配置支持
     _config: {} as Record<string, any>, // 存储配置的模拟对象
-    getConfiguration: function(section: string) {
+    getConfiguration: function (section: string) {
         return {
             get: <T>(key: string): T | undefined => {
                 // 返回对应 section 和 key 的配置值
@@ -48,15 +50,18 @@ export const workspace = {
         };
     },
     // 设置模拟配置值的方法
-    setConfiguration: function(section: string, key: string, value: any) {
+    setConfiguration: function (section: string, key: string, value: any) {
         if (!this._config[section]) {
             this._config[section] = {};
         }
         this._config[section][key] = value;
     },
     // 重置模拟配置
-    resetConfiguration: function() {
+    resetConfiguration: function () {
         this._config = {};
+    },
+    onDidChangeConfiguration: function (listener: (e) => any, thisArgs?: any, disposables?: Disposable[]) {
+        console.log('onDidChangeConfiguration in the mock vscode','args,',thisArgs)
     }
 }
 
@@ -82,6 +87,8 @@ export enum ExtensionMode {
     Test = 3,
 }
 
-export { MockExtensionContext } from "./context";
+export {MockExtensionContext} from "./context";
 
-export const env = {language:'zh-CN'}
+export const env = {language: 'zh-CN'}
+
+export {MockWebviewView} from "./mock-webview";
