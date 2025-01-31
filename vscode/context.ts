@@ -1,4 +1,6 @@
 import * as vscode from 'vscode';
+import {MockMemento} from "./memo";
+import {MockSecretStorage} from "./storage";
 
 export class MockExtensionContext implements vscode.ExtensionContext {
     subscriptions: { dispose(): any }[] = [];
@@ -17,38 +19,9 @@ export class MockExtensionContext implements vscode.ExtensionContext {
     secrets: vscode.SecretStorage = new MockSecretStorage();
 }
 
-class MockMemento implements vscode.Memento {
-    private storage = new Map<string, any>();
 
-    get<T>(key: string): T | undefined;
-    get<T>(key: string, defaultValue: T): T;
-    get(key: string, defaultValue?: any) {
-        return this.storage.has(key) ? this.storage.get(key) : defaultValue;
-    }
 
-    update(key: string, value: any): Thenable<void> {
-        this.storage.set(key, value);
-        return Promise.resolve();
-    }
-}
 
-class MockSecretStorage implements vscode.SecretStorage {
-    private storage = new Map<string, string>();
-
-    get(key: string): Thenable<string | undefined> {
-        return Promise.resolve(this.storage.get(key));
-    }
-
-    store(key: string, value: string): Thenable<void> {
-        this.storage.set(key, value);
-        return Promise.resolve();
-    }
-
-    delete(key: string): Thenable<void> {
-        this.storage.delete(key);
-        return Promise.resolve();
-    }
-}
 
 class MockEnvironmentVariableCollection implements vscode.EnvironmentVariableCollection {
     private collection = new Map<string, vscode.EnvironmentVariableMutation>();

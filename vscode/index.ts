@@ -25,7 +25,10 @@ global.__dirname = __dirname;
 
 export const window = {
     createOutputChannel: (name: string) => new OutputChannel(name),
-    createTextEditorDecorationType: ({}) => ({})
+    createTextEditorDecorationType: ({}) => ({}),
+    tabGroups : {
+        all : []
+    }
 }
 
 
@@ -33,6 +36,28 @@ export const workspace = {
     workspaceFolders: [],
     createFileSystemWatcher: () => new MockFileSystemWatcher(),
     onDidSaveTextDocument: () => {},
+
+    // 新增 mock 配置支持
+    _config: {} as Record<string, any>, // 存储配置的模拟对象
+    getConfiguration: function(section: string) {
+        return {
+            get: <T>(key: string): T | undefined => {
+                // 返回对应 section 和 key 的配置值
+                return this._config[section]?.[key];
+            }
+        };
+    },
+    // 设置模拟配置值的方法
+    setConfiguration: function(section: string, key: string, value: any) {
+        if (!this._config[section]) {
+            this._config[section] = {};
+        }
+        this._config[section][key] = value;
+    },
+    // 重置模拟配置
+    resetConfiguration: function() {
+        this._config = {};
+    }
 }
 
 export const Uri = MockUri
@@ -58,3 +83,5 @@ export enum ExtensionMode {
 }
 
 export { MockExtensionContext } from "./context";
+
+export const env = {language:'zh-CN'}
