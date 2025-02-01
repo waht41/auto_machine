@@ -1,5 +1,5 @@
 import {EventEmitter} from 'events';
-import vscode from "vscode";
+import vscode, {Disposable} from "vscode";
 
 // 模拟 vscode 模块
 
@@ -8,6 +8,7 @@ import vscode from "vscode";
 class MockWebview extends EventEmitter implements vscode.Webview {
     private _options = {enableScripts: false, localResourceRoots: [] as string[]};
     private _html = '';
+    listeners : any = []
 
     get options() {
         console.log('[Webview] Get options:', this._options);
@@ -31,11 +32,15 @@ class MockWebview extends EventEmitter implements vscode.Webview {
 
     postMessage(message: any): Thenable<boolean> {
         console.log('[Webview] Post message:', message);
+        for(const listener of this.listeners) {
+            listener(message)
+        }
         return Promise.resolve(true);
     }
 
-    get onDidReceiveMessage() {
-        return this.addListener.bind(this, 'message') as unknown as vscode.Event<any>;
+    onDidReceiveMessage(listener: (e) => any, thisArgs?: any, disposables?: Disposable[]) {
+        console.log('[WebviewView] Received message:', thisArgs);
+        this.listeners.push(listener)  // todo waht 需要先修复这个
     }
 }
 
@@ -75,23 +80,5 @@ export class MockWebviewView extends EventEmitter implements vscode.WebviewView 
             this._disposed = true;
             this.emit('dispose');
         }
-    }
-}
-
-// 模拟扩展上下文
-export class MockExtensionContext {
-    private _state: Record<string, any> = {};
-
-    constructor(public extensionUri: string) {
-    }
-
-    async getState() {
-        console.log('[ExtensionContext] Get state:', this._state);
-        return {...this._state};
-    }
-
-    async setState(state: Record<string, any>) {
-        console.log('[ExtensionContext] Set state:', state);
-        this._state = {...this._state, ...state};
     }
 }

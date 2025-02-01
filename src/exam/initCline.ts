@@ -7,4 +7,4 @@ const context : vscode.ExtensionContext  = new MockExtensionContext();
 const cp = new ClineProvider(context, outputChannel)
 const webview = new MockWebviewView('mock')
 cp.resolveWebviewView(webview)
-// cp.initClineWithTask('hello')
+cp.initClineWithTask('hello')
