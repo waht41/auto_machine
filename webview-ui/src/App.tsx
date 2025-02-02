@@ -67,46 +67,58 @@ const AppContent = () => {
 		}
 	}, [shouldShowAnnouncement])
 
-	if (!didHydrateState) {
-		return null
-	}
+	// if (!didHydrateState) {
+	// 	return null
+	// }
 
-	return (
-		<>
-			{showWelcome ? (
-				<WelcomeView />
-			) : (
-				<>
-					{showSettings && <SettingsView onDone={() => setShowSettings(false)} />}
-					{showHistory && <HistoryView onDone={() => setShowHistory(false)} />}
-					{showMcp && <McpView onDone={() => setShowMcp(false)} />}
-					{showPrompts && <PromptsView onDone={() => setShowPrompts(false)} />}
-					{/* Do not conditionally load ChatView, it's expensive and there's state we don't want to lose (user input, disableInput, askResponse promise, etc.) */}
-					<ChatView
-						showHistoryView={() => {
-							setShowSettings(false)
-							setShowMcp(false)
-							setShowPrompts(false)
-							setShowHistory(true)
-						}}
-						isHidden={showSettings || showHistory || showMcp || showPrompts}
-						showAnnouncement={showAnnouncement}
-						hideAnnouncement={() => {
-							setShowAnnouncement(false)
-						}}
-					/>
-				</>
-			)}
-		</>
-	)
+	// return (
+	// 	<>
+	// 		{showWelcome ? (
+	// 			<WelcomeView />
+	// 		) : (
+	// 			<>
+	// 				{showSettings && <SettingsView onDone={() => setShowSettings(false)} />}
+	// 				{showHistory && <HistoryView onDone={() => setShowHistory(false)} />}
+	// 				{showMcp && <McpView onDone={() => setShowMcp(false)} />}
+	// 				{showPrompts && <PromptsView onDone={() => setShowPrompts(false)} />}
+	// 				{/* Do not conditionally load ChatView, it's expensive and there's state we don't want to lose (user input, disableInput, askResponse promise, etc.) */}
+	// 				<ChatView
+	// 					showHistoryView={() => {
+	// 						setShowSettings(false)
+	// 						setShowMcp(false)
+	// 						setShowPrompts(false)
+	// 						setShowHistory(true)
+	// 					}}
+	// 					isHidden={showSettings || showHistory || showMcp || showPrompts}
+	// 					showAnnouncement={showAnnouncement}
+	// 					hideAnnouncement={() => {
+	// 						setShowAnnouncement(false)
+	// 					}}
+	// 				/>
+	// 			</>
+	// 		)}
+	// 	</>
+	// )
 }
 
 const App = () => {
-	return (
-		<ExtensionStateContextProvider>
-			<AppContent />
-		</ExtensionStateContextProvider>
-	)
+	useEvent('message',(arg)=>{
+		console.log('[waht]',arg)
+	})
+	useEffect(() => {
+		// window.postMessage('你的消息内容', '*');
+		// window.api.send('event-name',  Buffer.from('你的消息内容', 'utf-8'));
+		window.api.send('event-name',  'hello from server服务器');
+	}, []);
+	return (<div>
+		hello world
+	</div>)
+
+	// return (
+	// 	<ExtensionStateContextProvider>
+	// 		<AppContent />
+	// 	</ExtensionStateContextProvider>
+	// )
 }
 
 export default App

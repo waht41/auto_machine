@@ -5,7 +5,7 @@
   "type": "module",
   "main": "dist-electron/main.js",
   "scripts": {
-    "dev": "vite",
+    "dev": "chcp 65001 && vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "start": "electron ."
