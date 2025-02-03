@@ -67,47 +67,43 @@ const AppContent = () => {
 		}
 	}, [shouldShowAnnouncement])
 
-	// if (!didHydrateState) {
-	// 	return null
-	// }
+	if (!didHydrateState) {
+		return null
+	}
 
-	// return (
-	// 	<>
-	// 		{showWelcome ? (
-	// 			<WelcomeView />
-	// 		) : (
-	// 			<>
-	// 				{showSettings && <SettingsView onDone={() => setShowSettings(false)} />}
-	// 				{showHistory && <HistoryView onDone={() => setShowHistory(false)} />}
-	// 				{showMcp && <McpView onDone={() => setShowMcp(false)} />}
-	// 				{showPrompts && <PromptsView onDone={() => setShowPrompts(false)} />}
-	// 				{/* Do not conditionally load ChatView, it's expensive and there's state we don't want to lose (user input, disableInput, askResponse promise, etc.) */}
-	// 				<ChatView
-	// 					showHistoryView={() => {
-	// 						setShowSettings(false)
-	// 						setShowMcp(false)
-	// 						setShowPrompts(false)
-	// 						setShowHistory(true)
-	// 					}}
-	// 					isHidden={showSettings || showHistory || showMcp || showPrompts}
-	// 					showAnnouncement={showAnnouncement}
-	// 					hideAnnouncement={() => {
-	// 						setShowAnnouncement(false)
-	// 					}}
-	// 				/>
-	// 			</>
-	// 		)}
-	// 	</>
-	// )
+	return (
+		<>
+			{showWelcome ? (
+				<WelcomeView />
+			) : (
+				<>
+					{showSettings && <SettingsView onDone={() => setShowSettings(false)} />}
+					{showHistory && <HistoryView onDone={() => setShowHistory(false)} />}
+					{showMcp && <McpView onDone={() => setShowMcp(false)} />}
+					{showPrompts && <PromptsView onDone={() => setShowPrompts(false)} />}
+					{/* Do not conditionally load ChatView, it's expensive and there's state we don't want to lose (user input, disableInput, askResponse promise, etc.) */}
+					<ChatView
+						showHistoryView={() => {
+							setShowSettings(false)
+							setShowMcp(false)
+							setShowPrompts(false)
+							setShowHistory(true)
+						}}
+						isHidden={showSettings || showHistory || showMcp || showPrompts}
+						showAnnouncement={showAnnouncement}
+						hideAnnouncement={() => {
+							setShowAnnouncement(false)
+						}}
+					/>
+				</>
+			)}
+		</>
+	)
 }
 
 const App = () => {
-	useEvent('message',(arg)=>{
-		console.log('[waht] message',arg)
-	})
 	useEffect(() => {
 		window.electronApi.on('message', (data) => {
-			console.log('[waht]', 'center', data);
 			try {
 				const targetOrigin = window.location.origin;
 				window.postMessage(data, targetOrigin);
@@ -115,16 +111,14 @@ const App = () => {
 				console.error('Failed to process message when transport message', error);
 			}
 		});
+		window.electronApi.send('message', 'webview ready');
 	}, []);
-	return (<div>
-		hello world
-	</div>)
 
-	// return (
-	// 	<ExtensionStateContextProvider>
-	// 		<AppContent />
-	// 	</ExtensionStateContextProvider>
-	// )
+	return (
+		<ExtensionStateContextProvider>
+			<AppContent />
+		</ExtensionStateContextProvider>
+	)
 }
 
 export default App

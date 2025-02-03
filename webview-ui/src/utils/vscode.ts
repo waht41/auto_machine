@@ -1,6 +1,14 @@
 import { WebviewMessage } from "../../../src/shared/WebviewMessage"
 import type { WebviewApi } from "vscode-webview"
 
+const acquireVsCodeApi = () => {
+	return {
+		postMessage: (message: any) => {
+			window.electronApi.send('message', message)
+		}
+	} as any
+}
+
 /**
  * A utility wrapper around the acquireVsCodeApi() function, which enables
  * message passing and state management between the webview and extension
