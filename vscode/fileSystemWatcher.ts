@@ -1,5 +1,5 @@
 import {Uri } from 'vscode'; // Or 'vscode' if in a VS Code extension context
-import { Event, Emitter } from './events';
+import { Event, EventEmitter } from './events';
 import {FileSystemWatcher} from "vscode"; // Import from correct location (see below)
 
 // Mock implementation of Event and Emitter (if not in VS Code extension)
@@ -12,13 +12,13 @@ export class MockFileSystemWatcher implements FileSystemWatcher {
     public ignoreChangeEvents: boolean;
     public ignoreDeleteEvents: boolean;
 
-    private _onDidCreate: Emitter<Uri> = new Emitter<Uri>();
+    private _onDidCreate: EventEmitter<Uri> = new EventEmitter<Uri>();
     public onDidCreate: Event<Uri> = this._onDidCreate.event;
 
-    private _onDidChange: Emitter<Uri> = new Emitter<Uri>();
+    private _onDidChange: EventEmitter<Uri> = new EventEmitter<Uri>();
     public onDidChange: Event<Uri> = this._onDidChange.event;
 
-    private _onDidDelete: Emitter<Uri> = new Emitter<Uri>();
+    private _onDidDelete: EventEmitter<Uri> = new EventEmitter<Uri>();
     public onDidDelete: Event<Uri> = this._onDidDelete.event;
 
     constructor(

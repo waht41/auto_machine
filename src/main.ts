@@ -2,7 +2,7 @@ import {BrowserWindow, app, ipcMain} from 'electron'
 import * as path from 'path'
 import {fileURLToPath} from "url";
 import {dirname} from "path";
-// import app = Electron.app;
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const createWindow = async () => {
@@ -41,6 +41,6 @@ app.whenReady().then(() => {
 })
 
 //输出当前路径
-console.log(path.resolve('.'))
+// console.log(path.resolve('.'))
 
-console.log('[waht]',__filename,__dirname)
+// console.log('[waht]',__filename,__dirname)

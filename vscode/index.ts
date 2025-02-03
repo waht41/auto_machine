@@ -92,3 +92,5 @@ export {MockExtensionContext} from "./context";
 export const env = {language: 'zh-CN'}
 
 export {MockWebviewView} from "./mock-webview";
+
+export {EventEmitter} from "./events";

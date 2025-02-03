@@ -1,14 +1,25 @@
-import {EventEmitter} from 'events';
-import vscode, {Disposable} from "vscode";
+import * as vscode from "vscode";
+import {EventEmitter} from "events";
+import {BrowserWindow, ipcMain} from "electron";
 
 // 模拟 vscode 模块
 
 
 // 模拟 Webview 实现
-class MockWebview extends EventEmitter implements vscode.Webview {
+class MockWebview implements vscode.Webview {
     private _options = {enableScripts: false, localResourceRoots: [] as string[]};
     private _html = '';
     listeners : any = []
+    eventEmitter : vscode.EventEmitter<any>
+    onDidReceiveMessage: vscode.Event<any>;
+    window: BrowserWindow
+
+    constructor(window: BrowserWindow) {
+        this.eventEmitter = new vscode.EventEmitter();
+        this.onDidReceiveMessage = this.eventEmitter.event;
+        this.window = window
+    }
+
 
     get options() {
         console.log('[Webview] Get options:', this._options);
@@ -31,30 +42,28 @@ class MockWebview extends EventEmitter implements vscode.Webview {
     }
 
     postMessage(message: any): Thenable<boolean> {
-        console.log('[Webview] Post message:', message);
-        for(const listener of this.listeners) {
-            listener(message)
-        }
+        // console.log('[Webview] Post message:', message);
+        // for(const listener of this.listeners) {
+        //     listener(message)
+        // }
+        // ipcMain.emit('message',message)
+        this.window?.webContents.send('message',message)
         return Promise.resolve(true);
-    }
-
-    onDidReceiveMessage(listener: (e) => any, thisArgs?: any, disposables?: Disposable[]) {
-        console.log('[WebviewView] Received message:', thisArgs);
-        this.listeners.push(listener)  // todo waht 需要先修复这个
     }
 }
 
 // 模拟 WebviewView 实现
 export class MockWebviewView extends EventEmitter implements vscode.WebviewView {
     readonly viewType: string;
-    readonly webview = new MockWebview();
+    readonly webview: MockWebview;
     visible = false;
 
     private _disposed = false;
 
-    constructor(viewType: string) {
+    constructor(viewType: string, window: BrowserWindow) {
         super();
         this.viewType = viewType;
+        this.webview = new MockWebview(window);
         console.log(`[WebviewView] Created (type: ${viewType})`);
     }
 
