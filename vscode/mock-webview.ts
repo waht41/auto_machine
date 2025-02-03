@@ -42,11 +42,6 @@ class MockWebview implements vscode.Webview {
     }
 
     postMessage(message: any): Thenable<boolean> {
-        // console.log('[Webview] Post message:', message);
-        // for(const listener of this.listeners) {
-        //     listener(message)
-        // }
-        // ipcMain.emit('message',message)
         this.window?.webContents.send('message',message)
         return Promise.resolve(true);
     }

@@ -106,9 +106,15 @@ const App = () => {
 		console.log('[waht] message',arg)
 	})
 	useEffect(() => {
-		// window.postMessage('你的消息内容', '*');
-		// window.api.send('event-name',  Buffer.from('你的消息内容', 'utf-8'));
-		window.api.send('event-name',  'hello from server服务器');
+		window.electronApi.on('message', (data) => {
+			console.log('[waht]', 'center', data);
+			try {
+				const targetOrigin = window.location.origin;
+				window.postMessage(data, targetOrigin);
+			} catch (error) {
+				console.error('Failed to process message when transport message', error);
+			}
+		});
 	}, []);
 	return (<div>
 		hello world
