@@ -1,4 +1,4 @@
-import { Checkbox, Dropdown, Pane } from "vscrui"
+import { Checkbox, Dropdown, Pane } from "../ui"
 import type { DropdownOption } from "vscrui"
 import { VSCodeLink, VSCodeRadio, VSCodeRadioGroup, VSCodeTextField } from "@vscode/webview-ui-toolkit/react"
 import { Fragment, memo, useCallback, useEffect, useMemo, useState } from "react"
@@ -187,7 +187,7 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 						/>
 					)}
 
-					<p
+					<div
 						style={{
 							fontSize: "12px",
 							marginTop: 3,
@@ -201,7 +201,7 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 								You can get an Anthropic API key by signing up here.
 							</VSCodeLink>
 						)}
-					</p>
+					</div>
 				</div>
 			)}
 
@@ -223,14 +223,14 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 							Get Glama API Key
 						</VSCodeButtonLink>
 					)}
-					<p
+					<div
 						style={{
 							fontSize: "12px",
 							marginTop: "5px",
 							color: "var(--vscode-descriptionForeground)",
 						}}>
 						This key is stored locally and only used to make API requests from this extension.
-					</p>
+					</div>
 				</div>
 			)}
 
@@ -244,7 +244,7 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 						placeholder="Enter API Key...">
 						<span style={{ fontWeight: 500 }}>OpenAI API Key</span>
 					</VSCodeTextField>
-					<p
+					<div
 						style={{
 							fontSize: "12px",
 							marginTop: 3,
@@ -258,7 +258,7 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 								You can get an OpenAI API key by signing up here.
 							</VSCodeLink>
 						)}
-					</p>
+					</div>
 				</div>
 			)}
 
@@ -272,7 +272,7 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 						placeholder="Enter API Key...">
 						<span style={{ fontWeight: 500 }}>Mistral API Key</span>
 					</VSCodeTextField>
-					<p
+					<div
 						style={{
 							fontSize: "12px",
 							marginTop: 3,
@@ -289,7 +289,7 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 								You can get a Mistral API key by signing up here.
 							</VSCodeLink>
 						)}
-					</p>
+					</div>
 				</div>
 			)}
 
@@ -304,14 +304,14 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 						<span style={{ fontWeight: 500 }}>OpenRouter API Key</span>
 					</VSCodeTextField>
 					{!apiConfiguration?.openRouterApiKey && (
-						<p>
+						<div>
 							<VSCodeButtonLink
 								href={getOpenRouterAuthUrl(uriScheme)}
 								style={{ margin: "5px 0 0 0" }}
 								appearance="secondary">
 								Get OpenRouter API Key
 							</VSCodeButtonLink>
-						</p>
+						</div>
 					)}
 					<Checkbox
 						checked={openRouterBaseUrlSelected}
@@ -337,7 +337,7 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 							placeholder="Default: https://openrouter.ai/api/v1"
 						/>
 					)}
-					<p
+					<div
 						style={{
 							fontSize: "12px",
 							marginTop: "5px",
@@ -350,7 +350,7 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 								limits, prompt caching, and wider selection of models.)
 							</span>
 						)} */}
-					</p>
+					</div>
 					<Checkbox
 						checked={apiConfiguration?.openRouterUseMiddleOutTransform || false}
 						onChange={(checked: boolean) => {
@@ -461,7 +461,7 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 						}}>
 						Use cross-region inference
 					</Checkbox>
-					<p
+					<div
 						style={{
 							fontSize: "12px",
 							marginTop: "5px",
@@ -470,7 +470,7 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 						Authenticate by either providing the keys above or use the default AWS credential providers,
 						i.e. ~/.aws/credentials or environment variables. These credentials are only used locally to
 						make API requests from this extension.
-					</p>
+					</div>
 				</div>
 			)}
 
@@ -508,7 +508,7 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 							]}
 						/>
 					</div>
-					<p
+					<div
 						style={{
 							fontSize: "12px",
 							marginTop: "5px",
@@ -527,7 +527,7 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 							style={{ display: "inline", fontSize: "inherit" }}>
 							{"2) install the Google Cloud CLI › configure Application Default Credentials."}
 						</VSCodeLink>
-					</p>
+					</div>
 				</div>
 			)}
 
@@ -541,7 +541,7 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 						placeholder="Enter API Key...">
 						<span style={{ fontWeight: 500 }}>Gemini API Key</span>
 					</VSCodeTextField>
-					<p
+					<div
 						style={{
 							fontSize: "12px",
 							marginTop: 3,
@@ -555,7 +555,7 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 								You can get a Gemini API key by signing up here.
 							</VSCodeLink>
 						)}
-					</p>
+					</div>
 				</div>
 			)}
 
@@ -643,7 +643,7 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 								padding: 15,
 								backgroundColor: "var(--vscode-editor-background)",
 							}}>
-							<p
+							<div
 								style={{
 									fontSize: "12px",
 									color: "var(--vscode-descriptionForeground)",
@@ -652,7 +652,7 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 								}}>
 								Configure the capabilities and pricing for your custom OpenAI-compatible model. <br />
 								Be careful for the model capabilities, as they can affect how Roo Code can work.
-							</p>
+							</div>
 
 							{/* Capabilities Section */}
 							<div
@@ -831,7 +831,7 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 														}}
 													/>
 												</div>
-												<p
+												<div
 													style={{
 														fontSize: "11px",
 														color: "var(--vscode-descriptionForeground)",
@@ -841,7 +841,7 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 													}}>
 													Allows the model to analyze and understand images, essential for
 													visual code assistance
-												</p>
+												</div>
 											</div>
 
 											<div
@@ -879,7 +879,7 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 														}}
 													/>
 												</div>
-												<p
+												<div
 													style={{
 														fontSize: "11px",
 														color: "var(--vscode-descriptionForeground)",
@@ -888,7 +888,7 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 														lineHeight: "1.4",
 													}}>
 													This model feature is for computer use like sonnet 3.5 support
-												</p>
+												</div>
 											</div>
 										</div>
 									</div>
@@ -1046,7 +1046,7 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 
 					{/* end Model Info Configuration */}
 
-					<p
+					<div
 						style={{
 							fontSize: "12px",
 							marginTop: 3,
@@ -1056,7 +1056,7 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 							(<span style={{ fontWeight: 500 }}>Note:</span> Roo Code uses complex prompts and works best
 							with Claude models. Less capable models may not work as expected.)
 						</span>
-					</p>
+					</div>
 				</div>
 			)}
 
@@ -1103,7 +1103,7 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 							))}
 						</VSCodeRadioGroup>
 					)}
-					<p
+					<div
 						style={{
 							fontSize: "12px",
 							marginTop: "5px",
@@ -1125,7 +1125,7 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 							(<span style={{ fontWeight: 500 }}>Note:</span> Roo Code uses complex prompts and works best
 							with Claude models. Less capable models may not work as expected.)
 						</span>
-					</p>
+					</div>
 				</div>
 			)}
 
@@ -1139,7 +1139,7 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 						placeholder="Enter API Key...">
 						<span style={{ fontWeight: 500 }}>DeepSeek API Key</span>
 					</VSCodeTextField>
-					<p
+					<div
 						style={{
 							fontSize: "12px",
 							marginTop: "5px",
@@ -1153,7 +1153,7 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 								You can get a DeepSeek API key by signing up here.
 							</VSCodeLink>
 						)}
-					</p>
+					</div>
 				</div>
 			)}
 
@@ -1193,7 +1193,7 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 								]}
 							/>
 						) : (
-							<p
+							<div
 								style={{
 									fontSize: "12px",
 									marginTop: "5px",
@@ -1202,10 +1202,10 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 								The VS Code Language Model API allows you to run models provided by other VS Code
 								extensions (including but not limited to GitHub Copilot). The easiest way to get started
 								is to install the Copilot and Copilot Chat extensions from the VS Code Marketplace.
-							</p>
+							</div>
 						)}
 
-						<p
+						<div
 							style={{
 								fontSize: "12px",
 								marginTop: "5px",
@@ -1214,7 +1214,7 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 							}}>
 							Note: This is a very experimental integration and may not work as expected. Please report
 							any issues to the Roo-Code GitHub repository.
-						</p>
+						</div>
 					</div>
 				</div>
 			)}
@@ -1262,7 +1262,7 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 							))}
 						</VSCodeRadioGroup>
 					)}
-					<p
+					<div
 						style={{
 							fontSize: "12px",
 							marginTop: "5px",
@@ -1279,19 +1279,19 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 							(<span style={{ fontWeight: 500 }}>Note:</span> Roo Code uses complex prompts and works best
 							with Claude models. Less capable models may not work as expected.)
 						</span>
-					</p>
+					</div>
 				</div>
 			)}
 
 			{apiErrorMessage && (
-				<p
+				<div
 					style={{
 						margin: "-10px 0 4px 0",
 						fontSize: 12,
 						color: "var(--vscode-errorForeground)",
 					}}>
 					{apiErrorMessage}
-				</p>
+				</div>
 			)}
 
 			{selectedProvider === "glama" && <GlamaModelPicker />}
@@ -1327,14 +1327,14 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 				)}
 
 			{modelIdErrorMessage && (
-				<p
+				<div
 					style={{
 						margin: "-10px 0 4px 0",
 						fontSize: 12,
 						color: "var(--vscode-errorForeground)",
 					}}>
 					{modelIdErrorMessage}
-				</p>
+				</div>
 			)}
 		</div>
 	)
@@ -1375,7 +1375,7 @@ export const ModelInfoView = ({
 	const infoItems = [
 		modelInfo.description && (
 			<ModelDescriptionMarkdown
-				key="description"
+				modelKey="description"
 				markdown={modelInfo.description}
 				isExpanded={isDescriptionExpanded}
 				setIsExpanded={setIsDescriptionExpanded}
@@ -1441,14 +1441,19 @@ export const ModelInfoView = ({
 	].filter(Boolean)
 
 	return (
-		<p style={{ fontSize: "12px", marginTop: "2px", color: "var(--vscode-descriptionForeground)" }}>
+		<div
+			style={{
+				fontSize: "12px",
+				marginTop: "2px",
+				color: "var(--vscode-descriptionForeground)",
+			}}>
 			{infoItems.map((item, index) => (
 				<Fragment key={index}>
 					{item}
 					{index < infoItems.length - 1 && <br />}
 				</Fragment>
 			))}
-		</p>
+		</div>
 	)
 }
 

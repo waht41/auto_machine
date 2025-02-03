@@ -296,12 +296,12 @@ const StyledMarkdown = styled.div`
 export const ModelDescriptionMarkdown = memo(
 	({
 		markdown,
-		key,
+		modelKey,
 		isExpanded,
 		setIsExpanded,
 	}: {
 		markdown?: string
-		key: string
+		modelKey: string
 		isExpanded: boolean
 		setIsExpanded: (isExpanded: boolean) => void
 	}) => {
@@ -328,7 +328,7 @@ export const ModelDescriptionMarkdown = memo(
 		}, [reactContent, setIsExpanded])
 
 		return (
-			<StyledMarkdown key={key} style={{ display: "inline-block", marginBottom: 0 }}>
+			<StyledMarkdown key={modelKey} style={{ display: "inline-block", marginBottom: 0 }}>
 				<div
 					ref={textContainerRef}
 					style={{
