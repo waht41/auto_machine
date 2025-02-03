@@ -2,7 +2,7 @@ import * as vscode from "vscode"
 import * as path from "path"
 import { listFiles } from "../../services/glob/list-files"
 import { ClineProvider } from "../../core/webview/ClineProvider"
-import * as process from "node:process";
+// import * as process from "node:process";
 
 const cwd = process.cwd()
 const MAX_INITIAL_FILES = 1_000

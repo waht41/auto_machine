@@ -52,7 +52,15 @@ export default defineConfig({
         outDir: 'dist',
         assetsDir: 'assets',
         rollupOptions: {
-            external: ['vscode']
+            external: ['electron']
+        }
+    },
+    optimizeDeps: {
+        exclude: ['puppeteer-chromium-resolver']
+    },
+    server: {
+        fs: {
+            strict: false
         }
     }
 })
