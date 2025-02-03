@@ -2,6 +2,9 @@ import {BrowserWindow, app, ipcMain} from 'electron'
 import * as path from 'path'
 import {fileURLToPath} from "url";
 import {dirname} from "path";
+import {ClineProvider} from "@/core/webview/ClineProvider";
+import * as vscode from "../vscode";
+import {MockExtensionContext, MockWebviewView} from "../vscode";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -14,6 +17,13 @@ const createWindow = async () => {
             contextIsolation: true,                      // 启用上下文隔离
         }
     })
+
+    const outputChannel = vscode.window.createOutputChannel("Roo-Code")
+    const context : vscode.MockExtensionContext  = new MockExtensionContext();
+    const cp = new ClineProvider(context, outputChannel)
+    const webview = new MockWebviewView('mock',win)
+    cp.resolveWebviewView(webview)
+    cp.initClineWithTask('hello')
 
     ipcMain.on('event-name', (event, data) => {
         // const text = data.toString('utf-8');

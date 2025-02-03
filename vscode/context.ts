@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
 import {MockMemento} from "./memo";
 import {MockSecretStorage} from "./storage";
+import {EnvironmentVariableMutator, GlobalEnvironmentVariableCollection, MarkdownString} from "vscode";
+import {undefined} from "zod";
 
 export class MockExtensionContext implements vscode.ExtensionContext {
     subscriptions: { dispose(): any }[] = [];
@@ -8,7 +10,7 @@ export class MockExtensionContext implements vscode.ExtensionContext {
     globalState: vscode.Memento = new MockMemento();
     extensionUri: vscode.Uri = vscode.Uri.file(__dirname);
     extensionPath: string = __dirname;
-    environmentVariableCollection: vscode.EnvironmentVariableCollection = new MockEnvironmentVariableCollection();
+    environmentVariableCollection: GlobalEnvironmentVariableCollection = new MockEnvironmentVariableCollection();
     asAbsolutePath(relativePath: string): string {
         return require('path').join(this.extensionPath, relativePath);
     }
@@ -54,5 +56,11 @@ class MockEnvironmentVariableCollection implements vscode.EnvironmentVariableCol
 
     clear(): void {
         this.collection.clear();
+    }
+
+    description: string | MarkdownString | undefined;
+
+    [Symbol.iterator](): Iterator<[variable: string, mutator: EnvironmentVariableMutator], any, any> {
+        return undefined;
     }
 }

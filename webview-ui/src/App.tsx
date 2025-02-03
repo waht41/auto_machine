@@ -103,7 +103,7 @@ const AppContent = () => {
 
 const App = () => {
 	useEvent('message',(arg)=>{
-		console.log('[waht]',arg)
+		console.log('[waht] message',arg)
 	})
 	useEffect(() => {
 		// window.postMessage('你的消息内容', '*');

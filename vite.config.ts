@@ -4,26 +4,33 @@ import electron from 'vite-plugin-electron'
 import react from '@vitejs/plugin-react'
 
 const root = process.cwd()
-const pathResolve = (path: string) => resolve(root, path)
-
+const pathResolve = (path: string) => resolve(__dirname, path)
+console.log('root:', root)
+console.log('@core', pathResolve('src/core'))
+const alias = [
+    {find: '@', replacement: pathResolve('src')},
+    {find: '@core', replacement: pathResolve('src/core')},
+    {find: 'vscode', replacement: pathResolve('vscode')},
+]
 export default defineConfig({
     resolve: {
-        alias: [
-            {find: '@', replacement: pathResolve('src')},
-            {find: '@core', replacement: pathResolve('src/core')},
-        ],
+        alias: alias,
     },
     plugins: [
         electron([{
             // 主进程入口文件
             entry: resolve(__dirname, 'src/main.ts'),
             vite: {
+                resolve: {
+                    alias: alias,
+                },
                 build: {
                     // 主进程输出目录
                     outDir: 'dist-electron',
                     rollupOptions: {
                         // 确保这里指向正确的入口文件（保持为 main.ts）
                         input: resolve(__dirname, 'src/main.ts'),
+                        // external: ['electron', 'vscode']
                     },
                 },
             },
@@ -44,5 +51,8 @@ export default defineConfig({
         // 渲染进程输出目录（与原配置保持一致）
         outDir: 'dist',
         assetsDir: 'assets',
+        rollupOptions: {
+            external: ['vscode']
+        }
     }
 })
