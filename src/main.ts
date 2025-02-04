@@ -4,7 +4,8 @@ import {fileURLToPath} from "url";
 import {dirname} from "path";
 import {ClineProvider} from "@/core/webview/ClineProvider";
 import * as vscode from "vscode";
-import {MockExtensionContext, MockWebviewView} from "vscode";
+import {MockExtensionContext, MockWebviewView} from "../vscode";
+import { createMenu } from '@/menu';
 
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
@@ -14,7 +15,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const createWindow = async () => {
     const win = new BrowserWindow({
-        width: 800,
+        width: 1600,
         height: 600,
         webPreferences:{
             preload: path.join(__dirname, 'preload.js'), // 注入 preload 脚本
@@ -22,18 +23,30 @@ const createWindow = async () => {
         }
     })
 
-    // const outputChannel = vscode.window.createOutputChannel("Roo-Code")
-    // const context : vscode.MockExtensionContext  = new MockExtensionContext();
-    // const webview = new MockWebviewView('mock',win)
-    // const cp = new ClineProvider(context, outputChannel)
+    // 创建并应用菜单
+    createMenu(win);
 
-    // cp.resolveWebviewView(webview)
-    // cp.initClineWithTask('hello')
+    let webview: MockWebviewView = new MockWebviewView('mock',win);
 
+    ipcMain.on('message', async (event, data) => {
 
-    ipcMain.on('event-name', (event, data) => {
-        // const text = data.toString('utf-8');
-        console.log('[waht] receive from main: ',data)
+        if (data === 'webview ready'){
+            console.log('[waht]', 'webview ready')
+            const outputChannel = vscode.window.createOutputChannel("Roo-Code")
+            const context  = new MockExtensionContext();
+            const cp = new ClineProvider(context, outputChannel)
+            cp.resolveWebviewView(webview)
+            // cp.initClineWithTask('hello')
+            await cp.clearTask()
+            await cp.postStateToWebview()
+            await cp.postMessageToWebview({ type: "action", action: "chatButtonClicked" })
+        } else {
+            console.log('[waht]','try fire data: ',data, `webview ${webview}`)
+            if (webview){
+                console.log(`[waht] fire data ${data}`,)
+                webview.webview.eventEmitter.fire(data)
+            }
+        }
     });
 
 
@@ -49,11 +62,6 @@ const createWindow = async () => {
             }
         )
     }
-    let count = 0;
-    setInterval(()=>{
-        win.webContents.send('message', `a late message from server count ${count++}`);
-        console.log('[waht]','time out')
-    },2000)
 }
 
 app.whenReady().then(() => {
