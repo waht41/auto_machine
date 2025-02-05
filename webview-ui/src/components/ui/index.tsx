@@ -1,7 +1,6 @@
 import React from 'react';
 import { 
     VSCodeCheckbox, 
-    VSCodeDropdown, 
     VSCodePanels
 } from "@vscode/webview-ui-toolkit/react";
 
@@ -41,9 +40,13 @@ export const Dropdown = ({
     [key: string]: any;
 }) => {
     return (
-        <VSCodeDropdown
+        <select
+            className="dropdown"
             value={value}
-            onChange={(e) => onChange?.(e?.target?.value)}
+            onChange={(e) => {
+                console.log('[waht] select',e.target.value)
+                onChange?.(e.target.value)
+            }}
             {...props}
         >
             {options.map((option) => (
@@ -51,7 +54,7 @@ export const Dropdown = ({
                     {option.label}
                 </option>
             ))}
-        </VSCodeDropdown>
+        </select>
     );
 };
 

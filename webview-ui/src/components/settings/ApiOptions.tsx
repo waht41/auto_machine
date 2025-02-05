@@ -128,7 +128,7 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
 					onChange={(value: unknown) => {
 						handleInputChange("apiProvider")({
 							target: {
-								value: (value as DropdownOption).value,
+								value: value,
 							},
 						})
 					}}
