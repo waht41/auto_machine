@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "main": "dist-electron/main.js",
   "scripts": {
-    "dev": "rimraf dist-electron && chcp 65001 && vite",
+    "dev": "rimraf dist-electron && cross-env-shell \"[[ '$OSTYPE' == 'win32' || '$OSTYPE' == 'msys' ]] && chcp 65001 || true && vite\"",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "start": "electron ."
@@ -16,6 +16,7 @@
     "@types/diff-match-patch": "^1.0.36",
     "@types/jest": "^29.5.14",
     "@vitejs/plugin-react": "^4.3.4",
+    "cross-env-shell": "^7.0.3",
     "electron": "^34.0.1",
     "electron-builder": "^25.1.8",
     "jest": "^29.7.0",

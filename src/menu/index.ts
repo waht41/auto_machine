@@ -2,18 +2,13 @@ import { Menu, BrowserWindow } from 'electron';
 
 export function createMenu(mainWindow: BrowserWindow) {
     // 获取默认菜单模板
-    const template = Menu.getApplicationMenu()?.items.map(item => {
+    let template = Menu.getApplicationMenu()?.items.map(item => {
         return {
             label: item.label,
-            submenu: item.submenu?.items.map(subItem => ({
-                label: subItem.label,
-                accelerator: subItem.accelerator,
-                click: subItem.click,
-                type: subItem.type,
-                role: subItem.role,
-            }))
+            submenu: item.submenu
         };
     }) || [];
+    // template = []
 
     // 添加自定义菜单项
     template.push({
