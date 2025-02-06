@@ -36,7 +36,7 @@ export const Dropdown = ({
 }: { 
     options?: Array<{ value: string; label: string }>; 
     value?: string;
-    onChange?: (value: string) => void;
+    onChange?: (value: {value: string}) => void;
     [key: string]: any;
 }) => {
     return (
@@ -45,7 +45,7 @@ export const Dropdown = ({
             value={value}
             onChange={(e) => {
                 console.log('[waht] select',e.target.value)
-                onChange?.(e.target.value)
+                onChange?.(e.target)
             }}
             {...props}
         >
