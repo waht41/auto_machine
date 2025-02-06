@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import {MockMemento} from "./storage/memo";
+import {BaseMemento} from "./storage/memo";
 import {EnvironmentVariableMutator, GlobalEnvironmentVariableCollection, MarkdownString} from "vscode";
 import {undefined} from "zod";
 import {MockSecretStorage} from "./storage/secret";
@@ -7,7 +7,7 @@ import {GlobalState} from "./storage/global-state";
 
 export class MockExtensionContext implements vscode.ExtensionContext {
     subscriptions: { dispose(): any }[] = [];
-    workspaceState: vscode.Memento = new MockMemento();
+    workspaceState: vscode.Memento = new BaseMemento();
     globalState: GlobalState = new GlobalState();
     extensionUri: vscode.Uri = vscode.Uri.file(__dirname);
     extensionPath: string = __dirname;

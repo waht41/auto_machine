@@ -1,4 +1,5 @@
-class MockUri {
+import vscode from "vscode";
+class MockUri implements vscode.Uri {
     static parse(value: string, strict?: boolean): MockUri {
         if (strict && (!value || value.length === 0)) {
             throw new Error('Uri is empty');
@@ -20,9 +21,6 @@ class MockUri {
 
     static file(path: string): MockUri {
         path = path.replace(/\\/g, '/');
-        // if (path[0] !== '/') {
-        //     path = '/' + path;
-        // }
         return new MockUri('file', '', path, '', '');
     }
 

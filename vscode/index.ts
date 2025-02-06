@@ -1,28 +1,12 @@
 import {OutputChannel} from "./output-channel";
 import {MockFileSystemWatcher} from "./fileSystemWatcher";
 import MockUri from "./Uri";
-
+import {BaseMemento} from "./storage/memo";
 import {fileURLToPath} from 'url';
 import {dirname} from 'path';
 import path from 'path';
 import {Disposable} from "vscode";
 
-// Get file and directory paths
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Export the root directory
-export const ROOT_DIR = path.resolve(__dirname, '../..');
-
-// Create type declarations
-declare global {
-    var __filename: string;
-    var __dirname: string;
-}
-
-// Assign to global scope
-global.__filename = __filename;
-global.__dirname = __dirname;
 
 export const window = {
     createOutputChannel: (name: string) => new OutputChannel(name),
@@ -33,32 +17,41 @@ export const window = {
 }
 
 
+export enum ConfigurationTarget {
+    Global = 1,
+    Workspace = 2,
+    WorkspaceFolder = 3
+}
+
 export const workspace = {
     workspaceFolders: [],
     createFileSystemWatcher: () => new MockFileSystemWatcher(),
     onDidSaveTextDocument: () => {
     },
 
-    // 新增 mock 配置支持
-    _config: {} as Record<string, any>, // 存储配置的模拟对象
-    getConfiguration: function (section: string) {
+    // 使用 BaseMemento 存储配置
+    _configMemento: new BaseMemento('vscode_workspace_config'),
+    getConfiguration: function (section: string, resource?: any, scopeUri?: any) {
         return {
             get: <T>(key: string): T | undefined => {
-                // 返回对应 section 和 key 的配置值
-                return this._config[section]?.[key];
+                const fullKey = `${section}.${key}`;
+                return this._configMemento.get(fullKey);
+            },
+            update: async (key: string, value: any, target?: ConfigurationTarget | boolean) => {
+                const fullKey = `${section}.${key}`;
+                await this._configMemento.update(fullKey, value);
+                return Promise.resolve();
             }
         };
     },
     // 设置模拟配置值的方法
     setConfiguration: function (section: string, key: string, value: any) {
-        if (!this._config[section]) {
-            this._config[section] = {};
-        }
-        this._config[section][key] = value;
+        const fullKey = `${section}.${key}`;
+        this._configMemento.update(fullKey, value);
     },
     // 重置模拟配置
     resetConfiguration: function () {
-        this._config = {};
+        this._configMemento.clear();
     },
     onDidChangeConfiguration: function (listener: (e) => any, thisArgs?: any, disposables?: Disposable[]) {
         console.log('onDidChangeConfiguration in the mock vscode','args,',thisArgs)

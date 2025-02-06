@@ -2,7 +2,7 @@ import vscode from "vscode";
 import * as fs from 'fs';
 import * as path from 'path';
 
-export class MockMemento implements vscode.Memento {
+export class BaseMemento implements vscode.Memento {
     private storagePath: string;
     private cache: Map<string, any>;
     private dirty: boolean = false;
@@ -48,5 +48,11 @@ export class MockMemento implements vscode.Memento {
 
     keys(): readonly string[] {
         return Array.from(this.cache.keys());
+    }
+
+    clear(): Thenable<void> {
+        this.cache.clear();
+        this.dirty = true;
+        return this.flushIfNeeded();
     }
 }

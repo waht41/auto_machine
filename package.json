@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "main": "dist-electron/main.js",
   "scripts": {
-    "dev": "rimraf dist-electron && cross-env-shell \"[[ '$OSTYPE' == 'win32' || '$OSTYPE' == 'msys' ]] && chcp 65001 || true && vite\"",
+    "dev-win": "rimraf dist-electron && chcp 65001 && vite\"",
+    "dev-mac": "rimraf dist-electron && vite\"",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "start": "electron ."
