@@ -17,8 +17,8 @@ import { join } from 'path'
 function createHelloWorker() {
     const isDev = process.env.NODE_ENV === 'development'
     const workerPath = join(__dirname, 
-        isDev ? '../dist-electron/services/hello.js' 
-              : './services/hello.js'
+        isDev ? '../dist-electron/background/hello.js' 
+              : './background/hello.js'
     )
     
     const worker = fork(workerPath)
