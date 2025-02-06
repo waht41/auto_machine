@@ -7,12 +7,32 @@ import * as vscode from "vscode";
 import {MockExtensionContext, MockWebviewView} from "../vscode";
 import { createMenu } from '@/menu';
 
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
-global.require = require;
+// 创建后台服务进程
+import { fork } from 'child_process'
+import { join } from 'path'
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = dirname(__filename);
+
+function createHelloWorker() {
+    const isDev = process.env.NODE_ENV === 'development'
+    const workerPath = join(__dirname, 
+        isDev ? '../dist-electron/services/hello.js' 
+              : './services/hello.js'
+    )
+    
+    const worker = fork(workerPath)
+    
+    worker.on('message', (message) => {
+        console.log('Main received:', message)
+    })
+    
+    // 发送测试消息
+    worker.send({ type: 'HELLO', data: 'Hello from main process!' })
+    
+    return worker
+}
+
 const createWindow = async () => {
     const win = new BrowserWindow({
         width: 1600,
@@ -36,13 +56,20 @@ const createWindow = async () => {
             const context  = new MockExtensionContext();
             const cp = new ClineProvider(context, outputChannel)
             cp.resolveWebviewView(webview)
-            // cp.initClineWithTask('hello')
             await cp.clearTask()
             await cp.postStateToWebview()
             await cp.postMessageToWebview({ type: "action", action: "chatButtonClicked" })
         } else {
-            console.log('[waht]','try fire data: ',data, `webview ${webview}`)
+            console.log('[waht] try fire data: ',data, `webview ${webview}`)
             if (webview){
+                if (data.type === 'upsertApiConfiguration'){
+                    const apiConfiguration = data.apiConfiguration
+                    for (let key in apiConfiguration){
+                        if (!apiConfiguration[key]){
+                            apiConfiguration[key] = ''
+                        }
+                    }
+                }
                 console.log(`[waht] fire data ${data}`,)
                 webview.webview.eventEmitter.fire(data)
             }
@@ -65,6 +92,7 @@ const createWindow = async () => {
 }
 
 app.whenReady().then(() => {
+    createHelloWorker()
     createWindow()
 })
 

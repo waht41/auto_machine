@@ -30,7 +30,7 @@ export default defineConfig({
                     rollupOptions: {
                         // 确保这里指向正确的入口文件（保持为 main.ts）
                         input: resolve(__dirname, 'src/main.ts'),
-                        // external: ['electron', 'vscode']
+                        external: ['electron']
                     },
                 },
             },
@@ -42,7 +42,13 @@ export default defineConfig({
                     build: {
                         // 预加载脚本输出目录
                         outDir: 'dist-electron',
+                        rollupOptions: {
+                            // 确保这里指向正确的入口文件（保持为 main.ts）
+                            input: resolve(__dirname, 'electron-preload/preload.ts'),
+                            external: ['electron']
+                        },
                     },
+
                 },
             }]),
         react()
