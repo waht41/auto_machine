@@ -5,7 +5,7 @@ import { createMenu } from '@/menu';
 import { ChildProcess, fork } from 'child_process';
 import chokidar from 'chokidar';
 
-function createHelloWorker(): ChildProcess {
+function createHelloWorker(win?: BrowserWindow): ChildProcess {
     const isDev = process.env.NODE_ENV === 'development';
     const workerPath = join(__dirname,
         isDev ? '../src/background-worker/start-background.ts'
@@ -14,14 +14,52 @@ function createHelloWorker(): ChildProcess {
 
     let worker: ChildProcess | null = null;
 
+    function setupWorkerMessageHandlers(worker: ChildProcess) {
+        if (win) {
+            // 接收来自渲染进程的消息，并转发给 worker
+            ipcMain.removeAllListeners('message');  // 清理旧的监听器
+            ipcMain.on('message', async (event, data) => {
+                try {
+                    if (worker && !worker.killed) {
+                        worker.send(data);
+                    }
+                } catch (error) {
+                    console.error('Error sending message to worker:', error);
+                }
+            });
+
+            // 接收来自 worker 的消息，并转发给渲染进程
+            worker.on('message', (message) => {
+                try {
+                    if (!win.isDestroyed() && win.webContents && !win.webContents.isDestroyed()) {
+                        console.log('[waht] main receive from worker:', message);
+                        win.webContents.send('message', message);
+                    }
+                } catch (error) {
+                    console.error('Error sending message to renderer:', error);
+                }
+            });
+
+            // 监听窗口关闭事件
+            win.on('closed', () => {
+                if (worker && !worker.killed) {
+                    worker.removeAllListeners('message');
+                    worker.kill();
+                }
+            });
+        }
+    }
+
     function startWorker() {
         worker = fork(workerPath, [], {
             execArgv: isDev ? ['--import', 'tsx'] : []
         });
+        setupWorkerMessageHandlers(worker);
     }
 
     function restartWorker() {
         if (worker) {
+            worker.removeAllListeners('message');  // 清理旧的消息监听器
             worker.kill();
         }
         startWorker();
@@ -31,7 +69,7 @@ function createHelloWorker(): ChildProcess {
 
     if (isDev) {
         const watcher = chokidar.watch(workerPath, {
-            ignored: /(^|[\/\\])\../, // 忽略隐藏文件
+            ignored: /(^|[\/\\])\../,
             persistent: true
         });
 
@@ -44,30 +82,20 @@ function createHelloWorker(): ChildProcess {
     return worker!;
 }
 
-const createWindow = async (worker: ChildProcess) => {
+const createWindow = async () => {
     const win = new BrowserWindow({
         width: 1600,
         height: 600,
         webPreferences: {
-            preload: path.join(__dirname, 'preload.js'), // 注入 preload 脚本
-            contextIsolation: true,                      // 启用上下文隔离
+            preload: path.join(__dirname, 'preload.js'),
+            contextIsolation: true,
         }
     })
 
     // 创建并应用菜单
     createMenu(win);
 
-    //接受来自渲染进程的消息，并转发给 worker
-    ipcMain.on('message', async (event, data) => {
-        worker.send(data);
-    });
-
-    //接受来自 worker 的消息，并转发给渲染进程
-    worker.on('message', (message) => {
-        console.log('[waht] main receive from worker:', message);
-        win.webContents.send('message', message);
-    })
-
+    const worker = createHelloWorker(win);
 
     if (process.env.NODE_ENV === 'development') {
         console.log('[waht] Loading development URL...');
@@ -84,6 +112,5 @@ const createWindow = async (worker: ChildProcess) => {
 }
 
 app.whenReady().then(() => {
-    const worker = createHelloWorker()
-    createWindow(worker)
+    createWindow()
 })
