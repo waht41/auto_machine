@@ -1,21 +1,15 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import * as path from 'path';
 import { join } from 'path';
-import { ClineProvider } from '@/core/webview/ClineProvider';
-import * as vscode from 'vscode';
-import { MockExtensionContext, MockWebviewView } from '../vscode';
 import { createMenu } from '@/menu';
 import { ChildProcess, fork } from 'child_process';
-import { EventEmitter } from 'events';
 import chokidar from 'chokidar';
-
-const eventEmitter = new EventEmitter();
 
 function createHelloWorker(): ChildProcess {
   const isDev = process.env.NODE_ENV === 'development';
   const workerPath = join(__dirname,
-    isDev ? '../src/background-worker/hello.ts'
-          : './background/hello.js'
+    isDev ? '../src/background-worker/start-background.mts'
+          : './background/start-background.js'
   );
 
   let worker: ChildProcess | null = null;
@@ -57,7 +51,7 @@ function createHelloWorker(): ChildProcess {
   return worker!;
 }
 
-const createWindow = async () => {
+const createWindow = async (worker: ChildProcess) => {
     const win = new BrowserWindow({
         width: 1600,
         height: 600,
@@ -70,42 +64,13 @@ const createWindow = async () => {
     // 创建并应用菜单
     createMenu(win);
 
-    let webview: MockWebviewView = new MockWebviewView('mock',
-      (message) => {
-          eventEmitter.emit('postMessage', message);
-      }
-    );
-
     ipcMain.on('message', async (event, data) => {
-
-        if (data === 'webview ready'){
-            console.log('[waht]', 'webview ready')
-            eventEmitter.on('postMessage', (message) => {
-                win.webContents.send('message', message);
-            });
-            const outputChannel = vscode.window.createOutputChannel("Roo-Code")
-            const context  = new MockExtensionContext();
-            const cp = new ClineProvider(context, outputChannel)
-            cp.resolveWebviewView(webview)
-            await cp.clearTask()
-            await cp.postStateToWebview()
-            await cp.postMessageToWebview({ type: "action", action: "chatButtonClicked" })
-        } else {
-            console.log('[waht] try fire data: ',data, `webview ${webview}`)
-            if (webview){
-                if (data.type === 'upsertApiConfiguration'){
-                    const apiConfiguration = data.apiConfiguration
-                    for (let key in apiConfiguration){
-                        if (!apiConfiguration[key]){
-                            apiConfiguration[key] = ''
-                        }
-                    }
-                }
-                console.log(`[waht] fire data ${data}`,)
-                webview.webview.eventEmitter.fire(data)
-            }
-        }
+      worker.send(data);
     });
+
+    worker.on('message',(message) => {
+      win.webContents.send('message', message);
+    })
 
 
     if (process.env.NODE_ENV === 'development') {
@@ -123,6 +88,6 @@ const createWindow = async () => {
 }
 
 app.whenReady().then(() => {
-    createHelloWorker()
-    createWindow()
+    const worker = createHelloWorker()
+    createWindow(worker)
 })
