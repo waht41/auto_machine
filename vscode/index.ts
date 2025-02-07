@@ -2,9 +2,6 @@ import {OutputChannel} from "./output-channel";
 import {MockFileSystemWatcher} from "./fileSystemWatcher";
 import MockUri from "./Uri";
 import {BaseMemento} from "./storage/memo";
-import {fileURLToPath} from 'url';
-import {dirname} from 'path';
-import path from 'path';
 import {Disposable} from "vscode";
 
 
