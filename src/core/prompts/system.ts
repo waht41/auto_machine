@@ -25,6 +25,7 @@ import {
 } from "./sections"
 import fs from "fs/promises"
 import path from "path"
+import { AM_PROMPT } from "@core/prompts/auto-machine";
 
 async function generatePrompt(
 	context: vscode.ExtensionContext,
@@ -89,7 +90,7 @@ ${await addCustomInstructions(promptComponent?.customInstructions || modeConfig.
 	return basePrompt
 }
 
-export const SYSTEM_PROMPT = async (
+export const SYSTEM_PROMPT_OLD = async (
 	context: vscode.ExtensionContext,
 	cwd: string,
 	supportsComputerUse: boolean,
@@ -137,3 +138,5 @@ export const SYSTEM_PROMPT = async (
 		diffEnabled,
 	)
 }
+
+export const SYSTEM_PROMPT = AM_PROMPT;
