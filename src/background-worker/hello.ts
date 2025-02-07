@@ -14,4 +14,4 @@ process.on('disconnect', () => {
     process.exit(0);
 });
 
-console.log('Hello worker processss startedaas！！！!');
+console.log('Hello worker process started！！！!');

@@ -4,10 +4,9 @@
   "version": "0.0.0",
   "main": "dist-electron/main.js",
   "scripts": {
-    "start-electron": "rimraf dist-electron && cross-env-shell \"node -e \\\"process.platform === 'win32' && process.exit(1)\\\" || (chcp 65001 && vite) || vite\"",
-    "dev": "concurrently -n electron,background -c blue,green \"npm run start-electron\" \"npm run dev:background\"",
+    "start-electron": "cross-env-shell \"node -e \\\"process.platform === 'win32' && process.exit(1)\\\" || (chcp 65001 && vite) || vite\"",
+    "dev": "rimraf dist-electron && npm run start-electron",
     "build": "tsc && vite build",
-    "build:background": "npx tsx scripts/build-background.ts",
     "dev:background": "npx nodemon --config nodemon.json",
     "preview": "vite preview",
     "start": "electron ."
@@ -30,6 +29,7 @@
     "prettier": "^3.3.1",
     "rimraf": "^6.0.1",
     "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
     "tsx": "^4.19.2",
     "typescript": "^5.2.2",
     "undici": "^7.3.0",

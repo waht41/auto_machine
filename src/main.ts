@@ -5,28 +5,56 @@ import { ClineProvider } from '@/core/webview/ClineProvider';
 import * as vscode from 'vscode';
 import { MockExtensionContext, MockWebviewView } from '../vscode';
 import { createMenu } from '@/menu';
-import { fork } from 'child_process';
+import { ChildProcess, fork } from 'child_process';
 import { EventEmitter } from 'events';
+import chokidar from 'chokidar';
 
 const eventEmitter = new EventEmitter();
 
-function createHelloWorker() {// 创建后台服务进程
-    const isDev = process.env.NODE_ENV === 'development'
-    const workerPath = join(__dirname,
-      isDev ? '../dist-electron/background/hello.js'
-              : './background/hello.js'
-    )
+function createHelloWorker(): ChildProcess {
+  const isDev = process.env.NODE_ENV === 'development';
+  const workerPath = join(__dirname,
+    isDev ? '../src/background-worker/hello.ts'
+          : './background/hello.js'
+  );
 
-    const worker = fork(workerPath)
+  let worker: ChildProcess | null = null;
+
+  function startWorker() {
+    worker = fork(workerPath, [], {
+      execArgv: isDev ? ['-r', 'ts-node/register'] : []
+    });
 
     worker.on('message', (message) => {
-        console.log('Main received:', message)
-    })
+      console.log('Main received:', message);
+    });
 
     // 发送测试消息
-    worker.send({ type: 'HELLO', data: 'Hello from main process!' })
+    worker.send({ type: 'HELLO', data: 'Hello from main process!' });
+  }
 
-    return worker
+  function restartWorker() {
+    if (worker) {
+      worker.kill();
+    }
+    startWorker();
+  }
+
+  startWorker();
+
+  if (isDev) {
+    const watcher = chokidar.watch(workerPath, {
+      ignored: /(^|[\/\\])\../, // 忽略隐藏文件
+      persistent: true
+    });
+
+    watcher.on('change', (path) => {
+      console.log(`File ${path} has been changed. Restarting worker...`);
+      restartWorker();
+    });
+  }
+
+  return worker!;
 }
 
 const createWindow = async () => {
