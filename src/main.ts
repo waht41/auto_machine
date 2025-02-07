@@ -6,56 +6,49 @@ import { ChildProcess, fork } from 'child_process';
 import chokidar from 'chokidar';
 
 function createHelloWorker(): ChildProcess {
-  const isDev = process.env.NODE_ENV === 'development';
-  const workerPath = join(__dirname,
-    isDev ? '../src/background-worker/start-background.mts'
-          : './background/start-background.js'
-  );
+    const isDev = process.env.NODE_ENV === 'development';
+    const workerPath = join(__dirname,
+        isDev ? '../src/background-worker/start-background.ts'
+            : './background/start-background.js'
+    );
 
-  let worker: ChildProcess | null = null;
+    let worker: ChildProcess | null = null;
 
-  function startWorker() {
-    worker = fork(workerPath, [], {
-      execArgv: isDev ? ['-r', 'ts-node/register'] : []
-    });
-
-    worker.on('message', (message) => {
-      console.log('Main received:', message);
-    });
-
-    // 发送测试消息
-    worker.send({ type: 'HELLO', data: 'Hello from main process!' });
-  }
-
-  function restartWorker() {
-    if (worker) {
-      worker.kill();
+    function startWorker() {
+        worker = fork(workerPath, [], {
+            execArgv: isDev ? ['--import', 'tsx'] : []
+        });
     }
+
+    function restartWorker() {
+        if (worker) {
+            worker.kill();
+        }
+        startWorker();
+    }
+
     startWorker();
-  }
 
-  startWorker();
+    if (isDev) {
+        const watcher = chokidar.watch(workerPath, {
+            ignored: /(^|[\/\\])\../, // 忽略隐藏文件
+            persistent: true
+        });
 
-  if (isDev) {
-    const watcher = chokidar.watch(workerPath, {
-      ignored: /(^|[\/\\])\../, // 忽略隐藏文件
-      persistent: true
-    });
+        watcher.on('change', (path) => {
+            console.log(`File ${path} has been changed. Restarting worker...`);
+            restartWorker();
+        });
+    }
 
-    watcher.on('change', (path) => {
-      console.log(`File ${path} has been changed. Restarting worker...`);
-      restartWorker();
-    });
-  }
-
-  return worker!;
+    return worker!;
 }
 
 const createWindow = async (worker: ChildProcess) => {
     const win = new BrowserWindow({
         width: 1600,
         height: 600,
-        webPreferences:{
+        webPreferences: {
             preload: path.join(__dirname, 'preload.js'), // 注入 preload 脚本
             contextIsolation: true,                      // 启用上下文隔离
         }
@@ -64,12 +57,15 @@ const createWindow = async (worker: ChildProcess) => {
     // 创建并应用菜单
     createMenu(win);
 
+    //接受来自渲染进程的消息，并转发给 worker
     ipcMain.on('message', async (event, data) => {
-      worker.send(data);
+        worker.send(data);
     });
 
-    worker.on('message',(message) => {
-      win.webContents.send('message', message);
+    //接受来自 worker 的消息，并转发给渲染进程
+    worker.on('message', (message) => {
+        console.log('[waht] main receive from worker:', message);
+        win.webContents.send('message', message);
     })
 
 

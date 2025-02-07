@@ -4,6 +4,7 @@ import MockUri from "./Uri";
 import {BaseMemento} from "./storage/memo";
 import {Disposable} from "vscode";
 
+export default {}
 
 export const window = {
     createOutputChannel: (name: string) => new OutputChannel(name),
