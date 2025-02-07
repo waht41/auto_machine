@@ -1,35 +1,31 @@
-import {BrowserWindow, app, ipcMain} from 'electron'
-import * as path from 'path'
-import {fileURLToPath} from "url";
-import {dirname} from "path";
-import {ClineProvider} from "@/core/webview/ClineProvider";
-import * as vscode from "vscode";
-import {MockExtensionContext, MockWebviewView} from "../vscode";
+import { app, BrowserWindow, ipcMain } from 'electron';
+import * as path from 'path';
+import { join } from 'path';
+import { ClineProvider } from '@/core/webview/ClineProvider';
+import * as vscode from 'vscode';
+import { MockExtensionContext, MockWebviewView } from '../vscode';
 import { createMenu } from '@/menu';
+import { fork } from 'child_process';
+import { EventEmitter } from 'events';
 
-// 创建后台服务进程
-import { fork } from 'child_process'
-import { join } from 'path'
+const eventEmitter = new EventEmitter();
 
-// const __filename = fileURLToPath(import.meta.url);
-// const __dirname = dirname(__filename);
-
-function createHelloWorker() {
+function createHelloWorker() {// 创建后台服务进程
     const isDev = process.env.NODE_ENV === 'development'
-    const workerPath = join(__dirname, 
-        isDev ? '../dist-electron/background/hello.js' 
+    const workerPath = join(__dirname,
+      isDev ? '../dist-electron/background/hello.js'
               : './background/hello.js'
     )
-    
+
     const worker = fork(workerPath)
-    
+
     worker.on('message', (message) => {
         console.log('Main received:', message)
     })
-    
+
     // 发送测试消息
     worker.send({ type: 'HELLO', data: 'Hello from main process!' })
-    
+
     return worker
 }
 
@@ -46,12 +42,19 @@ const createWindow = async () => {
     // 创建并应用菜单
     createMenu(win);
 
-    let webview: MockWebviewView = new MockWebviewView('mock',win);
+    let webview: MockWebviewView = new MockWebviewView('mock',
+      (message) => {
+          eventEmitter.emit('postMessage', message);
+      }
+    );
 
     ipcMain.on('message', async (event, data) => {
 
         if (data === 'webview ready'){
             console.log('[waht]', 'webview ready')
+            eventEmitter.on('postMessage', (message) => {
+                win.webContents.send('message', message);
+            });
             const outputChannel = vscode.window.createOutputChannel("Roo-Code")
             const context  = new MockExtensionContext();
             const cp = new ClineProvider(context, outputChannel)
@@ -95,8 +98,3 @@ app.whenReady().then(() => {
     createHelloWorker()
     createWindow()
 })
-
-//输出当前路径
-// console.log(path.resolve('.'))
-
-// console.log('[waht]',__filename,__dirname)

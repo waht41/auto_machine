@@ -12,12 +12,10 @@ class MockWebview implements vscode.Webview {
     listeners : any = []
     eventEmitter : vscode.EventEmitter<any>
     onDidReceiveMessage: vscode.Event<any>;
-    window: BrowserWindow
 
-    constructor(window: BrowserWindow) {
+    constructor(private post: (message: any) => void) {
         this.eventEmitter = new vscode.EventEmitter();
         this.onDidReceiveMessage = this.eventEmitter.event;
-        this.window = window
     }
 
 
@@ -42,7 +40,7 @@ class MockWebview implements vscode.Webview {
     }
 
     postMessage(message: any): Thenable<boolean> {
-        this.window?.webContents.send('message',message)
+        this.post(message);
         return Promise.resolve(true);
     }
 }
@@ -55,10 +53,10 @@ export class MockWebviewView extends EventEmitter implements vscode.WebviewView 
 
     private _disposed = false;
 
-    constructor(viewType: string, window: BrowserWindow) {
+    constructor(viewType: string, post: (message: any) => void) {
         super();
         this.viewType = viewType;
-        this.webview = new MockWebview(window);
+        this.webview = new MockWebview(post);
         console.log(`[WebviewView] Created (type: ${viewType})`);
     }
 
