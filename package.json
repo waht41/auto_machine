@@ -6,6 +6,7 @@
   "scripts": {
     "start-electron": "cross-env-shell \"node -e \\\"process.platform === 'win32' && process.exit(1)\\\" || (chcp 65001 && vite) || vite\"",
     "dev-win": "rimraf dist-electron && chcp 65001 && vite",
+    "dev-mac": "rimraf dist-electron && vite",
     "build": "tsc && vite build",
     "dev:background": "npx nodemon --config nodemon.json",
     "preview": "vite preview",

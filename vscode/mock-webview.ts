@@ -20,22 +20,18 @@ class MockWebview implements vscode.Webview {
 
 
     get options() {
-        console.log('[Webview] Get options:', this._options);
         return this._options;
     }
 
     set options(value: Partial<typeof this._options>) {
-        console.log('[Webview] Set options:', value);
         this._options = {...this._options, ...value};
     }
 
     get html() {
-        console.log('[Webview] Get HTML');
         return this._html;
     }
 
     set html(value: string) {
-        console.log('[Webview] Set HTML:', value.slice(0, 50) + '...');
         this._html = value;
     }
 
@@ -69,7 +65,6 @@ export class MockWebviewView extends EventEmitter implements vscode.WebviewView 
     }
 
     show(preserveFocus?: boolean): void {
-        console.log(`[WebviewView] Show (preserveFocus: ${preserveFocus})`);
         if (!this.visible) {
             this.visible = true;
             this.emit('visibility-change');
@@ -78,7 +73,6 @@ export class MockWebviewView extends EventEmitter implements vscode.WebviewView 
 
     dispose() {
         if (!this._disposed) {
-            console.log('[WebviewView] Dispose');
             this._disposed = true;
             this.emit('dispose');
         }

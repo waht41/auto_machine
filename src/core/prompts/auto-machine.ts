@@ -1,5 +1,5 @@
 export const AM_PROMPT = async (
-    prop: any
+  ...prop: any
 ): Promise<string> => {
     return await `
 这里有几点须知

@@ -1619,7 +1619,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 				console.error("Invalid response from Glama API")
 			}
 			await fs.writeFile(glamaModelsFilePath, JSON.stringify(models))
-			console.log("Glama models fetched and saved", models)
+			// console.log("Glama models fetched and saved", models)
 		} catch (error) {
 			console.error("Error fetching Glama models:", error)
 		}
@@ -1742,7 +1742,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 				console.error("Invalid response from OpenRouter API")
 			}
 			await fs.writeFile(openRouterModelsFilePath, JSON.stringify(models))
-			console.log("OpenRouter models fetched and saved", models)
+			// console.log("OpenRouter models fetched and saved", models)
 		} catch (error) {
 			console.error("Error fetching OpenRouter models:", error)
 		}

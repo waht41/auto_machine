@@ -20,23 +20,27 @@ function createHelloWorker(win?: BrowserWindow): ChildProcess {
             ipcMain.removeAllListeners('message');  // 清理旧的监听器
             ipcMain.on('message', async (event, data) => {
                 try {
-                    if (worker && !worker.killed) {
+                    if (worker && !worker.killed && event.sender && !event.sender.isDestroyed()) {
                         worker.send(data);
                     }
                 } catch (error) {
-                    console.error('Error sending message to worker:', error);
+                    if (error.code !== 'ERR_IPC_CHANNEL_CLOSED') {
+                        console.error('Error sending message to worker:', error);
+                    }
                 }
             });
 
             // 接收来自 worker 的消息，并转发给渲染进程
             worker.on('message', (message) => {
                 try {
-                    if (!win.isDestroyed() && win.webContents && !win.webContents.isDestroyed()) {
-                        console.log('[waht] main receive from worker:', message);
+                    if (win && !win.isDestroyed() && win.webContents && !win.webContents.isDestroyed()) {
+                        // console.log('[waht] main receive from worker:', message);
                         win.webContents.send('message', message);
                     }
                 } catch (error) {
-                    console.error('Error sending message to renderer:', error);
+                    if (error.code !== 'ERR_IPC_CHANNEL_CLOSED') {
+                        console.error('Error sending message to renderer:', error);
+                    }
                 }
             });
 
@@ -68,7 +72,11 @@ function createHelloWorker(win?: BrowserWindow): ChildProcess {
     startWorker();
 
     if (isDev) {
-        const watcher = chokidar.watch(workerPath, {
+
+        const watcher = chokidar.watch([
+            path.join(__dirname, '../src/**/*.{js,ts}'),
+            path.join(__dirname, '../vscode/**/*.{js,ts}')
+        ], {
             ignored: /(^|[\/\\])\../,
             persistent: true
         });

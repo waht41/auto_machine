@@ -13,7 +13,7 @@ let webview: MockWebviewView = new MockWebviewView('mock',
 );
 
 process.on('message', async (message: any) => {
-    console.log('Worker received:', message);
+    // console.log('Worker received:', message);
 
 
     if (message === 'webview ready') {
@@ -27,7 +27,6 @@ process.on('message', async (message: any) => {
         await cp.postStateToWebview();
         await cp.postMessageToWebview({type: 'action', action: 'chatButtonClicked'});
     } else {
-        console.log('[waht] try fire data: ', message, `webview ${webview}`);
         if (webview) {
             if (message.type === 'upsertApiConfiguration') {
                 const apiConfiguration = message.apiConfiguration;
@@ -37,7 +36,7 @@ process.on('message', async (message: any) => {
                     }
                 }
             }
-            console.log(`[waht] fire data ${message}`);
+            // console.log(`[waht] fire data ${message}`);
             webview.webview.eventEmitter.fire(message);
         }
     }
