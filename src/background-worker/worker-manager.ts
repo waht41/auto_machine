@@ -3,6 +3,7 @@ import { ChildProcess, fork } from 'child_process';
 import { join } from 'path';
 import * as path from 'path';
 import chokidar from 'chokidar';
+import { Stats } from "fs";
 
 export class WorkerManager {
     private worker: ChildProcess | null = null;
@@ -109,16 +110,21 @@ export class WorkerManager {
         return this.worker;
     }
 
-    private setupDevWatcher() {
-        const projectRoot = path.resolve(__dirname, '../..');
-        console.log('[waht] watching: ', path.join(projectRoot, 'src/**/*.{js,ts}'));
-        
+   private setupDevWatcher() {
+        const ignored = (file: string, _s: Stats| undefined) => {
+            if (!_s?.isFile()){
+                return false;
+            }
+            const watchedTypes = ['.js', '.ts'];
+            return !watchedTypes.some((type) => file.endsWith(type));
+        }
         const watcher = chokidar.watch([
-            path.join(projectRoot, 'src/**/*.{js,ts}'),
-            path.join(projectRoot, 'vscode/**/*.{js,ts}')
+            path.join(__dirname,'../vscode'),
+            path.join(__dirname,'../src'),
         ], {
-            ignored: /(^|[\/\\])\../,
-            persistent: true
+            ignored: ignored,
+            persistent: true,
+            interval: 1000,
         });
 
         watcher.on('change', (filePath) => {
@@ -131,10 +137,6 @@ export class WorkerManager {
 
         watcher.on('error', (error) => {
             console.error('Chokidar error:', error);
-        });
-
-        watcher.on('ready', () => {
-            console.log('Chokidar is ready.');
         });
     }
 

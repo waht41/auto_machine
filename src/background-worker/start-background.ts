@@ -11,18 +11,19 @@ let webview: MockWebviewView = new MockWebviewView('mock',
         }
     }
 );
+const outputChannel = window.createOutputChannel('Roo-Code');
+const context = new MockExtensionContext();
+//@ts-ignore
+const cp = new ClineProvider(context, outputChannel);
+//@ts-ignore
+cp.resolveWebviewView(webview);
 
 process.on('message', async (message: any) => {
     // console.log('Worker received:', message);
 
 
     if (message === 'webview ready') {
-        const outputChannel = window.createOutputChannel('Roo-Code');
-        const context = new MockExtensionContext();
-        //@ts-ignore
-        const cp = new ClineProvider(context, outputChannel);
-        //@ts-ignore
-        cp.resolveWebviewView(webview);
+
         await cp.clearTask();
         await cp.postStateToWebview();
         await cp.postMessageToWebview({type: 'action', action: 'chatButtonClicked'});
