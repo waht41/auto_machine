@@ -85,3 +85,17 @@ export const env = {language: 'zh-CN'}
 export {MockWebviewView} from "./mock-webview";
 
 export {EventEmitter} from "./events";
+
+export const extensions = {
+    all: [],
+    getExtension(extensionId: string) {
+        return {
+            extensionUri: Uri.file(''),
+            activate: () => Promise.resolve(),
+            extensionPath: '',
+            id: extensionId,
+            isActive: true,
+            packageJSON: {}
+        };
+    },
+}
