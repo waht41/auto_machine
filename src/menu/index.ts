@@ -1,6 +1,6 @@
 import { Menu, BrowserWindow } from 'electron';
 
-export function createMenu(mainWindow: BrowserWindow) {
+export function createMenu(mainWindow: BrowserWindow, sendToWorker?: (message: any) => void) {
     // 获取默认菜单模板
     let template = Menu.getApplicationMenu()?.items.map(item => {
         return {
@@ -21,6 +21,7 @@ export function createMenu(mainWindow: BrowserWindow) {
                         type: "action",
                         action: "chatButtonClicked"
                     });
+                    sendToWorker?.({type: 'clearTask'})
                 },
                 accelerator: undefined,
                 type: 'normal',

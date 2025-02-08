@@ -14,6 +14,22 @@ export class WorkerManager {
 
     constructor(private win?: BrowserWindow) {}
 
+    send = (message: any) => {
+        if (this.worker && !this.worker.killed) {
+            this.worker.send(message);
+        }
+    }
+
+    public init() {
+        this.worker = this.startWorker();
+
+        if (this.isDev) {
+            this.setupDevWatcher();
+        }
+
+        return this.worker;
+    }
+
     private setupWorkerMessageHandlers(worker: ChildProcess) {
         if (this.win) {
             // 接收来自渲染进程的消息，并转发给 worker
@@ -96,16 +112,6 @@ export class WorkerManager {
         });
 
         this.setupWorkerMessageHandlers(this.worker);
-
-        return this.worker;
-    }
-
-    public init() {
-        this.worker = this.startWorker();
-
-        if (this.isDev) {
-            this.setupDevWatcher();
-        }
 
         return this.worker;
     }

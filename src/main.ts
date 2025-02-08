@@ -13,12 +13,12 @@ const createWindow = async () => {
         }
     })
 
-    // 创建并应用菜单
-    createMenu(win);
-
     // 初始化 worker 管理器
     const workerManager = new WorkerManager(win);
     workerManager.init();
+
+    // 创建并应用菜单
+    createMenu(win, workerManager.send);
 
     if (process.env.NODE_ENV === 'development') {
         console.log('[waht] Loading development URL...');
