@@ -42,6 +42,32 @@ process.on('message', async (message: any) => {
     }
 });
 
+// 处理未捕获的异常
+process.on('uncaughtException', (error) => {
+    console.error('[background] Uncaught Exception:', error);
+    // 发送错误信息到主进程
+    if (process.send) {
+        process.send({ type: 'worker-error', error: error.message });
+    }
+    // 给一个短暂的时间让错误消息发送出去
+    setTimeout(() => {
+        process.exit(1);
+    }, 100);
+});
+
+// 处理 Promise 中的未捕获异常
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('[background] Unhandled Rejection at:', promise, 'reason:', reason);
+    // 发送错误信息到主进程
+    if (process.send) {
+        process.send({ type: 'worker-error', error: String(reason) });
+    }
+    // 给一个短暂的时间让错误消息发送出去
+    setTimeout(() => {
+        process.exit(1);
+    }, 100);
+});
+
 // 保持进程运行
 process.on('disconnect', () => {
     process.exit(0);

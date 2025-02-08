@@ -4,6 +4,7 @@ export const AM_PROMPT = async (
     return await `
 这里有几点须知
 1. 你可以使用xml格式回复，这些特殊格式将触发特殊效果，详情见tool部分
+2. 如果未明确使用某些工具请求,你将不会获得任何来自用户或环境的信息，只会不断自己说话
 
 # tool
 

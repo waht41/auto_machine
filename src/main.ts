@@ -13,6 +13,9 @@ function createHelloWorker(win?: BrowserWindow): ChildProcess {
     );
 
     let worker: ChildProcess | null = null;
+    let restartAttempts = 0;
+    const maxRestartAttempts = 5;
+    const restartDelay = 1000; // 1秒延迟重启
 
     function setupWorkerMessageHandlers(worker: ChildProcess) {
         if (win) {
@@ -54,22 +57,49 @@ function createHelloWorker(win?: BrowserWindow): ChildProcess {
         }
     }
 
-    function startWorker() {
+    const startWorker = () => {
         worker = fork(workerPath, [], {
             execArgv: isDev ? ['--import', 'tsx'] : []
         });
+
+        worker.on('message', (message: any) => {
+            if (message.type === 'worker-error') {
+                console.error('[main] Worker error:', message.error);
+            }
+            if (win && !win.isDestroyed()) {
+                win.webContents.send('background-message', message);
+            }
+        });
+
+        worker.on('exit', (code) => {
+            console.log(`[main] Worker process exited with code ${code}`);
+            if (code !== 0) {
+                if (restartAttempts < maxRestartAttempts) {
+                    restartAttempts++;
+                    console.log(`[main] Attempting to restart worker (${restartAttempts}/${maxRestartAttempts})...`);
+                    setTimeout(() => {
+                        if (win && !win.isDestroyed()) {
+                            startWorker();
+                        }
+                    }, restartDelay);
+                } else {
+                    console.error('[main] Max restart attempts reached. Please check the worker process.');
+                }
+            }
+        });
+
+        // 成功启动后重置重启计数
+        worker.on('spawn', () => {
+            restartAttempts = 0;
+            console.log('[main] Worker process started successfully');
+        });
+
         setupWorkerMessageHandlers(worker);
-    }
 
-    function restartWorker() {
-        if (worker) {
-            worker.removeAllListeners('message');  // 清理旧的消息监听器
-            worker.kill();
-        }
-        startWorker();
-    }
+        return worker;
+    };
 
-    startWorker();
+    worker = startWorker();
 
     if (isDev) {
 
@@ -83,7 +113,10 @@ function createHelloWorker(win?: BrowserWindow): ChildProcess {
 
         watcher.on('change', (path) => {
             console.log(`File ${path} has been changed. Restarting worker...`);
-            restartWorker();
+            if (worker) {
+                worker.removeAllListeners('message');  // 清理旧的消息监听器
+                worker.kill();
+            }
         });
     }
 
