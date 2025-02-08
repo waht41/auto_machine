@@ -25,6 +25,15 @@ export const AM_PROMPT = async (
 
 描述：当你认为需要用户回答的时候使用
 
+## attempt_completion
 
+格式：
+<attempt_completion>
+<result>
+已完成任务...
+</result>
+</attempt_completion>
+
+描述：向用户申请完成任务,需要时说明完成了那些任务
     `
 }
