@@ -17,6 +17,8 @@ resExam = `
 我将请求读取文件a.txt的内容。请稍等片刻。
 `
 
+resExam = '<external>'
+
 const parsed = parseAssistantMessage(resExam)
 console.log(parsed)
 
