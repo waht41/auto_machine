@@ -141,3 +141,126 @@ export function parseAssistantMessage(assistantMessage: string) {
 
 	return contentBlocks
 }
+
+export function parseBlocks(str: string, blocks: AssistantMessageContent[] = []): AssistantMessageContent[] {
+	const [textContent, toolStartIndex, toolName] = findNextTool(str);
+
+	const hasToolBlock = toolStartIndex !== -1;
+
+	if (textContent.length > 0) {
+		// 如果后面有工具块，当前文本块的partial为false
+		blocks.push(createTextBlock(textContent, !hasToolBlock));
+	}
+
+	if (!hasToolBlock || !toolName) return blocks;
+
+	const remainingStr = str.slice(toolStartIndex);
+	const [toolBlock, processedLength] = parseToolBlock(remainingStr, toolName);
+
+	if (toolBlock) {
+		blocks.push(toolBlock);
+		return parseBlocks(remainingStr.slice(processedLength), blocks);
+	}
+
+	return blocks.concat(createTextBlock(remainingStr, true));
+}
+
+function findNextTool(str: string): [string, number, string | null] {
+	const TAG_REGEX = /<([^>]+?)>/g;
+	let earliest: { index: number; tag: string } | null = null;
+
+	let match;
+	while ((match = TAG_REGEX.exec(str)) !== null) {
+		if (!earliest || match.index < earliest.index) {
+			earliest = { index: match.index, tag: match[1] };
+		}
+	}
+
+	return earliest ?
+		[str.slice(0, earliest.index).trim(), earliest.index, earliest.tag] :
+		[str.trim(), -1, null];
+}
+
+function parseToolBlock(str: string, toolName: string) : [AssistantMessageContent, number] {
+	const startTag = `<${toolName}>`;
+	const endTag = `</${toolName}>`;
+	const endIndex = str.indexOf(endTag);
+
+	// 处理完整工具块
+	if (endIndex !== -1) {
+		const content = str.slice(startTag.length, endIndex);
+		return [{
+			type: 'tool_use',
+			name: toolName,
+			params: parseXMLParams(content),
+			partial: false
+		}, endIndex + endTag.length];
+	}
+
+	// 处理部分工具块
+	const content = str.slice(startTag.length);
+	return [{
+		type: 'tool_use',
+		name: toolName,
+		params: parsePartialXMLParams(content),
+		partial: true
+	}, str.length];
+}
+
+// 完整参数解析（带闭合标签）
+function parseXMLParams(content: string): Record<string, string> {
+	const params: Record<string, string> = {};
+	let pos = 0;
+
+	while (pos < content.length) {
+		const startMatch = content.slice(pos).match(/<([^>]+?)>/);
+		if (!startMatch) break;
+
+		const tagName = startMatch[1];
+		const start = pos + startMatch.index! + startMatch[0].length;
+		const endTag = `</${tagName}>`;
+		const end = content.indexOf(endTag, start);
+
+		if (end === -1) {
+			params[tagName] = content.slice(start).trim();
+			break;
+		}
+
+		params[tagName] = content.slice(start, end).trim();
+		pos = end + endTag.length;
+	}
+
+	return params;
+}
+
+// 部分参数解析（处理未闭合标签）
+function parsePartialXMLParams(content: string): Record<string, string> {
+	const params: Record<string, string> = {};
+	let pos = 0;
+
+	while (pos < content.length) {
+		const startMatch = content.slice(pos).match(/<([^>]+?)>/);
+		if (!startMatch) break;
+
+		const tagName = startMatch[1];
+		const start = pos + startMatch.index! + startMatch[0].length;
+
+		// 取从开始标签到下一个标签开始前的内容
+		const nextTagStart = content.indexOf('<', start);
+		const valueEnd = nextTagStart === -1 ? content.length : nextTagStart;
+
+		params[tagName] = content.slice(start, valueEnd).trim();
+		pos = start;
+	}
+
+	return params;
+}
+
+function createTextBlock(content: string, partial: boolean): TextContent {
+	return {
+		type: 'text',
+		content: content.trim(),
+		partial: partial || /<[^>]+$/.test(content) // 检测未闭合标签
+	};
+}
+
