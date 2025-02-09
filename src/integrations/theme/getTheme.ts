@@ -53,7 +53,7 @@ export async function getTheme() {
 
 		if (currentTheme === undefined && defaultThemes[colorTheme]) {
 			const filename = `${defaultThemes[colorTheme]}.json`
-			currentTheme = await fs.readFile(
+			currentTheme = await fs.readFile(  //todo waht 这种写法此处不行
 				path.join(getExtensionUri().fsPath, "src", "integrations", "theme", "default-themes", filename),
 				"utf-8",
 			)

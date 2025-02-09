@@ -1621,7 +1621,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 			await fs.writeFile(glamaModelsFilePath, JSON.stringify(models))
 			// console.log("Glama models fetched and saved", models)
 		} catch (error) {
-			console.error("Error fetching Glama models:", error)
+			// console.error("Error fetching Glama models:", error) // todo waht
 		}
 
 		await this.postMessageToWebview({ type: "glamaModels", glamaModels: models })
@@ -1744,7 +1744,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 			await fs.writeFile(openRouterModelsFilePath, JSON.stringify(models))
 			// console.log("OpenRouter models fetched and saved", models)
 		} catch (error) {
-			console.error("Error fetching OpenRouter models:", error)
+			// console.error("Error fetching OpenRouter models:", error) //todo waht
 		}
 
 		await this.postMessageToWebview({ type: "openRouterModels", openRouterModels: models })
@@ -1914,6 +1914,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 	}
 
 	async clearTask() {
+		console.log("[Cline provider] Clearing task")
 		this.cline?.abortTask()
 		this.cline = undefined // removes reference to it, so once promises end it will be garbage collected
 	}
@@ -2281,6 +2282,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 	// dev
 
 	async resetState() {
+		console.log('[Cline provider] Resetting state')
 		const answer = await vscode.window.showInformationMessage(
 			"Are you sure you want to reset all state and secret storage in the extension? This cannot be undone.",
 			{ modal: true },

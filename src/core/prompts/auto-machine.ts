@@ -5,6 +5,7 @@ export const AM_PROMPT = async (
 这里有几点须知
 1. 你可以使用xml格式回复，这些特殊格式将触发特殊效果，详情见tool部分
 2. 如果未明确使用某些工具请求,你将不会获得任何来自用户或环境的信息，只会不断自己说话
+3. 如果你需要操作或使用外部资源，请调用additionl tool 详情见resource部分
 
 # tool
 
@@ -35,5 +36,26 @@ export const AM_PROMPT = async (
 </attempt_completion>
 
 描述：向用户申请完成任务,需要时说明完成了那些任务
+
+## log
+格式：
+<log>
+<abstract>日志摘要</abstract>
+<content>日志内容</content>>
+</log>
+
+描述：日志的内容不会被用于随后的对话，摘要则会保留
+
+# resource
+
+你可以使用工具调用外部资源，请求后将返回对应资源的使用方式
+
+## 用法
+<resource>
+<request>资源类别</request>
+</resource>
+
+## 资源类别
+- File: 文件资源，包括读取、写入等
     `
 }

@@ -693,6 +693,7 @@ export class Cline {
 				// 	"tool",
 				// 	"Cline responded with only text blocks but has not called attempt_completion yet. Forcing him to continue with task..."
 				// )
+				console.log('[waht] 触发了no tool use')
 				nextUserContent = [
 					{
 						type: "text",
@@ -2291,7 +2292,7 @@ export class Cline {
 		const [parsedUserContent, environmentDetails] = await this.loadContext(userContent, includeFileDetails)
 		userContent = parsedUserContent
 		// add environment details as its own text block, separate from tool results
-		userContent.push({ type: "text", text: environmentDetails })
+		// userContent.push({ type: "text", text: environmentDetails }) // 删除环境信息
 
 		await this.addToApiConversationHistory({ role: "user", content: userContent })
 
@@ -2441,6 +2442,7 @@ export class Cline {
 					}
 				}
 			} catch (error) {
+				console.error("error when receive chunk: ", error)
 				// abandoned happens when extension is no longer waiting for the cline instance to finish aborting (error is thrown here when any function in the for loop throws due to this.abort)
 				if (!this.abandoned) {
 					this.abortTask() // if the stream failed, there's various states the task could be in (i.e. could have streamed some tools the user may have executed), so we just resort to replicating a cancel task
