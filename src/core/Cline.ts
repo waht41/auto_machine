@@ -49,7 +49,13 @@ import { calculateApiCost } from "../utils/cost"
 import { fileExistsAtPath } from "../utils/fs"
 import { arePathsEqual, getReadablePath } from "../utils/path"
 import { parseMentions } from "./mentions"
-import { AssistantMessageContent, parseAssistantMessage, ToolParamName, ToolUseName } from "./assistant-message"
+import {
+	AssistantMessageContent,
+	parseAssistantMessage,
+	ToolParamName,
+	ToolUse,
+	ToolUseName
+} from "./assistant-message"
 import { formatResponse } from "./prompts/responses"
 import { SYSTEM_PROMPT } from "./prompts/system"
 import { modes, defaultModeSlug, getModeBySlug } from "../shared/modes"
@@ -60,6 +66,8 @@ import { BrowserSession } from "../services/browser/BrowserSession"
 import { OpenRouterHandler } from "../api/providers/openrouter"
 import { McpHub } from "../services/mcp/McpHub"
 import crypto from "crypto"
+import { CommandRunner } from "@/executors/runner";
+import { parseBlocks } from "@core/assistant-message/parse-assistant-message";
 
 const cwd =
 	vscode.workspace.workspaceFolders?.map((folder) => folder.uri.fsPath).at(0) ?? path.join(os.homedir(), "Desktop") // may or may not exist but fs checking existence would immediately ask for permission which would be bad UX, need to come up with a better solution
@@ -105,6 +113,7 @@ export class Cline {
 	private didRejectTool = false
 	private didAlreadyUseTool = false
 	private didCompleteReadingStream = false
+	private executor = new CommandRunner()
 
 	constructor(
 		provider: ClineProvider,
@@ -948,10 +957,11 @@ export class Cline {
 		}
 
 		const block = cloneDeep(this.assistantMessageContent[this.currentStreamingContentIndex]) // need to create copy bc while stream is updating the array, it could be updating the reference block properties too
+		// console.log('[waht] present', block)
 		switch (block.type) {
 			case "text": {
 				if (this.didRejectTool || this.didAlreadyUseTool) {
-					break
+					// break
 				}
 				let content = block.content
 				if (content) {
@@ -995,6 +1005,9 @@ export class Cline {
 				break
 			}
 			case "tool_use":
+				if (block.partial){
+					break
+				}
 				const toolDescription = () => {
 					switch (block.name) {
 						case "execute_command":
@@ -1025,6 +1038,8 @@ export class Cline {
 							return `[${block.name}]`
 						case "switch_mode":
 							return `[${block.name} to '${block.params.mode_slug}'${block.params.reason ? ` because: ${block.params.reason}` : ""}]`
+						case "external":
+							return `[${block.name} for '${block.params.request}']`
 					}
 				}
 
@@ -1047,11 +1062,11 @@ export class Cline {
 
 				if (this.didAlreadyUseTool) {
 					// ignore any content after a tool has already been used
-					this.userMessageContent.push({
-						type: "text",
-						text: `Tool [${block.name}] was not executed because a tool has already been used in this message. Only one tool may be used per message. You must assess the first tool's result before proceeding to use the next tool.`,
-					})
-					break
+					// this.userMessageContent.push({
+					// 	type: "text",
+					// 	text: `Tool [${block.name}] was not executed because a tool has already been used in this message. Only one tool may be used per message. You must assess the first tool's result before proceeding to use the next tool.`,
+					// })
+					// break
 				}
 
 				const pushToolResult = (content: ToolResponse) => {
@@ -1162,6 +1177,17 @@ export class Cline {
 					pushToolResult(formatResponse.toolError(error.message))
 					break
 				}
+
+				try {
+					console.log('[waht] 开始执行tool', block)
+					const res = await this.applyTool(block)
+					if (typeof res === "string") {
+						pushToolResult(res)
+					}
+				} catch (e) {
+					await handleError(`executing tool ${block.name}, `, e)
+				}
+
 
 				switch (block.name) {
 					case "write_to_file": {
@@ -2222,7 +2248,7 @@ export class Cline {
 		*/
 		this.presentAssistantMessageLocked = false // this needs to be placed here, if not then calling this.presentAssistantMessage below would fail (sometimes) since it's locked
 		// NOTE: when tool is rejected, iterator stream is interrupted and it waits for userMessageContentReady to be true. Future calls to present will skip execution since didRejectTool and iterate until contentIndex is set to message length and it sets userMessageContentReady to true itself (instead of preemptively doing it in iterator)
-		if (!block.partial || this.didRejectTool || this.didAlreadyUseTool) {
+		if (!block.partial || this.didRejectTool) {
 			// block is finished streaming and executing
 			if (this.currentStreamingContentIndex === this.assistantMessageContent.length - 1) {
 				// its okay that we increment if !didCompleteReadingStream, it'll just return bc out of bounds and as streaming continues it will call presentAssitantMessage if a new block is ready. if streaming is finished then we set userMessageContentReady to true when out of bounds. This gracefully allows the stream to continue on and all potential content blocks be presented.
@@ -2245,6 +2271,18 @@ export class Cline {
 		if (this.presentAssistantMessageHasPendingUpdates) {
 			this.presentAssistantMessage()
 		}
+	}
+
+	async applyTool(block: ToolUse){
+		if (block.name in this.executor.types){
+			const command = {
+				type: block.name,
+				...block.params
+			}
+			console.log('[waht] apply', command)
+			return await this.executor.runCommand(command as any)
+		}
+		return '';
 	}
 
 	async recursivelyMakeClineRequests(
@@ -2406,9 +2444,10 @@ export class Cline {
 							break
 						case "text":
 							assistantMessage += chunk.text
+							console.log("返回的信息: ", chunk.text)
 							// parse raw assistant message into content blocks
 							const prevLength = this.assistantMessageContent.length
-							this.assistantMessageContent = parseAssistantMessage(assistantMessage)
+							this.assistantMessageContent = parseBlocks(assistantMessage)
 							if (this.assistantMessageContent.length > prevLength) {
 								this.userMessageContentReady = false // new content we need to present, reset to false in case previous content set this to true
 							}
@@ -2416,6 +2455,7 @@ export class Cline {
 							this.presentAssistantMessage()
 							break
 					}
+
 
 					if (this.abort) {
 						console.log("aborting stream...")
@@ -2436,9 +2476,9 @@ export class Cline {
 					// PREV: we need to let the request finish for openrouter to get generation details
 					// UPDATE: it's better UX to interrupt the request at the cost of the api cost not being retrieved
 					if (this.didAlreadyUseTool) {
-						assistantMessage +=
-							"\n\n[Response interrupted by a tool use result. Only one tool may be used at a time and should be placed at the end of the message.]"
-						break
+						// assistantMessage +=
+						// 	"\n\n[Response interrupted by a tool use result. Only one tool may be used at a time and should be placed at the end of the message.]"
+						// break
 					}
 				}
 			} catch (error) {
