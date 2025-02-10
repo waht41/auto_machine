@@ -22,7 +22,7 @@ export class CommandRunner {
         }
     }
 
-    async runCommand(command: Command): Promise<void> {
+    async runCommand(command: Command) {
         const executor = this.registry.getExecutor(command.type);
         
         if (!executor) {

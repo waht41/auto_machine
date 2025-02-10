@@ -960,46 +960,11 @@ export class Cline {
 		// console.log('[waht] present', block)
 		switch (block.type) {
 			case "text": {
-				if (this.didRejectTool || this.didAlreadyUseTool) {
-					// break
-				}
 				let content = block.content
 				if (content) {
-					// (have to do this for partial and complete since sending content in thinking tags to markdown renderer will automatically be removed)
-					// Remove end substrings of <thinking or </thinking (below xml parsing is only for opening tags)
-					// (this is done with the xml parsing below now, but keeping here for reference)
-					// content = content.replace(/<\/?t(?:h(?:i(?:n(?:k(?:i(?:n(?:g)?)?)?)?$/, "")
-					// Remove all instances of <thinking> (with optional line break after) and </thinking> (with optional line break before)
-					// - Needs to be separate since we dont want to remove the line break before the first tag
-					// - Needs to happen before the xml parsing below
 					content = content.replace(/<thinking>\s?/g, "")
 					content = content.replace(/\s?<\/thinking>/g, "")
 
-					// Remove partial XML tag at the very end of the content (for tool use and thinking tags)
-					// (prevents scrollview from jumping when tags are automatically removed)
-					const lastOpenBracketIndex = content.lastIndexOf("<")
-					if (lastOpenBracketIndex !== -1) {
-						const possibleTag = content.slice(lastOpenBracketIndex)
-						// Check if there's a '>' after the last '<' (i.e., if the tag is complete) (complete thinking and tool tags will have been removed by now)
-						const hasCloseBracket = possibleTag.includes(">")
-						if (!hasCloseBracket) {
-							// Extract the potential tag name
-							let tagContent: string
-							if (possibleTag.startsWith("</")) {
-								tagContent = possibleTag.slice(2).trim()
-							} else {
-								tagContent = possibleTag.slice(1).trim()
-							}
-							// Check if tagContent is likely an incomplete tag name (letters and underscores only)
-							const isLikelyTagName = /^[a-zA-Z_]+$/.test(tagContent)
-							// Preemptively remove < or </ to keep from these artifacts showing up in chat (also handles closing thinking tags)
-							const isOpeningOrClosing = possibleTag === "<" || possibleTag === "</"
-							// If the tag is incomplete and at the end, remove it from the content
-							if (isOpeningOrClosing || isLikelyTagName) {
-								content = content.slice(0, lastOpenBracketIndex).trim()
-							}
-						}
-					}
 				}
 				await this.say("text", content, undefined, block.partial)
 				break
@@ -1043,31 +1008,13 @@ export class Cline {
 					}
 				}
 
-				if (this.didRejectTool) {
-					// ignore any tool content after user has rejected tool once
-					if (!block.partial) {
-						this.userMessageContent.push({
-							type: "text",
-							text: `Skipping tool ${toolDescription()} due to user rejecting a previous tool.`,
-						})
-					} else {
-						// partial tool after user rejected a previous tool
-						this.userMessageContent.push({
-							type: "text",
-							text: `Tool ${toolDescription()} was interrupted and not executed due to user rejecting a previous tool.`,
-						})
-					}
-					break
-				}
-
-				if (this.didAlreadyUseTool) {
-					// ignore any content after a tool has already been used
-					// this.userMessageContent.push({
-					// 	type: "text",
-					// 	text: `Tool [${block.name}] was not executed because a tool has already been used in this message. Only one tool may be used per message. You must assess the first tool's result before proceeding to use the next tool.`,
-					// })
-					// break
-				}
+				// if (this.didRejectTool) {
+				// 	this.userMessageContent.push({
+				// 		type: "text",
+				// 		text: `Skipping tool ${toolDescription()} due to user rejecting a previous tool.`,
+				// 	})
+				// 	break
+				// } //todo waht
 
 				const pushToolResult = (content: ToolResponse) => {
 					this.userMessageContent.push({
@@ -1094,27 +1041,9 @@ export class Cline {
 							pushToolResult(
 								formatResponse.toolResult(formatResponse.toolDeniedWithFeedback(text), images),
 							)
-							// this.userMessageContent.push({
-							// 	type: "text",
-							// 	text: `${toolDescription()}`,
-							// })
-							// this.toolResults.push({
-							// 	type: "tool_result",
-							// 	tool_use_id: toolUseId,
-							// 	content: this.formatToolResponseWithImages(
-							// 		await this.formatToolDeniedFeedback(text),
-							// 		images
-							// 	),
-							// })
-							this.didRejectTool = true
-							return false
+						} else {
+							pushToolResult(formatResponse.toolDenied())
 						}
-						pushToolResult(formatResponse.toolDenied())
-						// this.toolResults.push({
-						// 	type: "tool_result",
-						// 	tool_use_id: toolUseId,
-						// 	content: await this.formatToolDenied(),
-						// })
 						this.didRejectTool = true
 						return false
 					}
@@ -1127,11 +1056,6 @@ export class Cline {
 						"error",
 						`Error ${action}:\n${error.message ?? JSON.stringify(serializeError(error), null, 2)}`,
 					)
-					// this.toolResults.push({
-					// 	type: "tool_result",
-					// 	tool_use_id: toolUseId,
-					// 	content: await this.formatToolError(errorString),
-					// })
 					pushToolResult(formatResponse.toolError(errorString))
 				}
 
@@ -1156,9 +1080,9 @@ export class Cline {
 					return text.replace(tagRegex, "")
 				}
 
-				if (block.name !== "browser_action") {
-					await this.browserSession.closeBrowser()
-				}
+				// if (block.name !== "browser_action") {
+				// 	await this.browserSession.closeBrowser()
+				// } //todo waht
 
 				// Validate tool use before execution
 				const { mode, customModes } = (await this.providerRef.deref()?.getState()) ?? {}
@@ -1187,7 +1111,6 @@ export class Cline {
 				} catch (e) {
 					await handleError(`executing tool ${block.name}, `, e)
 				}
-
 
 				switch (block.name) {
 					case "write_to_file": {
