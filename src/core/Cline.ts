@@ -1106,6 +1106,7 @@ export class Cline {
 					console.log('[waht] 开始执行tool', block)
 					const res = await this.applyTool(block)
 					if (typeof res === "string") {
+						console.log('[waht] 执行tool 返回结果: ',res)
 						pushToolResult(res)
 					}
 				} catch (e) {
@@ -2197,15 +2198,16 @@ export class Cline {
 	}
 
 	async applyTool(block: ToolUse){
+		console.log('[waht] try apply tool',block)
 		if (block.name in this.executor.types){
 			const command = {
 				type: block.name,
 				...block.params
 			}
 			console.log('[waht] apply', command)
-			return await this.executor.runCommand(command as any)
+			return await this.executor.runCommand(command as any) ?? 'no result return'
 		}
-		return '';
+		return;
 	}
 
 	async recursivelyMakeClineRequests(
@@ -2396,13 +2398,6 @@ export class Cline {
 						break
 					}
 
-					// PREV: we need to let the request finish for openrouter to get generation details
-					// UPDATE: it's better UX to interrupt the request at the cost of the api cost not being retrieved
-					if (this.didAlreadyUseTool) {
-						// assistantMessage +=
-						// 	"\n\n[Response interrupted by a tool use result. Only one tool may be used at a time and should be placed at the end of the message.]"
-						// break
-					}
 				}
 			} catch (error) {
 				console.error("error when receive chunk: ", error)
@@ -2434,9 +2429,8 @@ export class Cline {
 			partialBlocks.forEach((block) => {
 				block.partial = false
 			})
-			// this.assistantMessageContent.forEach((e) => (e.partial = false)) // cant just do this bc a tool could be in the middle of executing ()
 			if (partialBlocks.length > 0) {
-				this.presentAssistantMessage() // if there is content to update then it will complete and update this.userMessageContentReady to true, which we pwaitfor before making the next request. all this is really doing is presenting the last partial message that we just set to complete
+				await this.presentAssistantMessage() // if there is content to update then it will complete and update this.userMessageContentReady to true, which we pwaitfor before making the next request. all this is really doing is presenting the last partial message that we just set to complete
 			}
 
 			updateApiReqMsg()
