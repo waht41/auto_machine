@@ -1,7 +1,7 @@
 import { Anthropic } from "@anthropic-ai/sdk"
 import cloneDeep from "clone-deep"
-import { DiffStrategy, getDiffStrategy, UnifiedDiffStrategy } from "./diff/DiffStrategy"
-import { validateToolUse, isToolAllowedForMode, ToolName } from "./mode-validator"
+import { DiffStrategy, getDiffStrategy } from "./diff/DiffStrategy"
+import { isToolAllowedForMode, ToolName, validateToolUse } from "./mode-validator"
 import delay from "delay"
 import fs from "fs/promises"
 import os from "os"
@@ -9,61 +9,33 @@ import pWaitFor from "p-wait-for"
 import * as path from "path"
 import { serializeError } from "serialize-error"
 import * as vscode from "vscode"
-import { ApiHandler, SingleCompletionHandler, buildApiHandler } from "../api"
+import { ApiHandler, buildApiHandler } from "../api"
 import { ApiStream } from "../api/transform/stream"
 import { DiffViewProvider } from "../integrations/editor/DiffViewProvider"
 import { findToolName, formatContentBlockToMarkdown } from "../integrations/misc/export-markdown"
-import {
-	extractTextFromFile,
-	addLineNumbers,
-	stripLineNumbers,
-	everyLineHasLineNumbers,
-	truncateOutput,
-} from "../integrations/misc/extract-text"
+import { truncateOutput, } from "../integrations/misc/extract-text"
 import { TerminalManager } from "../integrations/terminal/TerminalManager"
 import { UrlContentFetcher } from "../services/browser/UrlContentFetcher"
 import { listFiles } from "../services/glob/list-files"
-import { regexSearchFiles } from "../services/ripgrep"
-import { parseSourceCodeForDefinitionsTopLevel } from "../services/tree-sitter"
 import { ApiConfiguration } from "../shared/api"
 import { findLastIndex } from "../shared/array"
 import { combineApiRequests } from "../shared/combineApiRequests"
 import { combineCommandSequences } from "../shared/combineCommandSequences"
-import {
-	BrowserAction,
-	BrowserActionResult,
-	browserActions,
-	ClineApiReqCancelReason,
-	ClineApiReqInfo,
-	ClineAsk,
-	ClineAskUseMcpServer,
-	ClineMessage,
-	ClineSay,
-	ClineSayBrowserAction,
-	ClineSayTool,
-} from "../shared/ExtensionMessage"
+import { ClineApiReqCancelReason, ClineApiReqInfo, ClineAsk, ClineMessage, ClineSay, } from "../shared/ExtensionMessage"
 import { getApiMetrics } from "../shared/getApiMetrics"
 import { HistoryItem } from "../shared/HistoryItem"
 import { ClineAskResponse } from "../shared/WebviewMessage"
 import { calculateApiCost } from "../utils/cost"
 import { fileExistsAtPath } from "../utils/fs"
-import { arePathsEqual, getReadablePath } from "../utils/path"
+import { arePathsEqual } from "../utils/path"
 import { parseMentions } from "./mentions"
-import {
-	AssistantMessageContent,
-	parseAssistantMessage,
-	ToolParamName,
-	ToolUse,
-	ToolUseName
-} from "./assistant-message"
+import { AssistantMessageContent, ToolParamName, ToolUse, ToolUseName } from "./assistant-message"
 import { formatResponse } from "./prompts/responses"
 import { SYSTEM_PROMPT } from "./prompts/system"
-import { modes, defaultModeSlug, getModeBySlug } from "../shared/modes"
+import { defaultModeSlug, getModeBySlug } from "../shared/modes"
 import { truncateHalfConversation } from "./sliding-window"
 import { ClineProvider, GlobalFileNames } from "./webview/ClineProvider"
-import { detectCodeOmission } from "../integrations/editor/detect-omission"
 import { BrowserSession } from "../services/browser/BrowserSession"
-import { OpenRouterHandler } from "../api/providers/openrouter"
 import { McpHub } from "../services/mcp/McpHub"
 import crypto from "crypto"
 import { CommandRunner } from "@/executors/runner";
@@ -111,7 +83,7 @@ export class Cline {
 	private userMessageContent: (Anthropic.TextBlockParam | Anthropic.ImageBlockParam)[] = []
 	private userMessageContentReady = false
 	private didRejectTool = false
-	private didAlreadyUseTool = false
+	private didGetNewMessage = false
 	private didCompleteReadingStream = false
 	private executor = new CommandRunner()
 
@@ -367,7 +339,7 @@ export class Cline {
 		this.askResponseImages = images
 	}
 
-	async say(type: ClineSay, text?: string, images?: string[], partial?: boolean): Promise<undefined> {
+	async say(type: ClineSay, text?: string, images?: string[], partial?: boolean, replace = false): Promise<undefined> {
 		if (this.abort) {
 			throw new Error("Roo Code instance aborted")
 		}
@@ -375,7 +347,7 @@ export class Cline {
 		if (partial !== undefined) {
 			const lastMessage = this.clineMessages.at(-1)
 			const isUpdatingPreviousPartial =
-				lastMessage && lastMessage.partial && lastMessage.type === "say" && lastMessage.say === type
+				lastMessage && lastMessage.partial && lastMessage.type === "say" && (lastMessage.say === type || replace)
 			if (partial) {
 				if (isUpdatingPreviousPartial) {
 					// existing partial message, so update it
@@ -895,6 +867,7 @@ export class Cline {
 			// note that this api_req_failed ask is unique in that we only present this option if the api hasn't streamed any content yet (ie it fails on the first chunk due), as it would allow them to hit a retry button. However if the api failed mid-stream, it could be in any arbitrary state where some tools may have executed, so that error is handled differently and requires cancelling the task entirely.
 			if (alwaysApproveResubmit) {
 				const errorMsg = error.message ?? "Unknown error"
+				console.error("API request failed:", errorMsg)
 				const requestDelay = requestDelaySeconds || 5
 				// Automatically retry with delay
 				// Show countdown timer in error color
@@ -933,7 +906,7 @@ export class Cline {
 		yield* iterator
 	}
 
-	async presentAssistantMessage() {
+	async handleAssistantMessage(replacing = false) {
 		if (this.abort) {
 			throw new Error("Roo Code instance aborted")
 		}
@@ -962,11 +935,10 @@ export class Cline {
 			case "text": {
 				let content = block.content
 				if (content) {
-					content = content.replace(/<thinking>\s?/g, "")
-					content = content.replace(/\s?<\/thinking>/g, "")
-
+					// content = content.replace(/<thinking>\s?/g, "")
+					// content = content.replace(/\s?<\/thinking>/g, "")
 				}
-				await this.say("text", content, undefined, block.partial)
+				await this.say("text", content, undefined, block.partial, replacing)
 				break
 			}
 			case "tool_use":
@@ -1029,8 +1001,11 @@ export class Cline {
 					} else {
 						this.userMessageContent.push(...content)
 					}
+					const texts = this.userMessageContent.filter((block) => block.type === "text")
+					const textStrings = texts.map((block) => block.text)
+					this.say("text", textStrings.join('\n'), undefined, block.partial, replacing)
 					// once a tool result has been collected, ignore all other tool uses since we should only ever present one tool result per message
-					this.didAlreadyUseTool = true
+					this.didGetNewMessage = true
 				}
 
 				const askApproval = async (type: ClineAsk, partialMessage?: string) => {
@@ -1112,1058 +1087,6 @@ export class Cline {
 				} catch (e) {
 					await handleError(`executing tool ${block.name}, `, e)
 				}
-
-				switch (block.name) {
-					case "write_to_file": {
-						const relPath: string | undefined = block.params.path
-						let newContent: string | undefined = block.params.content
-						let predictedLineCount: number | undefined = parseInt(block.params.line_count ?? "0")
-						if (!relPath || !newContent) {
-							// checking for newContent ensure relPath is complete
-							// wait so we can determine if it's a new file or editing an existing file
-							break
-						}
-						// Check if file exists using cached map or fs.access
-						let fileExists: boolean
-						if (this.diffViewProvider.editType !== undefined) {
-							fileExists = this.diffViewProvider.editType === "modify"
-						} else {
-							const absolutePath = path.resolve(cwd, relPath)
-							fileExists = await fileExistsAtPath(absolutePath)
-							this.diffViewProvider.editType = fileExists ? "modify" : "create"
-						}
-
-						// pre-processing newContent for cases where weaker models might add artifacts like markdown codeblock markers (deepseek/llama) or extra escape characters (gemini)
-						if (newContent.startsWith("```")) {
-							// this handles cases where it includes language specifiers like ```python ```js
-							newContent = newContent.split("\n").slice(1).join("\n").trim()
-						}
-						if (newContent.endsWith("```")) {
-							newContent = newContent.split("\n").slice(0, -1).join("\n").trim()
-						}
-
-						if (!this.api.getModel().id.includes("claude")) {
-							// it seems not just llama models are doing this, but also gemini and potentially others
-							if (
-								newContent.includes("&gt;") ||
-								newContent.includes("&lt;") ||
-								newContent.includes("&quot;")
-							) {
-								newContent = newContent
-									.replace(/&gt;/g, ">")
-									.replace(/&lt;/g, "<")
-									.replace(/&quot;/g, '"')
-							}
-						}
-
-						const sharedMessageProps: ClineSayTool = {
-							tool: fileExists ? "editedExistingFile" : "newFileCreated",
-							path: getReadablePath(cwd, removeClosingTag("path", relPath)),
-						}
-						try {
-							if (block.partial) {
-								// update gui message
-								const partialMessage = JSON.stringify(sharedMessageProps)
-								await this.ask("tool", partialMessage, block.partial).catch(() => {})
-								// update editor
-								if (!this.diffViewProvider.isEditing) {
-									// open the editor and prepare to stream content in
-									await this.diffViewProvider.open(relPath)
-								}
-								// editor is open, stream content in
-								await this.diffViewProvider.update(
-									everyLineHasLineNumbers(newContent) ? stripLineNumbers(newContent) : newContent,
-									false,
-								)
-								break
-							} else {
-								if (!relPath) {
-									this.consecutiveMistakeCount++
-									pushToolResult(await this.sayAndCreateMissingParamError("write_to_file", "path"))
-									await this.diffViewProvider.reset()
-									break
-								}
-								if (!newContent) {
-									this.consecutiveMistakeCount++
-									pushToolResult(await this.sayAndCreateMissingParamError("write_to_file", "content"))
-									await this.diffViewProvider.reset()
-									break
-								}
-								if (!predictedLineCount) {
-									this.consecutiveMistakeCount++
-									pushToolResult(
-										await this.sayAndCreateMissingParamError("write_to_file", "line_count"),
-									)
-									await this.diffViewProvider.reset()
-									break
-								}
-								this.consecutiveMistakeCount = 0
-
-								// if isEditingFile false, that means we have the full contents of the file already.
-								// it's important to note how this function works, you can't make the assumption that the block.partial conditional will always be called since it may immediately get complete, non-partial data. So this part of the logic will always be called.
-								// in other words, you must always repeat the block.partial logic here
-								if (!this.diffViewProvider.isEditing) {
-									// show gui message before showing edit animation
-									const partialMessage = JSON.stringify(sharedMessageProps)
-									await this.ask("tool", partialMessage, true).catch(() => {}) // sending true for partial even though it's not a partial, this shows the edit row before the content is streamed into the editor
-									await this.diffViewProvider.open(relPath)
-								}
-								await this.diffViewProvider.update(
-									everyLineHasLineNumbers(newContent) ? stripLineNumbers(newContent) : newContent,
-									true,
-								)
-								await delay(300) // wait for diff view to update
-								this.diffViewProvider.scrollToFirstDiff()
-
-								// Check for code omissions before proceeding
-								if (
-									detectCodeOmission(
-										this.diffViewProvider.originalContent || "",
-										newContent,
-										predictedLineCount,
-									)
-								) {
-									if (this.diffStrategy) {
-										await this.diffViewProvider.revertChanges()
-										pushToolResult(
-											formatResponse.toolError(
-												`Content appears to be truncated (file has ${
-													newContent.split("\n").length
-												} lines but was predicted to have ${predictedLineCount} lines), and found comments indicating omitted code (e.g., '// rest of code unchanged', '/* previous code */'). Please provide the complete file content without any omissions if possible, or otherwise use the 'apply_diff' tool to apply the diff to the original file.`,
-											),
-										)
-										break
-									} else {
-										vscode.window
-											.showWarningMessage(
-												"Potential code truncation detected. This happens when the AI reaches its max output limit.",
-												"Follow this guide to fix the issue",
-											)
-											.then((selection) => {
-												if (selection === "Follow this guide to fix the issue") {
-													vscode.env.openExternal(
-														vscode.Uri.parse(
-															"https://github.com/cline/cline/wiki/Troubleshooting-%E2%80%90-Cline-Deleting-Code-with-%22Rest-of-Code-Here%22-Comments",
-														),
-													)
-												}
-											})
-									}
-								}
-
-								const completeMessage = JSON.stringify({
-									...sharedMessageProps,
-									content: fileExists ? undefined : newContent,
-									diff: fileExists
-										? formatResponse.createPrettyPatch(
-												relPath,
-												this.diffViewProvider.originalContent,
-												newContent,
-											)
-										: undefined,
-								} satisfies ClineSayTool)
-								const didApprove = await askApproval("tool", completeMessage)
-								if (!didApprove) {
-									await this.diffViewProvider.revertChanges()
-									break
-								}
-								const { newProblemsMessage, userEdits, finalContent } =
-									await this.diffViewProvider.saveChanges()
-								this.didEditFile = true // used to determine if we should wait for busy terminal to update before sending api request
-								if (userEdits) {
-									await this.say(
-										"user_feedback_diff",
-										JSON.stringify({
-											tool: fileExists ? "editedExistingFile" : "newFileCreated",
-											path: getReadablePath(cwd, relPath),
-											diff: userEdits,
-										} satisfies ClineSayTool),
-									)
-									pushToolResult(
-										`The user made the following updates to your content:\n\n${userEdits}\n\n` +
-											`The updated content, which includes both your original modifications and the user's edits, has been successfully saved to ${relPath.toPosix()}. Here is the full, updated content of the file, including line numbers:\n\n` +
-											`<final_file_content path="${relPath.toPosix()}">\n${addLineNumbers(
-												finalContent || "",
-											)}\n</final_file_content>\n\n` +
-											`Please note:\n` +
-											`1. You do not need to re-write the file with these changes, as they have already been applied.\n` +
-											`2. Proceed with the task using this updated file content as the new baseline.\n` +
-											`3. If the user's edits have addressed part of the task or changed the requirements, adjust your approach accordingly.` +
-											`${newProblemsMessage}`,
-									)
-								} else {
-									pushToolResult(
-										`The content was successfully saved to ${relPath.toPosix()}.${newProblemsMessage}`,
-									)
-								}
-								await this.diffViewProvider.reset()
-								break
-							}
-						} catch (error) {
-							await handleError("writing file", error)
-							await this.diffViewProvider.reset()
-							break
-						}
-					}
-					case "apply_diff": {
-						const relPath: string | undefined = block.params.path
-						const diffContent: string | undefined = block.params.diff
-
-						const sharedMessageProps: ClineSayTool = {
-							tool: "appliedDiff",
-							path: getReadablePath(cwd, removeClosingTag("path", relPath)),
-						}
-
-						try {
-							if (block.partial) {
-								// update gui message
-								const partialMessage = JSON.stringify(sharedMessageProps)
-								await this.ask("tool", partialMessage, block.partial).catch(() => {})
-								break
-							} else {
-								if (!relPath) {
-									this.consecutiveMistakeCount++
-									pushToolResult(await this.sayAndCreateMissingParamError("apply_diff", "path"))
-									break
-								}
-								if (!diffContent) {
-									this.consecutiveMistakeCount++
-									pushToolResult(await this.sayAndCreateMissingParamError("apply_diff", "diff"))
-									break
-								}
-
-								const absolutePath = path.resolve(cwd, relPath)
-								const fileExists = await fileExistsAtPath(absolutePath)
-
-								if (!fileExists) {
-									this.consecutiveMistakeCount++
-									const formattedError = `File does not exist at path: ${absolutePath}\n\n<error_details>\nThe specified file could not be found. Please verify the file path and try again.\n</error_details>`
-									await this.say("error", formattedError)
-									pushToolResult(formattedError)
-									break
-								}
-
-								const originalContent = await fs.readFile(absolutePath, "utf-8")
-
-								// Apply the diff to the original content
-								const diffResult = (await this.diffStrategy?.applyDiff(
-									originalContent,
-									diffContent,
-									parseInt(block.params.start_line ?? ""),
-									parseInt(block.params.end_line ?? ""),
-								)) ?? {
-									success: false,
-									error: "No diff strategy available",
-								}
-								if (!diffResult.success) {
-									this.consecutiveMistakeCount++
-									const currentCount =
-										(this.consecutiveMistakeCountForApplyDiff.get(relPath) || 0) + 1
-									this.consecutiveMistakeCountForApplyDiff.set(relPath, currentCount)
-									const errorDetails = diffResult.details
-										? JSON.stringify(diffResult.details, null, 2)
-										: ""
-									const formattedError = `Unable to apply diff to file: ${absolutePath}\n\n<error_details>\n${
-										diffResult.error
-									}${errorDetails ? `\n\nDetails:\n${errorDetails}` : ""}\n</error_details>`
-									if (currentCount >= 2) {
-										await this.say("error", formattedError)
-									}
-									pushToolResult(formattedError)
-									break
-								}
-
-								this.consecutiveMistakeCount = 0
-								this.consecutiveMistakeCountForApplyDiff.delete(relPath)
-								// Show diff view before asking for approval
-								this.diffViewProvider.editType = "modify"
-								await this.diffViewProvider.open(relPath)
-								await this.diffViewProvider.update(diffResult.content, true)
-								await this.diffViewProvider.scrollToFirstDiff()
-
-								const completeMessage = JSON.stringify({
-									...sharedMessageProps,
-									diff: diffContent,
-								} satisfies ClineSayTool)
-
-								const didApprove = await askApproval("tool", completeMessage)
-								if (!didApprove) {
-									await this.diffViewProvider.revertChanges() // This likely handles closing the diff view
-									break
-								}
-
-								const { newProblemsMessage, userEdits, finalContent } =
-									await this.diffViewProvider.saveChanges()
-								this.didEditFile = true // used to determine if we should wait for busy terminal to update before sending api request
-								if (userEdits) {
-									await this.say(
-										"user_feedback_diff",
-										JSON.stringify({
-											tool: fileExists ? "editedExistingFile" : "newFileCreated",
-											path: getReadablePath(cwd, relPath),
-											diff: userEdits,
-										} satisfies ClineSayTool),
-									)
-									pushToolResult(
-										`The user made the following updates to your content:\n\n${userEdits}\n\n` +
-											`The updated content, which includes both your original modifications and the user's edits, has been successfully saved to ${relPath.toPosix()}. Here is the full, updated content of the file, including line numbers:\n\n` +
-											`<final_file_content path="${relPath.toPosix()}">\n${addLineNumbers(
-												finalContent || "",
-											)}\n</final_file_content>\n\n` +
-											`Please note:\n` +
-											`1. You do not need to re-write the file with these changes, as they have already been applied.\n` +
-											`2. Proceed with the task using this updated file content as the new baseline.\n` +
-											`3. If the user's edits have addressed part of the task or changed the requirements, adjust your approach accordingly.` +
-											`${newProblemsMessage}`,
-									)
-								} else {
-									pushToolResult(
-										`Changes successfully applied to ${relPath.toPosix()}:\n\n${newProblemsMessage}`,
-									)
-								}
-								await this.diffViewProvider.reset()
-								break
-							}
-						} catch (error) {
-							await handleError("applying diff", error)
-							await this.diffViewProvider.reset()
-							break
-						}
-					}
-					case "read_file": {
-						const relPath: string | undefined = block.params.path
-						const sharedMessageProps: ClineSayTool = {
-							tool: "readFile",
-							path: getReadablePath(cwd, removeClosingTag("path", relPath)),
-						}
-						try {
-							if (block.partial) {
-								const partialMessage = JSON.stringify({
-									...sharedMessageProps,
-									content: undefined,
-								} satisfies ClineSayTool)
-								await this.ask("tool", partialMessage, block.partial).catch(() => {})
-								break
-							} else {
-								if (!relPath) {
-									this.consecutiveMistakeCount++
-									pushToolResult(await this.sayAndCreateMissingParamError("read_file", "path"))
-									break
-								}
-								this.consecutiveMistakeCount = 0
-								const absolutePath = path.resolve(cwd, relPath)
-								const completeMessage = JSON.stringify({
-									...sharedMessageProps,
-									content: absolutePath,
-								} satisfies ClineSayTool)
-								const didApprove = await askApproval("tool", completeMessage)
-								if (!didApprove) {
-									break
-								}
-								// now execute the tool like normal
-								const content = await extractTextFromFile(absolutePath)
-								pushToolResult(content)
-								break
-							}
-						} catch (error) {
-							await handleError("reading file", error)
-							break
-						}
-					}
-					case "list_files": {
-						const relDirPath: string | undefined = block.params.path
-						const recursiveRaw: string | undefined = block.params.recursive
-						const recursive = recursiveRaw?.toLowerCase() === "true"
-						const sharedMessageProps: ClineSayTool = {
-							tool: !recursive ? "listFilesTopLevel" : "listFilesRecursive",
-							path: getReadablePath(cwd, removeClosingTag("path", relDirPath)),
-						}
-						try {
-							if (block.partial) {
-								const partialMessage = JSON.stringify({
-									...sharedMessageProps,
-									content: "",
-								} satisfies ClineSayTool)
-								await this.ask("tool", partialMessage, block.partial).catch(() => {})
-								break
-							} else {
-								if (!relDirPath) {
-									this.consecutiveMistakeCount++
-									pushToolResult(await this.sayAndCreateMissingParamError("list_files", "path"))
-									break
-								}
-								this.consecutiveMistakeCount = 0
-								const absolutePath = path.resolve(cwd, relDirPath)
-								const [files, didHitLimit] = await listFiles(absolutePath, recursive, 200)
-								const result = formatResponse.formatFilesList(absolutePath, files, didHitLimit)
-								const completeMessage = JSON.stringify({
-									...sharedMessageProps,
-									content: result,
-								} satisfies ClineSayTool)
-								const didApprove = await askApproval("tool", completeMessage)
-								if (!didApprove) {
-									break
-								}
-								pushToolResult(result)
-								break
-							}
-						} catch (error) {
-							await handleError("listing files", error)
-							break
-						}
-					}
-					case "list_code_definition_names": {
-						const relDirPath: string | undefined = block.params.path
-						const sharedMessageProps: ClineSayTool = {
-							tool: "listCodeDefinitionNames",
-							path: getReadablePath(cwd, removeClosingTag("path", relDirPath)),
-						}
-						try {
-							if (block.partial) {
-								const partialMessage = JSON.stringify({
-									...sharedMessageProps,
-									content: "",
-								} satisfies ClineSayTool)
-								await this.ask("tool", partialMessage, block.partial).catch(() => {})
-								break
-							} else {
-								if (!relDirPath) {
-									this.consecutiveMistakeCount++
-									pushToolResult(
-										await this.sayAndCreateMissingParamError("list_code_definition_names", "path"),
-									)
-									break
-								}
-								this.consecutiveMistakeCount = 0
-								const absolutePath = path.resolve(cwd, relDirPath)
-								const result = await parseSourceCodeForDefinitionsTopLevel(absolutePath)
-								const completeMessage = JSON.stringify({
-									...sharedMessageProps,
-									content: result,
-								} satisfies ClineSayTool)
-								const didApprove = await askApproval("tool", completeMessage)
-								if (!didApprove) {
-									break
-								}
-								pushToolResult(result)
-								break
-							}
-						} catch (error) {
-							await handleError("parsing source code definitions", error)
-							break
-						}
-					}
-					case "search_files": {
-						const relDirPath: string | undefined = block.params.path
-						const regex: string | undefined = block.params.regex
-						const filePattern: string | undefined = block.params.file_pattern
-						const sharedMessageProps: ClineSayTool = {
-							tool: "searchFiles",
-							path: getReadablePath(cwd, removeClosingTag("path", relDirPath)),
-							regex: removeClosingTag("regex", regex),
-							filePattern: removeClosingTag("file_pattern", filePattern),
-						}
-						try {
-							if (block.partial) {
-								const partialMessage = JSON.stringify({
-									...sharedMessageProps,
-									content: "",
-								} satisfies ClineSayTool)
-								await this.ask("tool", partialMessage, block.partial).catch(() => {})
-								break
-							} else {
-								if (!relDirPath) {
-									this.consecutiveMistakeCount++
-									pushToolResult(await this.sayAndCreateMissingParamError("search_files", "path"))
-									break
-								}
-								if (!regex) {
-									this.consecutiveMistakeCount++
-									pushToolResult(await this.sayAndCreateMissingParamError("search_files", "regex"))
-									break
-								}
-								this.consecutiveMistakeCount = 0
-								const absolutePath = path.resolve(cwd, relDirPath)
-								const results = await regexSearchFiles(cwd, absolutePath, regex, filePattern)
-								const completeMessage = JSON.stringify({
-									...sharedMessageProps,
-									content: results,
-								} satisfies ClineSayTool)
-								const didApprove = await askApproval("tool", completeMessage)
-								if (!didApprove) {
-									break
-								}
-								pushToolResult(results)
-								break
-							}
-						} catch (error) {
-							await handleError("searching files", error)
-							break
-						}
-					}
-					case "browser_action": {
-						const action: BrowserAction | undefined = block.params.action as BrowserAction
-						const url: string | undefined = block.params.url
-						const coordinate: string | undefined = block.params.coordinate
-						const text: string | undefined = block.params.text
-						if (!action || !browserActions.includes(action)) {
-							// checking for action to ensure it is complete and valid
-							if (!block.partial) {
-								// if the block is complete and we don't have a valid action this is a mistake
-								this.consecutiveMistakeCount++
-								pushToolResult(await this.sayAndCreateMissingParamError("browser_action", "action"))
-								await this.browserSession.closeBrowser()
-							}
-							break
-						}
-
-						try {
-							if (block.partial) {
-								if (action === "launch") {
-									await this.ask(
-										"browser_action_launch",
-										removeClosingTag("url", url),
-										block.partial,
-									).catch(() => {})
-								} else {
-									await this.say(
-										"browser_action",
-										JSON.stringify({
-											action: action as BrowserAction,
-											coordinate: removeClosingTag("coordinate", coordinate),
-											text: removeClosingTag("text", text),
-										} satisfies ClineSayBrowserAction),
-										undefined,
-										block.partial,
-									)
-								}
-								break
-							} else {
-								let browserActionResult: BrowserActionResult
-								if (action === "launch") {
-									if (!url) {
-										this.consecutiveMistakeCount++
-										pushToolResult(
-											await this.sayAndCreateMissingParamError("browser_action", "url"),
-										)
-										await this.browserSession.closeBrowser()
-										break
-									}
-									this.consecutiveMistakeCount = 0
-									const didApprove = await askApproval("browser_action_launch", url)
-									if (!didApprove) {
-										break
-									}
-
-									// NOTE: it's okay that we call this message since the partial inspect_site is finished streaming. The only scenario we have to avoid is sending messages WHILE a partial message exists at the end of the messages array. For example the api_req_finished message would interfere with the partial message, so we needed to remove that.
-									// await this.say("inspect_site_result", "") // no result, starts the loading spinner waiting for result
-									await this.say("browser_action_result", "") // starts loading spinner
-
-									await this.browserSession.launchBrowser()
-									browserActionResult = await this.browserSession.navigateToUrl(url)
-								} else {
-									if (action === "click") {
-										if (!coordinate) {
-											this.consecutiveMistakeCount++
-											pushToolResult(
-												await this.sayAndCreateMissingParamError(
-													"browser_action",
-													"coordinate",
-												),
-											)
-											await this.browserSession.closeBrowser()
-											break // can't be within an inner switch
-										}
-									}
-									if (action === "type") {
-										if (!text) {
-											this.consecutiveMistakeCount++
-											pushToolResult(
-												await this.sayAndCreateMissingParamError("browser_action", "text"),
-											)
-											await this.browserSession.closeBrowser()
-											break
-										}
-									}
-									this.consecutiveMistakeCount = 0
-									await this.say(
-										"browser_action",
-										JSON.stringify({
-											action: action as BrowserAction,
-											coordinate,
-											text,
-										} satisfies ClineSayBrowserAction),
-										undefined,
-										false,
-									)
-									switch (action) {
-										case "click":
-											browserActionResult = await this.browserSession.click(coordinate!)
-											break
-										case "type":
-											browserActionResult = await this.browserSession.type(text!)
-											break
-										case "scroll_down":
-											browserActionResult = await this.browserSession.scrollDown()
-											break
-										case "scroll_up":
-											browserActionResult = await this.browserSession.scrollUp()
-											break
-										case "close":
-											browserActionResult = await this.browserSession.closeBrowser()
-											break
-									}
-								}
-
-								switch (action) {
-									case "launch":
-									case "click":
-									case "type":
-									case "scroll_down":
-									case "scroll_up":
-										await this.say("browser_action_result", JSON.stringify(browserActionResult))
-										pushToolResult(
-											formatResponse.toolResult(
-												`The browser action has been executed. The console logs and screenshot have been captured for your analysis.\n\nConsole logs:\n${
-													browserActionResult.logs || "(No new logs)"
-												}\n\n(REMEMBER: if you need to proceed to using non-\`browser_action\` tools or launch a new browser, you MUST first close this browser. For example, if after analyzing the logs and screenshot you need to edit a file, you must first close the browser before you can use the write_to_file tool.)`,
-												browserActionResult.screenshot ? [browserActionResult.screenshot] : [],
-											),
-										)
-										break
-									case "close":
-										pushToolResult(
-											formatResponse.toolResult(
-												`The browser has been closed. You may now proceed to using other tools.`,
-											),
-										)
-										break
-								}
-								break
-							}
-						} catch (error) {
-							await this.browserSession.closeBrowser() // if any error occurs, the browser session is terminated
-							await handleError("executing browser action", error)
-							break
-						}
-					}
-					case "execute_command": {
-						const command: string | undefined = block.params.command
-						try {
-							if (block.partial) {
-								await this.ask("command", removeClosingTag("command", command), block.partial).catch(
-									() => {},
-								)
-								break
-							} else {
-								if (!command) {
-									this.consecutiveMistakeCount++
-									pushToolResult(
-										await this.sayAndCreateMissingParamError("execute_command", "command"),
-									)
-									break
-								}
-								this.consecutiveMistakeCount = 0
-
-								const didApprove = await askApproval("command", command)
-								if (!didApprove) {
-									break
-								}
-								const [userRejected, result] = await this.executeCommandTool(command)
-								if (userRejected) {
-									this.didRejectTool = true
-								}
-								pushToolResult(result)
-								break
-							}
-						} catch (error) {
-							await handleError("executing command", error)
-							break
-						}
-					}
-					case "use_mcp_tool": {
-						const server_name: string | undefined = block.params.server_name
-						const tool_name: string | undefined = block.params.tool_name
-						const mcp_arguments: string | undefined = block.params.arguments
-						try {
-							if (block.partial) {
-								const partialMessage = JSON.stringify({
-									type: "use_mcp_tool",
-									serverName: removeClosingTag("server_name", server_name),
-									toolName: removeClosingTag("tool_name", tool_name),
-									arguments: removeClosingTag("arguments", mcp_arguments),
-								} satisfies ClineAskUseMcpServer)
-								await this.ask("use_mcp_server", partialMessage, block.partial).catch(() => {})
-								break
-							} else {
-								if (!server_name) {
-									this.consecutiveMistakeCount++
-									pushToolResult(
-										await this.sayAndCreateMissingParamError("use_mcp_tool", "server_name"),
-									)
-									break
-								}
-								if (!tool_name) {
-									this.consecutiveMistakeCount++
-									pushToolResult(
-										await this.sayAndCreateMissingParamError("use_mcp_tool", "tool_name"),
-									)
-									break
-								}
-								// arguments are optional, but if they are provided they must be valid JSON
-								// if (!mcp_arguments) {
-								// 	this.consecutiveMistakeCount++
-								// 	pushToolResult(await this.sayAndCreateMissingParamError("use_mcp_tool", "arguments"))
-								// 	break
-								// }
-								let parsedArguments: Record<string, unknown> | undefined
-								if (mcp_arguments) {
-									try {
-										parsedArguments = JSON.parse(mcp_arguments)
-									} catch (error) {
-										this.consecutiveMistakeCount++
-										await this.say(
-											"error",
-											`Roo tried to use ${tool_name} with an invalid JSON argument. Retrying...`,
-										)
-										pushToolResult(
-											formatResponse.toolError(
-												formatResponse.invalidMcpToolArgumentError(server_name, tool_name),
-											),
-										)
-										break
-									}
-								}
-								this.consecutiveMistakeCount = 0
-								const completeMessage = JSON.stringify({
-									type: "use_mcp_tool",
-									serverName: server_name,
-									toolName: tool_name,
-									arguments: mcp_arguments,
-								} satisfies ClineAskUseMcpServer)
-								const didApprove = await askApproval("use_mcp_server", completeMessage)
-								if (!didApprove) {
-									break
-								}
-								// now execute the tool
-								await this.say("mcp_server_request_started") // same as browser_action_result
-								const toolResult = await this.providerRef
-									.deref()
-									?.mcpHub?.callTool(server_name, tool_name, parsedArguments)
-
-								// TODO: add progress indicator and ability to parse images and non-text responses
-								const toolResultPretty =
-									(toolResult?.isError ? "Error:\n" : "") +
-										toolResult?.content
-											.map((item) => {
-												if (item.type === "text") {
-													return item.text
-												}
-												if (item.type === "resource") {
-													const { blob, ...rest } = item.resource
-													return JSON.stringify(rest, null, 2)
-												}
-												return ""
-											})
-											.filter(Boolean)
-											.join("\n\n") || "(No response)"
-								await this.say("mcp_server_response", toolResultPretty)
-								pushToolResult(formatResponse.toolResult(toolResultPretty))
-								break
-							}
-						} catch (error) {
-							await handleError("executing MCP tool", error)
-							break
-						}
-					}
-					case "access_mcp_resource": {
-						const server_name: string | undefined = block.params.server_name
-						const uri: string | undefined = block.params.uri
-						try {
-							if (block.partial) {
-								const partialMessage = JSON.stringify({
-									type: "access_mcp_resource",
-									serverName: removeClosingTag("server_name", server_name),
-									uri: removeClosingTag("uri", uri),
-								} satisfies ClineAskUseMcpServer)
-								await this.ask("use_mcp_server", partialMessage, block.partial).catch(() => {})
-								break
-							} else {
-								if (!server_name) {
-									this.consecutiveMistakeCount++
-									pushToolResult(
-										await this.sayAndCreateMissingParamError("access_mcp_resource", "server_name"),
-									)
-									break
-								}
-								if (!uri) {
-									this.consecutiveMistakeCount++
-									pushToolResult(
-										await this.sayAndCreateMissingParamError("access_mcp_resource", "uri"),
-									)
-									break
-								}
-								this.consecutiveMistakeCount = 0
-								const completeMessage = JSON.stringify({
-									type: "access_mcp_resource",
-									serverName: server_name,
-									uri,
-								} satisfies ClineAskUseMcpServer)
-								const didApprove = await askApproval("use_mcp_server", completeMessage)
-								if (!didApprove) {
-									break
-								}
-								// now execute the tool
-								await this.say("mcp_server_request_started")
-								const resourceResult = await this.providerRef
-									.deref()
-									?.mcpHub?.readResource(server_name, uri)
-								const resourceResultPretty =
-									resourceResult?.contents
-										.map((item) => {
-											if (item.text) {
-												return item.text
-											}
-											return ""
-										})
-										.filter(Boolean)
-										.join("\n\n") || "(Empty response)"
-								await this.say("mcp_server_response", resourceResultPretty)
-								pushToolResult(formatResponse.toolResult(resourceResultPretty))
-								break
-							}
-						} catch (error) {
-							await handleError("accessing MCP resource", error)
-							break
-						}
-					}
-					case "ask_followup_question": {
-						const question: string | undefined = block.params.question
-						try {
-							if (block.partial) {
-								await this.ask("followup", removeClosingTag("question", question), block.partial).catch(
-									() => {},
-								)
-								break
-							} else {
-								if (!question) {
-									this.consecutiveMistakeCount++
-									pushToolResult(
-										await this.sayAndCreateMissingParamError("ask_followup_question", "question"),
-									)
-									break
-								}
-								this.consecutiveMistakeCount = 0
-								const { text, images } = await this.ask("followup", question, false)
-								await this.say("user_feedback", text ?? "", images)
-								pushToolResult(formatResponse.toolResult(`<answer>\n${text}\n</answer>`, images))
-								break
-							}
-						} catch (error) {
-							await handleError("asking question", error)
-							break
-						}
-					}
-					case "switch_mode": {
-						const mode_slug: string | undefined = block.params.mode_slug
-						const reason: string | undefined = block.params.reason
-						try {
-							if (block.partial) {
-								const partialMessage = JSON.stringify({
-									tool: "switchMode",
-									mode: removeClosingTag("mode_slug", mode_slug),
-									reason: removeClosingTag("reason", reason),
-								})
-								await this.ask("tool", partialMessage, block.partial).catch(() => {})
-								break
-							} else {
-								if (!mode_slug) {
-									this.consecutiveMistakeCount++
-									pushToolResult(await this.sayAndCreateMissingParamError("switch_mode", "mode_slug"))
-									break
-								}
-								this.consecutiveMistakeCount = 0
-
-								// Verify the mode exists
-								const targetMode = getModeBySlug(
-									mode_slug,
-									(await this.providerRef.deref()?.getState())?.customModes,
-								)
-								if (!targetMode) {
-									pushToolResult(formatResponse.toolError(`Invalid mode: ${mode_slug}`))
-									break
-								}
-
-								// Check if already in requested mode
-								const currentMode =
-									(await this.providerRef.deref()?.getState())?.mode ?? defaultModeSlug
-								if (currentMode === mode_slug) {
-									pushToolResult(`Already in ${targetMode.name} mode.`)
-									break
-								}
-
-								const completeMessage = JSON.stringify({
-									tool: "switchMode",
-									mode: mode_slug,
-									reason,
-								})
-
-								const didApprove = await askApproval("tool", completeMessage)
-								if (!didApprove) {
-									break
-								}
-
-								// Switch the mode using shared handler
-								const provider = this.providerRef.deref()
-								if (provider) {
-									await provider.handleModeSwitch(mode_slug)
-								}
-								pushToolResult(
-									`Successfully switched from ${getModeBySlug(currentMode)?.name ?? currentMode} mode to ${
-										targetMode.name
-									} mode${reason ? ` because: ${reason}` : ""}.`,
-								)
-								break
-							}
-						} catch (error) {
-							await handleError("switching mode", error)
-							break
-						}
-					}
-
-					case "attempt_completion": {
-						/*
-						this.consecutiveMistakeCount = 0
-						let resultToSend = result
-						if (command) {
-							await this.say("completion_result", resultToSend)
-							// TODO: currently we don't handle if this command fails, it could be useful to let cline know and retry
-							const [didUserReject, commandResult] = await this.executeCommand(command, true)
-							// if we received non-empty string, the command was rejected or failed
-							if (commandResult) {
-								return [didUserReject, commandResult]
-							}
-							resultToSend = ""
-						}
-						const { response, text, images } = await this.ask("completion_result", resultToSend) // this prompts webview to show 'new task' button, and enable text input (which would be the 'text' here)
-						if (response === "yesButtonClicked") {
-							return [false, ""] // signals to recursive loop to stop (for now this never happens since yesButtonClicked will trigger a new task)
-						}
-						await this.say("user_feedback", text ?? "", images)
-						return [
-						*/
-						const result: string | undefined = block.params.result
-						const command: string | undefined = block.params.command
-						try {
-							const lastMessage = this.clineMessages.at(-1)
-							if (block.partial) {
-								if (command) {
-									// the attempt_completion text is done, now we're getting command
-									// remove the previous partial attempt_completion ask, replace with say, post state to webview, then stream command
-
-									// const secondLastMessage = this.clineMessages.at(-2)
-									if (lastMessage && lastMessage.ask === "command") {
-										// update command
-										await this.ask(
-											"command",
-											removeClosingTag("command", command),
-											block.partial,
-										).catch(() => {})
-									} else {
-										// last message is completion_result
-										// we have command string, which means we have the result as well, so finish it (doesnt have to exist yet)
-										await this.say(
-											"completion_result",
-											removeClosingTag("result", result),
-											undefined,
-											false,
-										)
-										await this.ask(
-											"command",
-											removeClosingTag("command", command),
-											block.partial,
-										).catch(() => {})
-									}
-								} else {
-									// no command, still outputting partial result
-									await this.say(
-										"completion_result",
-										removeClosingTag("result", result),
-										undefined,
-										block.partial,
-									)
-								}
-								break
-							} else {
-								if (!result) {
-									this.consecutiveMistakeCount++
-									pushToolResult(
-										await this.sayAndCreateMissingParamError("attempt_completion", "result"),
-									)
-									break
-								}
-								this.consecutiveMistakeCount = 0
-
-								let commandResult: ToolResponse | undefined
-								if (command) {
-									if (lastMessage && lastMessage.ask !== "command") {
-										// havent sent a command message yet so first send completion_result then command
-										await this.say("completion_result", result, undefined, false)
-									}
-
-									// complete command message
-									const didApprove = await askApproval("command", command)
-									if (!didApprove) {
-										break
-									}
-									const [userRejected, execCommandResult] = await this.executeCommandTool(command!)
-									if (userRejected) {
-										this.didRejectTool = true
-										pushToolResult(execCommandResult)
-										break
-									}
-									// user didn't reject, but the command may have output
-									commandResult = execCommandResult
-								} else {
-									await this.say("completion_result", result, undefined, false)
-								}
-
-								// we already sent completion_result says, an empty string asks relinquishes control over button and field
-								const { response, text, images } = await this.ask("completion_result", "", false)
-								if (response === "yesButtonClicked") {
-									pushToolResult("") // signals to recursive loop to stop (for now this never happens since yesButtonClicked will trigger a new task)
-									break
-								}
-								await this.say("user_feedback", text ?? "", images)
-
-								const toolResults: (Anthropic.TextBlockParam | Anthropic.ImageBlockParam)[] = []
-								if (commandResult) {
-									if (typeof commandResult === "string") {
-										toolResults.push({ type: "text", text: commandResult })
-									} else if (Array.isArray(commandResult)) {
-										toolResults.push(...commandResult)
-									}
-								}
-								toolResults.push({
-									type: "text",
-									text: `The user has provided feedback on the results. Consider their input to continue the task, and then attempt completion again.\n<feedback>\n${text}\n</feedback>`,
-								})
-								toolResults.push(...formatResponse.imageBlocks(images))
-								this.userMessageContent.push({
-									type: "text",
-									text: `${toolDescription()} Result:`,
-								})
-								this.userMessageContent.push(...toolResults)
-
-								break
-							}
-						} catch (error) {
-							await handleError("inspecting site", error)
-							break
-						}
-					}
-				}
-				break
 		}
 
 		/*
@@ -2187,24 +1110,23 @@ export class Cline {
 				// there are already more content blocks to stream, so we'll call this function ourselves
 				// await this.presentAssistantContent()
 
-				this.presentAssistantMessage()
+				this.handleAssistantMessage()
 				return
 			}
 		}
 		// block is partial, but the read stream may have finished
 		if (this.presentAssistantMessageHasPendingUpdates) {
-			this.presentAssistantMessage()
+			this.handleAssistantMessage()
 		}
 	}
 
 	async applyTool(block: ToolUse){
 		console.log('[waht] try apply tool',block)
-		if (block.name in this.executor.types){
+		if (this.executor.types.includes(block.name)) {
 			const command = {
 				type: block.name,
 				...block.params
 			}
-			console.log('[waht] apply', command)
 			return await this.executor.runCommand(command as any) ?? 'no result return'
 		}
 		return;
@@ -2345,7 +1267,7 @@ export class Cline {
 			this.userMessageContent = []
 			this.userMessageContentReady = false
 			this.didRejectTool = false
-			this.didAlreadyUseTool = false
+			this.didGetNewMessage = false
 			this.presentAssistantMessageLocked = false
 			this.presentAssistantMessageHasPendingUpdates = false
 			await this.diffViewProvider.reset()
@@ -2373,11 +1295,12 @@ export class Cline {
 							// parse raw assistant message into content blocks
 							const prevLength = this.assistantMessageContent.length
 							this.assistantMessageContent = parseBlocks(assistantMessage)
+							const replacing = this.assistantMessageContent.length > prevLength
 							if (this.assistantMessageContent.length > prevLength) {
 								this.userMessageContentReady = false // new content we need to present, reset to false in case previous content set this to true
 							}
 							// present content to user
-							this.presentAssistantMessage()
+							this.handleAssistantMessage(replacing)
 							break
 					}
 
@@ -2430,7 +1353,7 @@ export class Cline {
 				block.partial = false
 			})
 			if (partialBlocks.length > 0) {
-				await this.presentAssistantMessage() // if there is content to update then it will complete and update this.userMessageContentReady to true, which we pwaitfor before making the next request. all this is really doing is presenting the last partial message that we just set to complete
+				await this.handleAssistantMessage() // if there is content to update then it will complete and update this.userMessageContentReady to true, which we pwaitfor before making the next request. all this is really doing is presenting the last partial message that we just set to complete
 			}
 
 			updateApiReqMsg()
@@ -2457,17 +1380,17 @@ export class Cline {
 				await pWaitFor(() => this.userMessageContentReady)
 
 				// if the model did not tool use, then we need to tell it to either use a tool or attempt_completion
-				const didToolUse = this.assistantMessageContent.some((block) => block.type === "tool_use")
-				if (!didToolUse) {
+				// const didToolUse = this.assistantMessageContent.some((block) => block.type === "tool_use")
+				if (!this.didGetNewMessage) {
 					this.userMessageContent.push({
 						type: "text",
 						text: formatResponse.noToolsUsed(),
 					})
 					this.consecutiveMistakeCount++
+					return true;
+				} else {
+					didEndLoop = await this.recursivelyMakeClineRequests(this.userMessageContent)
 				}
-
-				const recDidEndLoop = await this.recursivelyMakeClineRequests(this.userMessageContent)
-				didEndLoop = recDidEndLoop
 			} else {
 				// if there's no assistant_responses, that means we got no text or tool_use content blocks from API which we should assume is an error
 				await this.say(
@@ -2480,7 +1403,7 @@ export class Cline {
 				})
 			}
 
-			return didEndLoop // will always be false for now
+			return didEndLoop
 		} catch (error) {
 			// this should never happen since the only thing that can throw an error is the attemptApiRequest, which is wrapped in a try catch that sends an ask where if noButtonClicked, will clear current task and destroy this instance. However to avoid unhandled promise rejection, we will end this loop which will end execution of this instance (see startTask)
 			return true // needs to be true so parent loop knows to end task

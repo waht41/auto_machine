@@ -30,7 +30,7 @@ export class CommandRunner {
             return;
         }
 
-        await executor.execute(command, this.context);
+        return await executor.execute(command, this.context);
     }
 
     // 获取已定义的宏
