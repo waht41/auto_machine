@@ -237,11 +237,26 @@ export class Cline {
 
 	// Communicate with webview
 
+	async askP({
+				   type,
+				   text,
+				   partial,
+		replacing = false,
+			   }: {
+		type: ClineAsk,
+		text?: string,
+		partial?: boolean,
+		replacing?: boolean
+	}) {
+		return await this.ask(type, text, partial, replacing)
+	}
+
 	// partial has three valid states true (partial message), false (completion of partial message), undefined (individual complete message)
 	async ask(
 		type: ClineAsk,
 		text?: string,
 		partial?: boolean,
+		replacing = false,
 	): Promise<{ response: ClineAskResponse; text?: string; images?: string[] }> {
 		// If this Cline instance was aborted by the provider, then the only thing keeping us alive is a promise still running in the background, in which case we don't want to send its result to the webview as it is attached to a new instance of Cline now. So we can safely ignore the result of any active promises, and this class will be deallocated. (Although we set Cline = undefined in provider, that simply removes the reference to this instance, but the instance is still alive until this promise resolves or rejects.)
 		if (this.abort) {
@@ -251,12 +266,15 @@ export class Cline {
 		if (partial !== undefined) {
 			const lastMessage = this.clineMessages.at(-1)
 			const isUpdatingPreviousPartial =
-				lastMessage && lastMessage.partial && lastMessage.type === "ask" && lastMessage.ask === type
+				lastMessage && lastMessage.partial && (lastMessage.ask === type || replacing)
 			if (partial) {
 				if (isUpdatingPreviousPartial) {
 					// existing partial message, so update it
 					lastMessage.text = text
 					lastMessage.partial = partial
+					lastMessage.ask = type
+					lastMessage.say = undefined
+					lastMessage.type = "ask"
 					// todo be more efficient about saving and posting only new data or one whole message at a time so ignore partial for saves, and only post parts of partial message instead of whole array in new listener
 					// await this.saveClineMessages()
 					// await this.providerRef.deref()?.postStateToWebview()
@@ -292,6 +310,9 @@ export class Cline {
 					askTs = lastMessage.ts
 					this.lastMessageTs = askTs
 					// lastMessage.ts = askTs
+					lastMessage.ask = type
+					lastMessage.say = undefined
+					lastMessage.type = "ask"
 					lastMessage.text = text
 					lastMessage.partial = false
 					await this.saveClineMessages()
@@ -352,7 +373,7 @@ export class Cline {
 		partial?: boolean,
 		replacing?: boolean
 	}) {
-		await this.say(type, text, images, partial, replacing)
+		return await this.say(type, text, images, partial, replacing)
 	}
 
 	async say(type: ClineSay, text?: string, images?: string[], partial?: boolean, replacing = false): Promise<undefined> {
@@ -367,6 +388,7 @@ export class Cline {
 			if (partial) {
 				if (isUpdatingPreviousPartial) {
 					// existing partial message, so update it
+					lastMessage.say = type
 					lastMessage.text = text
 					lastMessage.images = images
 					lastMessage.partial = partial
@@ -386,6 +408,7 @@ export class Cline {
 					// this is the complete version of a previously partial message, so replace the partial with the complete version
 					this.lastMessageTs = lastMessage.ts
 					// lastMessage.ts = sayTs
+					lastMessage.say = type
 					lastMessage.text = text
 					lastMessage.images = images
 					lastMessage.partial = false
