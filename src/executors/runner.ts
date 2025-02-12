@@ -22,7 +22,7 @@ export class CommandRunner {
         }
     }
 
-    async runCommand(command: Command) {
+    async runCommand(command: Command, context: any): Promise<any> {
         const executor = this.registry.getExecutor(command.type);
         
         if (!executor) {
@@ -30,7 +30,7 @@ export class CommandRunner {
             return;
         }
 
-        return await executor.execute(command, this.context);
+        return await executor.execute(command, context);
     }
 
     // 获取已定义的宏

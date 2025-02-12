@@ -339,7 +339,23 @@ export class Cline {
 		this.askResponseImages = images
 	}
 
-	async say(type: ClineSay, text?: string, images?: string[], partial?: boolean, replace = false): Promise<undefined> {
+	async sayP({
+				   type,
+				   text,
+				   images,
+				   partial,
+				   replacing = false,
+			   }: {
+		type: ClineSay,
+		text?: string,
+		images?: string[],
+		partial?: boolean,
+		replacing?: boolean
+	}) {
+		await this.say(type, text, images, partial, replacing)
+	}
+
+	async say(type: ClineSay, text?: string, images?: string[], partial?: boolean, replacing = false): Promise<undefined> {
 		if (this.abort) {
 			throw new Error("Roo Code instance aborted")
 		}
@@ -347,7 +363,7 @@ export class Cline {
 		if (partial !== undefined) {
 			const lastMessage = this.clineMessages.at(-1)
 			const isUpdatingPreviousPartial =
-				lastMessage && lastMessage.partial && lastMessage.type === "say" && (lastMessage.say === type || replace)
+				lastMessage && lastMessage.partial && (lastMessage.say === type || replacing)
 			if (partial) {
 				if (isUpdatingPreviousPartial) {
 					// existing partial message, so update it
@@ -1079,7 +1095,7 @@ export class Cline {
 
 				try {
 					console.log('[waht] 开始执行tool', block)
-					const res = await this.applyTool(block)
+					const res = await this.applyTool(block, {'cline':this,'replacing':replacing})
 					if (typeof res === "string") {
 						console.log('[waht] 执行tool 返回结果: ',res)
 						pushToolResult(res)
@@ -1120,14 +1136,14 @@ export class Cline {
 		}
 	}
 
-	async applyTool(block: ToolUse){
+	async applyTool(block: ToolUse, context?: any): Promise<any> {
 		console.log('[waht] try apply tool',block)
 		if (this.executor.types.includes(block.name)) {
 			const command = {
 				type: block.name,
 				...block.params
 			}
-			return await this.executor.runCommand(command as any) ?? 'no result return'
+			return await this.executor.runCommand(command as any, context) ?? 'no result return'
 		}
 		return;
 	}
@@ -1295,7 +1311,7 @@ export class Cline {
 							// parse raw assistant message into content blocks
 							const prevLength = this.assistantMessageContent.length
 							this.assistantMessageContent = parseBlocks(assistantMessage)
-							const replacing = this.assistantMessageContent.length > prevLength
+							const replacing = this.assistantMessageContent.length <= prevLength
 							if (this.assistantMessageContent.length > prevLength) {
 								this.userMessageContentReady = false // new content we need to present, reset to false in case previous content set this to true
 							}

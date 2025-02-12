@@ -1,4 +1,6 @@
-export type CommandType = 'click' | 'type' | 'open' | 'define' | 'external';
+import { ExecutionContext } from "@/executors/command-executor";
+
+export type CommandType = 'click' | 'type' | 'open' | 'define' | 'external' | 'ask_followup_question';
 
 export interface BaseCommand {
     type: CommandType;
@@ -31,4 +33,10 @@ export interface ExternalCommand extends BaseCommand {
     request: string;
 }
 
-export type Command = ClickCommand | TypeCommand | OpenCommand | MacroDefinition | ExternalCommand;
+export interface AskFollowupQuestionCommand extends BaseCommand {
+    type: 'ask_followup_question';
+    question: string;
+    context?: ExecutionContext;
+}
+
+export type Command = ClickCommand | TypeCommand | OpenCommand | MacroDefinition | ExternalCommand | AskFollowupQuestionCommand;

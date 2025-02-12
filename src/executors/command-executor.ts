@@ -6,7 +6,7 @@ export interface ExecutionContext {
 }
 
 export interface CommandExecutor {
-    execute(command: Command, context: ExecutionContext): any;
+    execute(command: Command, context: any): any;
 }
 
 export class SafeCommandExecutor implements CommandExecutor {
@@ -19,11 +19,13 @@ export class SafeCommandExecutor implements CommandExecutor {
         try {
             return await this.wrapped.execute(command, context);
         } catch (e) {
-            this.errorHandler(e as Error, command);
+            return this.errorHandler(e as Error, command);
         }
     }
 }
 
-export function defaultErrorHandler(error: Error, command: Command): void {
-    console.error(`Error executing command ${command.type}: ${error.message}`);
+export function defaultErrorHandler(error: Error, command: Command) {
+    const errorMessage = `Error executing command ${command.type}: ${error.message}`;
+    console.error(errorMessage);
+    return errorMessage;
 }
