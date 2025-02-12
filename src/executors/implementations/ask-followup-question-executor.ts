@@ -9,7 +9,7 @@ export class AskFollowupQuestionCommandExecutor implements CommandExecutor {
         const cline: Cline = context?.['cline'];
         const replacing = context?.['replacing'];
         console.log('[waht] ask_followup_question', command.question, replacing);
-        await cline.askP({type: 'followup', text: command.question, partial: false, replacing: replacing});
+        await cline.askP({askType: 'followup', text: command.question, partial: false, replacing: replacing});
         return true;
     }
 }

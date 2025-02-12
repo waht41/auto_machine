@@ -238,22 +238,22 @@ export class Cline {
 	// Communicate with webview
 
 	async askP({
-				   type,
+				   askType,
 				   text,
 				   partial,
 		replacing = false,
 			   }: {
-		type: ClineAsk,
+		askType: ClineAsk,
 		text?: string,
 		partial?: boolean,
 		replacing?: boolean
 	}) {
-		return await this.ask(type, text, partial, replacing)
+		return await this.ask(askType, text, partial, replacing)
 	}
 
 	// partial has three valid states true (partial message), false (completion of partial message), undefined (individual complete message)
 	async ask(
-		type: ClineAsk,
+		askType: ClineAsk,
 		text?: string,
 		partial?: boolean,
 		replacing = false,
@@ -266,13 +266,13 @@ export class Cline {
 		if (partial !== undefined) {
 			const lastMessage = this.clineMessages.at(-1)
 			const isUpdatingPreviousPartial =
-				lastMessage && lastMessage.partial && (lastMessage.ask === type || replacing)
+				lastMessage && lastMessage.partial && (lastMessage.ask === askType || replacing)
 			if (partial) {
 				if (isUpdatingPreviousPartial) {
 					// existing partial message, so update it
 					lastMessage.text = text
 					lastMessage.partial = partial
-					lastMessage.ask = type
+					lastMessage.ask = askType
 					lastMessage.say = undefined
 					lastMessage.type = "ask"
 					// todo be more efficient about saving and posting only new data or one whole message at a time so ignore partial for saves, and only post parts of partial message instead of whole array in new listener
@@ -289,7 +289,7 @@ export class Cline {
 					// this.askResponseImages = undefined
 					askTs = Date.now()
 					this.lastMessageTs = askTs
-					await this.addToClineMessages({ ts: askTs, type: "ask", ask: type, text, partial })
+					await this.addToClineMessages({ ts: askTs, type: "ask", ask: askType, text, partial })
 					await this.providerRef.deref()?.postStateToWebview()
 					throw new Error("Current ask promise was ignored 2")
 				}
@@ -310,7 +310,7 @@ export class Cline {
 					askTs = lastMessage.ts
 					this.lastMessageTs = askTs
 					// lastMessage.ts = askTs
-					lastMessage.ask = type
+					lastMessage.ask = askType
 					lastMessage.say = undefined
 					lastMessage.type = "ask"
 					lastMessage.text = text
@@ -327,7 +327,7 @@ export class Cline {
 					this.askResponseImages = undefined
 					askTs = Date.now()
 					this.lastMessageTs = askTs
-					await this.addToClineMessages({ ts: askTs, type: "ask", ask: type, text })
+					await this.addToClineMessages({ ts: askTs, type: "ask", ask: askType, text })
 					await this.providerRef.deref()?.postStateToWebview()
 				}
 			}
@@ -339,7 +339,7 @@ export class Cline {
 			this.askResponseImages = undefined
 			askTs = Date.now()
 			this.lastMessageTs = askTs
-			await this.addToClineMessages({ ts: askTs, type: "ask", ask: type, text })
+			await this.addToClineMessages({ ts: askTs, type: "ask", ask: askType, text })
 			await this.providerRef.deref()?.postStateToWebview()
 		}
 
@@ -361,22 +361,22 @@ export class Cline {
 	}
 
 	async sayP({
-				   type,
+				   sayType,
 				   text,
 				   images,
 				   partial,
 				   replacing = false,
 			   }: {
-		type: ClineSay,
+		sayType: ClineSay,
 		text?: string,
 		images?: string[],
 		partial?: boolean,
 		replacing?: boolean
 	}) {
-		return await this.say(type, text, images, partial, replacing)
+		return await this.say(sayType, text, images, partial, replacing)
 	}
 
-	async say(type: ClineSay, text?: string, images?: string[], partial?: boolean, replacing = false): Promise<undefined> {
+	async say(sayType: ClineSay, text?: string, images?: string[], partial?: boolean, replacing = false): Promise<undefined> {
 		if (this.abort) {
 			throw new Error("Roo Code instance aborted")
 		}
@@ -384,11 +384,12 @@ export class Cline {
 		if (partial !== undefined) {
 			const lastMessage = this.clineMessages.at(-1)
 			const isUpdatingPreviousPartial =
-				lastMessage && lastMessage.partial && (lastMessage.say === type || replacing)
+				lastMessage && lastMessage.partial && (lastMessage.say === sayType || replacing)
 			if (partial) {
 				if (isUpdatingPreviousPartial) {
 					// existing partial message, so update it
-					lastMessage.say = type
+					lastMessage.type = "say"
+					lastMessage.say = sayType
 					lastMessage.text = text
 					lastMessage.images = images
 					lastMessage.partial = partial
@@ -399,7 +400,7 @@ export class Cline {
 					// this is a new partial message, so add it with partial state
 					const sayTs = Date.now()
 					this.lastMessageTs = sayTs
-					await this.addToClineMessages({ ts: sayTs, type: "say", say: type, text, images, partial })
+					await this.addToClineMessages({ ts: sayTs, type: "say", say: sayType, text, images, partial })
 					await this.providerRef.deref()?.postStateToWebview()
 				}
 			} else {
@@ -408,7 +409,8 @@ export class Cline {
 					// this is the complete version of a previously partial message, so replace the partial with the complete version
 					this.lastMessageTs = lastMessage.ts
 					// lastMessage.ts = sayTs
-					lastMessage.say = type
+					lastMessage.type = "say"
+					lastMessage.say = sayType
 					lastMessage.text = text
 					lastMessage.images = images
 					lastMessage.partial = false
@@ -423,7 +425,7 @@ export class Cline {
 					// this is a new partial=false message, so add it like normal
 					const sayTs = Date.now()
 					this.lastMessageTs = sayTs
-					await this.addToClineMessages({ ts: sayTs, type: "say", say: type, text, images })
+					await this.addToClineMessages({ ts: sayTs, type: "say", say: sayType, text, images })
 					await this.providerRef.deref()?.postStateToWebview()
 				}
 			}
@@ -431,7 +433,7 @@ export class Cline {
 			// this is a new non-partial message, so add it like normal
 			const sayTs = Date.now()
 			this.lastMessageTs = sayTs
-			await this.addToClineMessages({ ts: sayTs, type: "say", say: type, text, images })
+			await this.addToClineMessages({ ts: sayTs, type: "say", say: sayType, text, images })
 			await this.providerRef.deref()?.postStateToWebview()
 		}
 	}
