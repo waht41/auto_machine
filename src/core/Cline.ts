@@ -1417,17 +1417,25 @@ export class Cline {
 				// if (this.currentStreamingContentIndex >= completeBlocks.length) {
 				// 	this.userMessageContentReady = true
 				// }
-
+				console.log('[waht] waiting for user message content ready', assistantMessage)
 				await pWaitFor(() => this.userMessageContentReady)
+				console.log('[waht] wait end')
 
 				// if the model did not tool use, then we need to tell it to either use a tool or attempt_completion
 				// const didToolUse = this.assistantMessageContent.some((block) => block.type === "tool_use")
 				if (!this.didGetNewMessage) {
-					this.userMessageContent.push({
-						type: "text",
-						text: formatResponse.noToolsUsed(),
-					})
+					// this.userMessageContent.push({
+					// 	type: "text",
+					// 	text: formatResponse.noToolsUsed(),
+					// })
+                    await this.askP({
+                        askType: 'followup',
+                        text: 'roo stop the conversion, should resume?',
+                        partial: false,
+                        replacing: false
+                    })
 					this.consecutiveMistakeCount++
+					console.log('[waht] no new message get')
 					return true;
 				} else {
 					didEndLoop = await this.recursivelyMakeClineRequests(this.userMessageContent)
