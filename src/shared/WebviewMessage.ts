@@ -36,7 +36,6 @@ export interface WebviewMessage {
 		| "openFile"
 		| "openMention"
 		| "cancelTask"
-		| "refreshGlamaModels"
 		| "refreshOpenRouterModels"
 		| "refreshOpenAiModels"
 		| "alwaysAllowBrowser"
@@ -80,6 +79,7 @@ export interface WebviewMessage {
 		| "deleteCustomMode"
 		| "setopenAiCustomModelInfo"
 		| "openCustomModesSettings"
+		| "resumeTask"
 	text?: string
 	disabled?: boolean
 	askResponse?: ClineAskResponse

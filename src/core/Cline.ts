@@ -123,7 +123,27 @@ export class Cline {
 		if (task || images) {
 			this.startTask(task, images)
 		} else if (historyItem) {
-			this.resumeTaskFromHistory()
+			if (historyItem.newMessage || historyItem.newImages) {
+				const userContent: UserContent = []
+				if (historyItem.newMessage) {
+					userContent.push({type: "text", text: historyItem.newMessage})
+				}
+				if (historyItem.newImages) {
+					historyItem.newImages.forEach((image) => {
+						userContent.push({
+							type: "image", source: {
+								data: image,
+								type: "base64",
+								media_type: "image/png"
+							}
+						})
+					})
+				}
+				this.resumeTask(userContent)
+			}
+			else {
+				this.resumeTaskFromHistory()
+			}
 		}
 	}
 
@@ -467,6 +487,12 @@ export class Cline {
 			},
 			...imageBlocks,
 		])
+	}
+
+	private async resumeTask(message: UserContent) {
+		this.clineMessages = await this.getSavedClineMessages()
+		this.apiConversationHistory = await this.getSavedApiConversationHistory()
+		this.initiateTaskLoop(message)
 	}
 
 	private async resumeTaskFromHistory() {

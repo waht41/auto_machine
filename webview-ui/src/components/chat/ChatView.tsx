@@ -292,6 +292,8 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 			if (text || images.length > 0) {
 				if (messages.length === 0) {
 					vscode.postMessage({ type: "newTask", text, images })
+				} else if (messages.length > 0) {
+					vscode.postMessage({ type: "resumeTask", text, images })
 				} else if (clineAsk) {
 					switch (clineAsk) {
 						case "followup":

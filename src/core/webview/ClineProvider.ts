@@ -591,6 +591,16 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 						// initializing new instance of Cline will make sure that any agentically running promises in old instance don't affect our new task. this essentially creates a fresh slate for the new task
 						await this.initClineWithTask(message.text, message.images)
 						break
+					case "resumeTask":
+						if (this.cline){
+							const { historyItem } = await this.getTaskWithId(this.cline.taskId)
+							console.log('[waht] history item', historyItem)
+							await this.initClineWithHistoryItem(Object.assign(historyItem, {newMessage: message.text, newImages: message.images}))
+						} else {
+							await this.initClineWithTask(message.text, message.images)
+						}
+
+						break
 					case "apiConfiguration":
 						if (message.apiConfiguration) {
 							await this.updateApiConfiguration(message.apiConfiguration)
