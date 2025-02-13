@@ -39,6 +39,10 @@ export class GlobalState implements vscode.Memento {
         return value !== undefined ? value : defaultValue;
     }
 
+    getAll(): Record<string, any> {
+        return this.cache;
+    }
+
     keys(): readonly string[] {
         return Object.keys(this.cache);
     }

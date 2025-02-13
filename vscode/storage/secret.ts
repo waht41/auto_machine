@@ -54,4 +54,8 @@ export class MockSecretStorage implements vscode.SecretStorage {
             await this.writeStorage(this.cache);
         }
     }
+
+    async getAll(): Promise<Record<string, string>> {
+        return this.cache;
+    }
 }

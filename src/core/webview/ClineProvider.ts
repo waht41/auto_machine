@@ -1976,17 +1976,21 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 	*/
 
 	async getState() {
-		const [
-			storedApiProvider,
+		const [globalStates, secrets] = await Promise.all([
+			this.getGlobalStates(),
+			this.getSecrets()
+		]);
+
+		// 合并配置对象（secrets 会覆盖同名的 globalStates）
+		const config = { ...globalStates, ...secrets };
+
+		// 使用对象解构提取所有配置项
+		const {
+			// Global states
+			apiProvider: storedApiProvider,
 			apiModelId,
-			apiKey,
-			glamaApiKey,
 			glamaModelId,
 			glamaModelInfo,
-			openRouterApiKey,
-			awsAccessKey,
-			awsSecretKey,
-			awsSessionToken,
 			awsRegion,
 			awsUseCrossRegionInference,
 			awsProfile,
@@ -1994,7 +1998,6 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 			vertexProjectId,
 			vertexRegion,
 			openAiBaseUrl,
-			openAiApiKey,
 			openAiModelId,
 			openAiCustomModelInfo,
 			openAiUseAzure,
@@ -2003,10 +2006,6 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 			lmStudioModelId,
 			lmStudioBaseUrl,
 			anthropicBaseUrl,
-			geminiApiKey,
-			openAiNativeApiKey,
-			deepSeekApiKey,
-			mistralApiKey,
 			azureApiVersion,
 			openAiStreamingEnabled,
 			openRouterModelId,
@@ -2044,77 +2043,22 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 			enhancementApiConfigId,
 			experimentalDiffStrategy,
 			autoApprovalEnabled,
-			customModes,
-		] = await Promise.all([
-			this.getGlobalState("apiProvider") as Promise<ApiProvider | undefined>,
-			this.getGlobalState("apiModelId") as Promise<string | undefined>,
-			this.getSecret("apiKey") as Promise<string | undefined>,
-			this.getSecret("glamaApiKey") as Promise<string | undefined>,
-			this.getGlobalState("glamaModelId") as Promise<string | undefined>,
-			this.getGlobalState("glamaModelInfo") as Promise<ModelInfo | undefined>,
-			this.getSecret("openRouterApiKey") as Promise<string | undefined>,
-			this.getSecret("awsAccessKey") as Promise<string | undefined>,
-			this.getSecret("awsSecretKey") as Promise<string | undefined>,
-			this.getSecret("awsSessionToken") as Promise<string | undefined>,
-			this.getGlobalState("awsRegion") as Promise<string | undefined>,
-			this.getGlobalState("awsUseCrossRegionInference") as Promise<boolean | undefined>,
-			this.getGlobalState("awsProfile") as Promise<string | undefined>,
-			this.getGlobalState("awsUseProfile") as Promise<boolean | undefined>,
-			this.getGlobalState("vertexProjectId") as Promise<string | undefined>,
-			this.getGlobalState("vertexRegion") as Promise<string | undefined>,
-			this.getGlobalState("openAiBaseUrl") as Promise<string | undefined>,
-			this.getSecret("openAiApiKey") as Promise<string | undefined>,
-			this.getGlobalState("openAiModelId") as Promise<string | undefined>,
-			this.getGlobalState("openAiCustomModelInfo") as Promise<ModelInfo | undefined>,
-			this.getGlobalState("openAiUseAzure") as Promise<boolean | undefined>,
-			this.getGlobalState("ollamaModelId") as Promise<string | undefined>,
-			this.getGlobalState("ollamaBaseUrl") as Promise<string | undefined>,
-			this.getGlobalState("lmStudioModelId") as Promise<string | undefined>,
-			this.getGlobalState("lmStudioBaseUrl") as Promise<string | undefined>,
-			this.getGlobalState("anthropicBaseUrl") as Promise<string | undefined>,
-			this.getSecret("geminiApiKey") as Promise<string | undefined>,
-			this.getSecret("openAiNativeApiKey") as Promise<string | undefined>,
-			this.getSecret("deepSeekApiKey") as Promise<string | undefined>,
-			this.getSecret("mistralApiKey") as Promise<string | undefined>,
-			this.getGlobalState("azureApiVersion") as Promise<string | undefined>,
-			this.getGlobalState("openAiStreamingEnabled") as Promise<boolean | undefined>,
-			this.getGlobalState("openRouterModelId") as Promise<string | undefined>,
-			this.getGlobalState("openRouterModelInfo") as Promise<ModelInfo | undefined>,
-			this.getGlobalState("openRouterBaseUrl") as Promise<string | undefined>,
-			this.getGlobalState("openRouterUseMiddleOutTransform") as Promise<boolean | undefined>,
-			this.getGlobalState("lastShownAnnouncementId") as Promise<string | undefined>,
-			this.getGlobalState("customInstructions") as Promise<string | undefined>,
-			this.getGlobalState("alwaysAllowReadOnly") as Promise<boolean | undefined>,
-			this.getGlobalState("alwaysAllowWrite") as Promise<boolean | undefined>,
-			this.getGlobalState("alwaysAllowExecute") as Promise<boolean | undefined>,
-			this.getGlobalState("alwaysAllowBrowser") as Promise<boolean | undefined>,
-			this.getGlobalState("alwaysAllowMcp") as Promise<boolean | undefined>,
-			this.getGlobalState("taskHistory") as Promise<HistoryItem[] | undefined>,
-			this.getGlobalState("allowedCommands") as Promise<string[] | undefined>,
-			this.getGlobalState("soundEnabled") as Promise<boolean | undefined>,
-			this.getGlobalState("diffEnabled") as Promise<boolean | undefined>,
-			this.getGlobalState("soundVolume") as Promise<number | undefined>,
-			this.getGlobalState("browserViewportSize") as Promise<string | undefined>,
-			this.getGlobalState("fuzzyMatchThreshold") as Promise<number | undefined>,
-			this.getGlobalState("preferredLanguage") as Promise<string | undefined>,
-			this.getGlobalState("writeDelayMs") as Promise<number | undefined>,
-			this.getGlobalState("screenshotQuality") as Promise<number | undefined>,
-			this.getGlobalState("terminalOutputLineLimit") as Promise<number | undefined>,
-			this.getGlobalState("mcpEnabled") as Promise<boolean | undefined>,
-			this.getGlobalState("alwaysApproveResubmit") as Promise<boolean | undefined>,
-			this.getGlobalState("requestDelaySeconds") as Promise<number | undefined>,
-			this.getGlobalState("currentApiConfigName") as Promise<string | undefined>,
-			this.getGlobalState("listApiConfigMeta") as Promise<ApiConfigMeta[] | undefined>,
-			this.getGlobalState("vsCodeLmModelSelector") as Promise<vscode.LanguageModelChatSelector | undefined>,
-			this.getGlobalState("mode") as Promise<Mode | undefined>,
-			this.getGlobalState("modeApiConfigs") as Promise<Record<Mode, string> | undefined>,
-			this.getGlobalState("customModePrompts") as Promise<CustomModePrompts | undefined>,
-			this.getGlobalState("customSupportPrompts") as Promise<CustomSupportPrompts | undefined>,
-			this.getGlobalState("enhancementApiConfigId") as Promise<string | undefined>,
-			this.getGlobalState("experimentalDiffStrategy") as Promise<boolean | undefined>,
-			this.getGlobalState("autoApprovalEnabled") as Promise<boolean | undefined>,
-			this.customModesManager.getCustomModes(),
-		])
+
+			// Secrets
+			apiKey,
+			glamaApiKey,
+			openRouterApiKey,
+			awsAccessKey,
+			awsSecretKey,
+			awsSessionToken,
+			openAiApiKey,
+			geminiApiKey,
+			openAiNativeApiKey,
+			deepSeekApiKey,
+			mistralApiKey,
+		} = config;
+
+		const customModes = await this.customModesManager.getCustomModes();
 
 		let apiProvider: ApiProvider
 		if (storedApiProvider) {
@@ -2255,6 +2199,11 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		return await this.context.globalState.get(key)
 	}
 
+	async getGlobalStates() {
+		//@ts-ignore
+		return this.context.globalState.getAll()
+	}
+
 	// workspace
 
 	private async updateWorkspaceState(key: string, value: any) {
@@ -2287,6 +2236,11 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 
 	private async getSecret(key: SecretKey) {
 		return await this.context.secrets.get(key)
+	}
+
+	private async getSecrets() {
+		//@ts-ignore
+		return this.context.secrets.getAll()
 	}
 
 	// dev
