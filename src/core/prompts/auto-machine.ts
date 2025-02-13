@@ -51,11 +51,16 @@ export const AM_PROMPT = async (
 你可以使用工具调用外部资源，请求后将返回对应资源的使用方式
 
 ## 用法
+
 <external>
-<request>资源类别</request>
+<request>资源1,资源2...</request>
 </external>
 
 ## 资源类别
-- File: 文件资源，包括读取、写入等
+
+- File: 文件资源，包括读取、写入、列出文件等
+- Browser: 浏览器控制，包括打开网页，点击按钮，模拟键盘输入等
+- OCR: 图像识别，可用于截图、分析图像
+- ASL: 一种领域特定语言，可用于执行复杂操作，如pipeline，parallel，可以使用其余所有资源。
     `
 }
