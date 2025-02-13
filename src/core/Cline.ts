@@ -124,22 +124,7 @@ export class Cline {
 			this.startTask(task, images)
 		} else if (historyItem) {
 			if (historyItem.newMessage || historyItem.newImages) {
-				const userContent: UserContent = []
-				if (historyItem.newMessage) {
-					userContent.push({type: "text", text: historyItem.newMessage})
-				}
-				if (historyItem.newImages) {
-					historyItem.newImages.forEach((image) => {
-						userContent.push({
-							type: "image", source: {
-								data: image,
-								type: "base64",
-								media_type: "image/png"
-							}
-						})
-					})
-				}
-				this.resumeTask(userContent)
+				this.resumeTask(historyItem.newMessage,historyItem.newImages)
 			}
 			else {
 				this.resumeTaskFromHistory()
@@ -489,10 +474,24 @@ export class Cline {
 		])
 	}
 
-	private async resumeTask(message: UserContent) {
+	private toUserContent(text?: string, images?: string[]): UserContent {
+		const userContent: UserContent = []
+		if (text) {
+			userContent.push({ type: "text", text })
+		}
+		if (images) {
+			const imageBlocks = formatResponse.imageBlocks(images)
+			userContent.push(...imageBlocks)
+		}
+		return userContent
+	}
+
+	private async resumeTask(text?: string, images?: string[]) {
 		this.clineMessages = await this.getSavedClineMessages()
 		this.apiConversationHistory = await this.getSavedApiConversationHistory()
-		this.initiateTaskLoop(message)
+		await this.say("text", text, images, true)
+		const userContent: UserContent = this.toUserContent(text, images)
+		this.initiateTaskLoop(userContent)
 	}
 
 	private async resumeTaskFromHistory() {

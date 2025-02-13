@@ -26,6 +26,7 @@ export class GlobalState implements vscode.Memento {
 
     private async flushIfNeeded(): Promise<void> {
         if (this.dirty) {
+            // console.log('[waht] flush global state', this.cache);
             await fs.promises.writeFile(this.storagePath, JSON.stringify(this.cache, null, 2), 'utf8');
             this.dirty = false;
         }
