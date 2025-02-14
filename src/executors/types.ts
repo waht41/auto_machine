@@ -1,42 +1,45 @@
 import { ExecutionContext } from "@/executors/command-executor";
 
-export type CommandType = 'click' | 'type' | 'open' | 'define' | 'external' | 'ask_followup_question';
-
-export interface BaseCommand {
-    type: CommandType;
+export interface BaseCommand<T extends string> {
+    type: T;
 }
 
-export interface ClickCommand extends BaseCommand {
-    type: 'click';
+interface CommandMap {
+    click: ClickCommand;
+    type: TypeCommand;
+    open: OpenCommand;
+    define: MacroDefinition;
+    external: ExternalCommand;
+    ask_followup_question: AskFollowupQuestionCommand;
+}
+
+export interface ClickCommand extends BaseCommand<'click'> {
     target: string;
-    context?: string; // "in" 后面的内容
+    context?: string;
 }
 
-export interface TypeCommand extends BaseCommand {
-    type: 'type';
+export interface TypeCommand extends BaseCommand<'type'> {
     content: string;
 }
 
-export interface OpenCommand extends BaseCommand {
-    type: 'open';
+export interface OpenCommand extends BaseCommand<'open'> {
     application: string;
 }
 
-export interface MacroDefinition extends BaseCommand {
-    type: 'define';
+export interface MacroDefinition extends BaseCommand<'define'> {
     name: string;
     commands: Command[];
 }
 
-export interface ExternalCommand extends BaseCommand {
-    type: 'external';
+export interface ExternalCommand extends BaseCommand<'external'> {
     request: string;
 }
 
-export interface AskFollowupQuestionCommand extends BaseCommand {
-    type: 'ask_followup_question';
+export interface AskFollowupQuestionCommand extends BaseCommand<'ask_followup_question'> {
     question: string;
     context?: ExecutionContext;
 }
 
-export type Command = ClickCommand | TypeCommand | OpenCommand | MacroDefinition | ExternalCommand | AskFollowupQuestionCommand;
+
+export type CommandType = keyof CommandMap;
+export type Command = CommandMap[CommandType];
