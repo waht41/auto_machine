@@ -1,0 +1,51 @@
+tools:
+  file:
+    description: 用于处理文件相关操作的工具
+
+commands:
+  list:
+    description: 列出指定路径下的文件
+    params:
+      path: 路径
+      recursive: [optional] 是否递归列出  # 默认为 false
+    example:
+        - tool: file
+          cmd: list
+          path: /path/to/files
+          recursive: true
+
+  read:
+    description: 读取指定路径的文件
+    params:
+      path: 路径
+    example:
+      - tool: file
+        cmd: read
+        path: /path/to/file.txt
+
+  edit:
+    description: 编辑指定路径的文件
+    cmd: edit
+    params:
+      action: "insert|delete|replace"  # 必选操作类型
+      path: 文件路径                                   # 必选
+      content: 文本内容                                # write/insert/overwrite/replace时必选
+      start: row,col                                  # 操作起始位置，默认为1,1（delete/replace时必选）
+      end: rol,col                                    # 操作结束位置（delete/replace时必选） -1,-1表示到文件末尾
+    example:
+        - tool: file
+          cmd: edit
+          action: insert
+          start: -1,-1
+          content: "Hello, World!"
+
+
+  search_file:
+    description: 在指定路径下搜索包含关键词的文件
+    params:
+      path: [optional] 路径
+      keyword: 关键词  # 可使用正则
+    example:
+      - tool: file
+        cmd: search_file
+        keyword: /[1-9]/g
