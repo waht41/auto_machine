@@ -7,6 +7,7 @@ import {
 	toolUseNames,
 	ToolUseName,
 } from "."
+import * as yaml from 'js-yaml';
 
 export function parseAssistantMessage(assistantMessage: string) {
 	let contentBlocks: AssistantMessageContent[] = []
@@ -142,125 +143,140 @@ export function parseAssistantMessage(assistantMessage: string) {
 	return contentBlocks
 }
 
-export function parseBlocks(str: string, blocks: AssistantMessageContent[] = []): AssistantMessageContent[] {
-	const [textContent, toolStartIndex, toolName] = findNextTool(str);
-
-	const hasToolBlock = toolStartIndex !== -1;
-
-	if (textContent.length > 0) {
-		// 如果后面有工具块，当前文本块的partial为false
-		blocks.push(createTextBlock(textContent, !hasToolBlock));
-	}
-
-	if (!hasToolBlock || !toolName) return blocks;
-
-	const remainingStr = str.slice(toolStartIndex);
-	const [toolBlock, processedLength] = parseToolBlock(remainingStr, toolName);
-
-	if (toolBlock) {
-		blocks.push(toolBlock);
-		return parseBlocks(remainingStr.slice(processedLength), blocks);
-	}
-
-	return blocks.concat(createTextBlock(remainingStr, true));
+interface BlockParseResult {
+	content: AssistantMessageContent | AssistantMessageContent[];
+	nextPosition: number;
 }
 
-function findNextTool(str: string): [string, number, string | null] {
-	const TAG_REGEX = /<([^>]+?)>/g;
-	let earliest: { index: number; tag: string } | null = null;
+export function parseBlocks(str: string): AssistantMessageContent[] {
+	const blocks: AssistantMessageContent[] = [];
+	let currentPos = 0;
 
-	let match;
-	while ((match = TAG_REGEX.exec(str)) !== null) {
-		if (!earliest || match.index < earliest.index) {
-			earliest = { index: match.index, tag: match[1] };
-		}
-	}
+	while (currentPos < str.length) {
+		const blockStart = str.indexOf('```', currentPos);
 
-	return earliest ?
-		[str.slice(0, earliest.index).trim(), earliest.index, earliest.tag] :
-		[str.trim(), -1, null];
-}
-
-function parseToolBlock(str: string, toolName: string) : [AssistantMessageContent, number] {
-	const startTag = `<${toolName}>`;
-	const endTag = `</${toolName}>`;
-	const endIndex = str.indexOf(endTag);
-
-	// 处理完整工具块
-	if (endIndex !== -1) {
-		const content = str.slice(startTag.length, endIndex);
-		return [{
-			type: 'tool_use',
-			name: toolName,
-			params: parseXMLParams(content),
-			partial: false
-		}, endIndex + endTag.length];
-	}
-
-	// 处理部分工具块
-	const content = str.slice(startTag.length);
-	return [{
-		type: 'tool_use',
-		name: toolName,
-		params: parsePartialXMLParams(content),
-		partial: true
-	}, str.length];
-}
-
-// 完整参数解析（带闭合标签）
-function parseXMLParams(content: string): Record<string, string> {
-	const params: Record<string, string> = {};
-	let pos = 0;
-
-	while (pos < content.length) {
-		const startMatch = content.slice(pos).match(/<([^>]+?)>/);
-		if (!startMatch) break;
-
-		const tagName = startMatch[1];
-		const start = pos + startMatch.index! + startMatch[0].length;
-		const endTag = `</${tagName}>`;
-		const end = content.indexOf(endTag, start);
-
-		if (end === -1) {
-			params[tagName] = content.slice(start).trim();
+		if (blockStart === -1) {
+			const remainingText = str.slice(currentPos).trim();
+			if (remainingText.length > 0) {
+				blocks.push(createTextBlock(remainingText, true));
+			}
 			break;
 		}
 
-		params[tagName] = content.slice(start, end).trim();
-		pos = end + endTag.length;
+		// 处理代码块前的文本
+		const beforeText = str.slice(currentPos, blockStart).trim();
+		if (beforeText.length > 0) {
+			blocks.push(createTextBlock(beforeText, false));
+		}
+
+		// 解析代码块
+		const result = parseCodeBlock(str, blockStart);
+		if (Array.isArray(result.content)) {
+			blocks.push(...result.content);
+		} else {
+			blocks.push(result.content);
+		}
+		currentPos = result.nextPosition;
 	}
 
-	return params;
+	return blocks;
 }
 
-// 部分参数解析（处理未闭合标签）
-function parsePartialXMLParams(content: string): Record<string, string> {
-	const params: Record<string, string> = {};
-	let pos = 0;
+function parseCodeBlock(str: string, startPos: number): BlockParseResult {
+	const nextNewline = str.indexOf('\n', startPos);
+	const isYamlBlock = nextNewline !== -1 &&
+		str.slice(startPos, nextNewline).trim() === '```yaml';
 
-	while (pos < content.length) {
-		const startMatch = content.slice(pos).match(/<([^>]+?)>/);
-		if (!startMatch) break;
+	if (isYamlBlock) {
+		return parseYamlBlock(str, nextNewline);
+	} else {
+		return parseRegularCodeBlock(str, startPos);
+	}
+}
 
-		const tagName = startMatch[1];
-		const start = pos + startMatch.index! + startMatch[0].length;
+function parseYamlBlock(str: string, startNewline: number): BlockParseResult {
+	const endMarker = '```';
+	const endIndex = str.indexOf(endMarker, startNewline);
 
-		// 取从开始标签到下一个标签开始前的内容
-		const nextTagStart = content.indexOf('<', start);
-		const valueEnd = nextTagStart === -1 ? content.length : nextTagStart;
-
-		params[tagName] = content.slice(start, valueEnd).trim();
-		pos = start;
+	if (endIndex === -1) {
+		return {
+			content: createTextBlock(str.slice(startNewline), true),
+			nextPosition: str.length
+		};
 	}
 
-	return params;
+	const yamlContent = str.slice(startNewline + 1, endIndex);
+	const content = parseYamlContent(yamlContent);
+
+	return {
+		content,
+		nextPosition: endIndex + endMarker.length
+	};
+}
+
+function parseYamlContent(yamlContent: string): AssistantMessageContent | AssistantMessageContent[] {
+	try {
+		const parsed = yaml.load(yamlContent) as any;
+		if (Array.isArray(parsed)) {
+			const toolBlocks = parsed.map(toolData => {
+				if (toolData?.tool) {
+					return {
+						type: 'tool_use',
+						name: toolData.tool,
+						params: extractToolParams(toolData),
+						partial: false
+					} satisfies AssistantMessageContent;
+				}
+				return null;
+			}).filter(block => block !== null) as AssistantMessageContent[];
+
+			if (toolBlocks.length > 0) {
+				return toolBlocks;
+			}
+		} else if (parsed?.tool) {
+			return {
+				type: 'tool_use',
+				name: parsed.tool,
+				params: extractToolParams(parsed),
+				partial: false
+			};
+		}
+	} catch {
+		console.error('YAML 解析失败:', yamlContent);
+		// YAML 解析失败时作为普通文本处理
+	}
+
+	return createTextBlock(yamlContent, false);
+}
+
+function extractToolParams(toolData: any): Record<string, any> {
+	return Object.fromEntries(
+		Object.entries(toolData).filter(([key]) => key !== 'tool')
+	);
+}
+
+function parseRegularCodeBlock(str: string, startPos: number): BlockParseResult {
+	const endMarker = '```';
+	const endIndex = str.indexOf(endMarker, startPos + 3);
+
+	if (endIndex === -1) {
+		return {
+			content: createTextBlock(str.slice(startPos), true),
+			nextPosition: str.length
+		};
+	}
+
+	return {
+		content: createTextBlock(str.slice(startPos, endIndex + endMarker.length), false),
+		nextPosition: endIndex + endMarker.length
+	};
 }
 
 function createTextBlock(content: string, partial: boolean): TextContent {
 	return {
 		type: 'text',
 		content: content.trim(),
-		partial: partial || /<[^>]+$/.test(content) // 检测未闭合标签
+		partial
 	};
 }
 
