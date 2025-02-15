@@ -25,6 +25,7 @@
       "@core/*": ["src/core/*"],
       "vscode": ["vscode"],
       "@executors/*": ["executors/*"],
+      "@operation/*": ["operation/*"],
     },
     "jsx": "react-jsx"
   },

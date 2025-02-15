@@ -1,8 +1,7 @@
-import { ExecutionContext } from "./command-executor";
+import { BaseCommand } from "@executors/base";
+import { FileCommand } from "@executors/implementations/file";
 
-export interface BaseCommand<T extends string> {
-    type: T;
-}
+
 
 interface CommandMap {
     click: ClickCommand;
@@ -10,6 +9,7 @@ interface CommandMap {
     open: OpenCommand;
     define: MacroDefinition;
     external: ExternalCommand;
+    file: FileCommand;
 }
 
 export interface ClickCommand extends BaseCommand<'click'> {
@@ -33,7 +33,6 @@ export interface MacroDefinition extends BaseCommand<'define'> {
 export interface ExternalCommand extends BaseCommand<'external'> {
     request: string;
 }
-
 
 export type CommandType = keyof CommandMap;
 export type Command = CommandMap[CommandType];

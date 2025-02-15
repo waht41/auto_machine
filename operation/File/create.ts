@@ -7,7 +7,7 @@ import { CreateOptions } from './type';
  * @param options.path Path to create the file
  * @param options.content Optional content to write to the file
  */
-export async function create(options: CreateOptions): Promise<void> {
+export async function create(options: CreateOptions): Promise<string> {
     const { path: filePath, content = '' } = options;
 
     // Ensure parent directory exists
@@ -23,4 +23,6 @@ export async function create(options: CreateOptions): Promise<void> {
 
     // Create file with optional content
     fs.writeFileSync(filePath, content, 'utf-8');
+
+    return 'success';
 }

@@ -5,7 +5,7 @@ list:
     path: 路径
     recursive: [optional]   # 是否递归列出,默认为 false
     depth: [optional]       # 递归层数，默认为3，只在recursive为true时生效
-    exclude: [optional]     # 排除的文件夹,支持通配符
+    exclude: [optional]     # 排除的文件夹或文件,支持*作为通配符
   example:
     - tool: file
       cmd: list
@@ -56,7 +56,7 @@ search:
   params:
     path: [optional] # 路径，默认为当前目录下
     keyword: 关键词  # 可使用正则
-    exclude: [optional] # 排除的文件夹
+    exclude: [optional]
   example:
     - tool: file
       cmd: search_file

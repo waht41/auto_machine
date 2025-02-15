@@ -9,7 +9,7 @@ import { EditOptions } from './type';
  * @param options.start Start position [row, col]
  * @param options.end End position [row, col]
  */
-export async function edit(options: EditOptions): Promise<void> {
+export async function edit(options: EditOptions): Promise<string> {
     const {action, path: filePath, content, start = [1, 1], end} = options;
 
     // Ensure file exists
@@ -79,5 +79,5 @@ export async function edit(options: EditOptions): Promise<void> {
 
     // Write to file
     fs.writeFileSync(filePath, fileContent, 'utf-8');
-
+    return 'success';
 }
