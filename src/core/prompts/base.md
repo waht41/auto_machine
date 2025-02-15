@@ -14,19 +14,29 @@
 configuration:
   tools:
     thinking:
-      description: 用于放置不想被用户看见的内容
-    ask_followup_question:
-      description: 用于向用户提问
-    attempt_completion:
-      description: 用于声明完成任务
+      description: 用于放置不需要被用户看见的内容
+    ask:
+      description: 用于请求用户回复。 askType包括[ask_followup_question, ask_multiple_choice, ask_choice,attempt_completion]
     log:
       description: 用于记录日志
 
 examples:
   - tool: thinking
-    content: 这段内容不会直接展示给用户
-  - tool: ask_followup_question
+    content: 我应该先思考需要实施那些步骤
+  - tool: ask
+    askType: followup
+    question: 请输入文件搜索范围？
+  - tool: ask
+    askType: choice
     question: 你觉得这个方案怎么样？
+    choices: [好, 不好]
+  - tool: ask
+    askType: multiple_choice
+    question: 请选择所需的水果？
+    choices: [苹果, 香蕉, 橙子]
+  - tool: ask
+    askType: attempt_completion
+    question: 已完成任务A,B,C 请求确认
   - tool: log
     summary: 用户反馈
     content: 用户对方案表示满意

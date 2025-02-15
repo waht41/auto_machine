@@ -1140,18 +1140,24 @@ export class Cline {
 				} catch (error) {
 					this.consecutiveMistakeCount++
 					pushToolResult(formatResponse.toolError(error.message))
+					console.error("Tool use validation error:", error)
 					break
 				}
 
-				try {
-					console.log('[waht] 开始执行tool', block)
-					const res = await this.applyTool(block, {'cline':this,'replacing':replacing})
-					if (typeof res === "string") {
-						console.log('[waht] 执行tool 返回结果: ',res)
-						pushToolResult(res)
+				if (block.name === 'ask'){
+					console.log('[waht] 开始执行ask', block)
+					await this.ask(block.params.askType as ClineAsk,block.params.question,false,replacing)
+				} else {
+					try {
+						console.log('[waht] 开始执行tool', block)
+						const res = await this.applyTool(block, {'cline':this,'replacing':replacing})
+						if (typeof res === "string") {
+							console.log('[waht] 执行tool 返回结果: ',res)
+							pushToolResult(res)
+						}
+					} catch (e) {
+						await handleError(`executing tool ${block.name}, `, e)
 					}
-				} catch (e) {
-					await handleError(`executing tool ${block.name}, `, e)
 				}
 		}
 
@@ -1195,7 +1201,7 @@ export class Cline {
 			}
 			return await this.executor.runCommand(command as any, context) ?? 'no result return'
 		}
-		return;
+		return null;
 	}
 
 	async recursivelyMakeClineRequests(
