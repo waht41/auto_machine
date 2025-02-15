@@ -1,7 +1,7 @@
 import { app, BrowserWindow } from 'electron';
 import * as path from 'path';
-import { createMenu } from '@/menu';
-import { WorkerManager } from '@/background-worker/worker-manager';
+import { createMenu } from './menu';
+import { WorkerManager } from './worker-manager';
 
 const createWindow = async () => {
     const win = new BrowserWindow({

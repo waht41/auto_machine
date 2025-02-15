@@ -1303,11 +1303,11 @@ export class Cline {
 							reasoningMessage += chunk.text
 							await this.say("reasoning", reasoningMessage, undefined, true)
 							break
-						case "usage":
-							inputTokens += chunk.inputTokens
-							outputTokens += chunk.outputTokens
-							cacheWriteTokens += chunk.cacheWriteTokens ?? 0
-							cacheReadTokens += chunk.cacheReadTokens ?? 0
+						case "usage":  //todo waht 不确定其它api回的是不是最终结果（腾讯云是）
+							inputTokens = chunk.inputTokens
+							outputTokens = chunk.outputTokens
+							cacheWriteTokens = chunk.cacheWriteTokens ?? 0
+							cacheReadTokens = chunk.cacheReadTokens ?? 0
 							totalCost = chunk.totalCost
 							break
 						case "text":

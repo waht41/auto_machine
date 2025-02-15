@@ -21,7 +21,7 @@ export default defineConfig({
     plugins: [
         electron([{
             // 主进程入口文件
-            entry: resolve(__dirname, 'src/main.ts'),
+            entry: resolve(__dirname, 'electron-main/main.ts'),
             vite: {
                 resolve: {
                     alias: alias,
@@ -31,7 +31,7 @@ export default defineConfig({
                     outDir: 'dist-electron',
                     rollupOptions: {
                         // 确保这里指向正确的入口文件（保持为 main.ts）
-                        input: resolve(__dirname, 'src/main.ts'),
+                        input: resolve(__dirname, 'electron-main/main.ts'),
                         external: ['electron']
                     },
                 },
