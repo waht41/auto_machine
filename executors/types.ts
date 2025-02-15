@@ -10,7 +10,6 @@ interface CommandMap {
     open: OpenCommand;
     define: MacroDefinition;
     external: ExternalCommand;
-    ask_followup_question: AskFollowupQuestionCommand;
 }
 
 export interface ClickCommand extends BaseCommand<'click'> {
@@ -33,11 +32,6 @@ export interface MacroDefinition extends BaseCommand<'define'> {
 
 export interface ExternalCommand extends BaseCommand<'external'> {
     request: string;
-}
-
-export interface AskFollowupQuestionCommand extends BaseCommand<'ask_followup_question'> {
-    question: string;
-    context?: ExecutionContext;
 }
 
 

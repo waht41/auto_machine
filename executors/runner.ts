@@ -16,12 +16,6 @@ export class CommandRunner {
         };
     }
 
-    async runCommands(commands: Command[]): Promise<void> {
-        for (const command of commands) {
-            await this.runCommand(command);
-        }
-    }
-
     async runCommand(command: Command, context: any): Promise<any> {
         const executor = this.registry.getExecutor(command.type);
         
