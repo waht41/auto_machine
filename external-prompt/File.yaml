@@ -42,12 +42,12 @@ edit:
     path: 文件路径                                   # 必选
     content: 文本内容                                # write/insert/overwrite/replace时必选
     start: row,col                                  # 操作起始位置，默认为1,1（delete/replace时必选）
-    end: rol,col                                    # 操作结束位置（delete/replace时必选） -1,-1表示文件末尾
+    end: [rol,col]                                    # 操作结束位置（delete/replace时必选） [-1,-1]表示文件末尾
   example:
     - tool: file
       cmd: edit
       action: insert
-      start: -1,-1
+      start: [-1,-1]
       content: "Hello, World!"
 
 

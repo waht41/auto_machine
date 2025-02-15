@@ -2043,6 +2043,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 			enhancementApiConfigId,
 			experimentalDiffStrategy,
 			autoApprovalEnabled,
+			deepSeekBaseUrl,
 
 			// Secrets
 			apiKey,
@@ -2105,6 +2106,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 				geminiApiKey,
 				openAiNativeApiKey,
 				deepSeekApiKey,
+				deepSeekBaseUrl,
 				mistralApiKey,
 				azureApiVersion,
 				openAiStreamingEnabled,

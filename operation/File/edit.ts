@@ -24,16 +24,23 @@ export async function edit(options: EditOptions): Promise<string> {
     // Convert position to zero-based index
     // Special handling for -1 case which indicates end of file
     const getRow = (row: number) => row === -1 ? lines.length - 1 : row - 1;
-    const getCol = (row: number, col: number) => col === -1 ? lines[getRow(row)].length : col - 1;
+    const getCol = (row: number, col: number) => col === -1 ? (lines[getRow(row)].length ?? 0) : col - 1;
     const [startRow, startCol] = [getRow(start[0]), getCol(start[0], start[1])];
     const [endRow, endCol] = end ? [getRow(end[0]), getCol(end[0], end[1])] : [getRow(-1), getCol(-1, -1)];
 
     switch (action) {
         case 'insert': {
             if (!content) throw new Error('Content is required for insert operation');
-
+            while (lines.length <= startCol) {
+                lines.push('');
+            }
             // Insert content at specified position
-            const line = lines[startRow];
+            let line = lines[startRow];
+            if (line.length < startCol) {
+                lines[startRow] += ' '.repeat(startCol - line.length);
+                line = lines[startRow];
+            }
+
             lines[startRow] = line.slice(0, startCol) + content + line.slice(startCol);
             fileContent = lines.join('\n');
             break;
