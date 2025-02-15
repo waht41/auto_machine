@@ -11,6 +11,7 @@ const alias = [
     {find: '@', replacement: pathResolve('src')},
     {find: '@core', replacement: pathResolve('src/core')},
     {find: 'vscode', replacement: pathResolve('vscode')},
+    {find:'@executors', replacement: pathResolve('executors')},
 ]
 export default defineConfig({
     resolve: {
