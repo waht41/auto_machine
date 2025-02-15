@@ -9,34 +9,34 @@ import pWaitFor from "p-wait-for"
 import * as path from "path"
 import { serializeError } from "serialize-error"
 import * as vscode from "vscode"
-import { ApiHandler, buildApiHandler } from "../api"
-import { ApiStream } from "../api/transform/stream"
-import { DiffViewProvider } from "../integrations/editor/DiffViewProvider"
-import { findToolName, formatContentBlockToMarkdown } from "../integrations/misc/export-markdown"
-import { truncateOutput, } from "../integrations/misc/extract-text"
-import { TerminalManager } from "../integrations/terminal/TerminalManager"
-import { UrlContentFetcher } from "../services/browser/UrlContentFetcher"
-import { listFiles } from "../services/glob/list-files"
-import { ApiConfiguration } from "../shared/api"
-import { findLastIndex } from "../shared/array"
-import { combineApiRequests } from "../shared/combineApiRequests"
-import { combineCommandSequences } from "../shared/combineCommandSequences"
-import { ClineApiReqCancelReason, ClineApiReqInfo, ClineAsk, ClineMessage, ClineSay, } from "../shared/ExtensionMessage"
-import { getApiMetrics } from "../shared/getApiMetrics"
-import { HistoryItem } from "../shared/HistoryItem"
-import { ClineAskResponse } from "../shared/WebviewMessage"
-import { calculateApiCost } from "../utils/cost"
-import { fileExistsAtPath } from "../utils/fs"
-import { arePathsEqual } from "../utils/path"
+import { ApiHandler, buildApiHandler } from "@/api"
+import { ApiStream } from "@/api/transform/stream"
+import { DiffViewProvider } from "@/integrations/editor/DiffViewProvider"
+import { findToolName, formatContentBlockToMarkdown } from "@/integrations/misc/export-markdown"
+import { truncateOutput, } from "@/integrations/misc/extract-text"
+import { TerminalManager } from "@/integrations/terminal/TerminalManager"
+import { UrlContentFetcher } from "@/services/browser/UrlContentFetcher"
+import { listFiles } from "@/services/glob/list-files"
+import { ApiConfiguration } from "@/shared/api"
+import { findLastIndex } from "@/shared/array"
+import { combineApiRequests } from "@/shared/combineApiRequests"
+import { combineCommandSequences } from "@/shared/combineCommandSequences"
+import { ClineApiReqCancelReason, ClineApiReqInfo, ClineAsk, ClineMessage, ClineSay, } from "@/shared/ExtensionMessage"
+import { getApiMetrics } from "@/shared/getApiMetrics"
+import { HistoryItem } from "@/shared/HistoryItem"
+import { ClineAskResponse } from "@/shared/WebviewMessage"
+import { calculateApiCost } from "@/utils/cost"
+import { fileExistsAtPath } from "@/utils/fs"
+import { arePathsEqual } from "@/utils/path"
 import { parseMentions } from "./mentions"
-import { AssistantMessageContent, ToolParamName, ToolUse, ToolUseName } from "./assistant-message"
+import { AssistantMessageContent, ToolUse, ToolUseName } from "./assistant-message"
 import { formatResponse } from "./prompts/responses"
 import { SYSTEM_PROMPT } from "./prompts/system"
-import { defaultModeSlug, getModeBySlug } from "../shared/modes"
+import { defaultModeSlug, getModeBySlug } from "@/shared/modes"
 import { truncateHalfConversation } from "./sliding-window"
 import { ClineProvider, GlobalFileNames } from "./webview/ClineProvider"
-import { BrowserSession } from "../services/browser/BrowserSession"
-import { McpHub } from "../services/mcp/McpHub"
+import { BrowserSession } from "@/services/browser/BrowserSession"
+import { McpHub } from "@/services/mcp/McpHub"
 import crypto from "crypto"
 import { CommandRunner } from "@executors/runner";
 import { parseBlocks } from "@core/assistant-message/parse-assistant-message";
@@ -1013,46 +1013,16 @@ export class Cline {
 				}
 				const toolDescription = () => {
 					switch (block.name) {
-						case "execute_command":
-							return `[${block.name} for '${block.params.command}']`
-						case "read_file":
-							return `[${block.name} for '${block.params.path}']`
-						case "write_to_file":
-							return `[${block.name} for '${block.params.path}']`
-						case "apply_diff":
-							return `[${block.name} for '${block.params.path}']`
-						case "search_files":
-							return `[${block.name} for '${block.params.regex}'${
-								block.params.file_pattern ? ` in '${block.params.file_pattern}'` : ""
-							}]`
-						case "list_files":
-							return `[${block.name} for '${block.params.path}']`
-						case "list_code_definition_names":
-							return `[${block.name} for '${block.params.path}']`
-						case "browser_action":
-							return `[${block.name} for '${block.params.action}']`
-						case "use_mcp_tool":
-							return `[${block.name} for '${block.params.server_name}']`
-						case "access_mcp_resource":
-							return `[${block.name} for '${block.params.server_name}']`
-						case "ask_followup_question":
-							return `[${block.name} for '${block.params.question}']`
-						case "attempt_completion":
-							return `[${block.name}]`
-						case "switch_mode":
-							return `[${block.name} to '${block.params.mode_slug}'${block.params.reason ? ` because: ${block.params.reason}` : ""}]`
 						case "external":
 							return `[${block.name} for '${block.params.request}']`
+						case "file":
+							return `[${block.name} for '${block.params.path}']`
+						case "ask":
+							return `[${block.name} for '${block.params.askType}']`
+						default:
+							return `[${block.name}]`
 					}
 				}
-
-				// if (this.didRejectTool) {
-				// 	this.userMessageContent.push({
-				// 		type: "text",
-				// 		text: `Skipping tool ${toolDescription()} due to user rejecting a previous tool.`,
-				// 	})
-				// 	break
-				// } //todo waht
 
 				const pushToolResult = (content: ToolResponse) => {
 					this.userMessageContent.push({
@@ -1098,27 +1068,6 @@ export class Cline {
 						`Error ${action}:\n${error.message ?? JSON.stringify(serializeError(error), null, 2)}`,
 					)
 					pushToolResult(formatResponse.toolError(errorString))
-				}
-
-				// If block is partial, remove partial closing tag so its not presented to user
-				const removeClosingTag = (tag: ToolParamName, text?: string) => {
-					if (!block.partial) {
-						return text || ""
-					}
-					if (!text) {
-						return ""
-					}
-					// This regex dynamically constructs a pattern to match the closing tag:
-					// - Optionally matches whitespace before the tag
-					// - Matches '<' or '</' optionally followed by any subset of characters from the tag name
-					const tagRegex = new RegExp(
-						`\\s?<\/?${tag
-							.split("")
-							.map((char) => `(?:${char})?`)
-							.join("")}$`,
-						"g",
-					)
-					return text.replace(tagRegex, "")
 				}
 
 				// if (block.name !== "browser_action") {
@@ -1485,6 +1434,7 @@ export class Cline {
 
 			return didEndLoop
 		} catch (error) {
+			console.error("Error in recursivelyMakeClineRequests:", error)
 			// this should never happen since the only thing that can throw an error is the attemptApiRequest, which is wrapped in a try catch that sends an ask where if noButtonClicked, will clear current task and destroy this instance. However to avoid unhandled promise rejection, we will end this loop which will end execution of this instance (see startTask)
 			return true // needs to be true so parent loop knows to end task
 		}
