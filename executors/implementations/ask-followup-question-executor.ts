@@ -1,7 +1,7 @@
 import { AskFollowupQuestionCommand } from '../types';
 import { CommandExecutor, ExecutionContext } from '../command-executor';
 import { RegisterExecutor } from '../registry';
-import { Cline } from "@core/Cline";
+import { Cline } from "../../src/core/Cline";
 
 @RegisterExecutor('ask_followup_question')
 export class AskFollowupQuestionCommandExecutor implements CommandExecutor {

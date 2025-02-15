@@ -38,7 +38,7 @@ import { ClineProvider, GlobalFileNames } from "./webview/ClineProvider"
 import { BrowserSession } from "../services/browser/BrowserSession"
 import { McpHub } from "../services/mcp/McpHub"
 import crypto from "crypto"
-import { CommandRunner } from "@/executors/runner";
+import { CommandRunner } from "@executors/runner";
 import { parseBlocks } from "@core/assistant-message/parse-assistant-message";
 
 const cwd =

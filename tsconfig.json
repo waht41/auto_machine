@@ -23,7 +23,8 @@
     "paths": {
       "@/*": ["src/*"],
       "@core/*": ["src/core/*"],
-      "vscode": ["vscode"]
+      "vscode": ["vscode"],
+      "@executors/*": ["executors/*"],
     },
     "jsx": "react-jsx"
   },

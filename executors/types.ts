@@ -1,4 +1,4 @@
-import { ExecutionContext } from "@/executors/command-executor";
+import { ExecutionContext } from "./command-executor";
 
 export interface BaseCommand<T extends string> {
     type: T;
