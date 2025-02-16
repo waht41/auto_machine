@@ -1,0 +1,103 @@
+# 用于操控浏览器进行各种操作
+open:
+  description: 打开指定网址
+  params:
+    url: 网址
+  example:
+    - tool: browser
+      url: "https://www.baidu.com"
+      cmd: open
+
+state:
+  description: 获取所有页面状态
+  example:
+    - tool: browser
+      cmd: state
+
+analyze:
+  description: 分析网页内容
+  params:
+    url: [optional] # 网址 和 title至少需要一个
+    title: [optional]  # 标题
+    with_selector: [true|false] # 是否返回元素选择器,默认为false  由于返回的数据量较大，建议关闭
+  example:
+    - tool: browser
+      url: "https://www.bilibili.com"
+      cmd: analyze
+
+
+navigation:  # 页面导航类
+  common_params:
+    url: [ optional ] # 网址 和 title至少需要一个
+    title: [ optional ]  # 标题
+    timeout: 3  # 超时秒数
+  back:
+    desc: 返回上一页
+    params:
+    # common_params
+    example:
+      - tool: browser
+        url: "https://www.bilibili.com"
+        cmd: navigation
+        action: back
+        timeout: 8  # 超时秒数（默认5）
+
+  forward:
+    desc: 前进下一页
+    params:
+    # common_params
+    example:
+      - tool: browser
+        url: "https://www.bilibili.com"
+        cmd: navigation
+        action: forward
+
+  refresh:
+    desc: 刷新页面
+    params:
+      # common_params
+      wait_until: [load|domcontentloaded|networkidle]
+    example:
+      - tool: browser
+        url: "https://www.bilibili.com"
+        cmd: navigation
+        action: refresh
+        wait_until: "networkidle"
+
+interact:  # 页面交互类
+  common_params:
+    selector: optional # 元素选择器
+    id: optional # 元素ID
+    text: optional # 元素文本
+    tag: optional # 元素标签  # 以上四个参数至少需要一个
+
+    url: [ optional ] # 网址 和 title至少需要一个
+    title: [ optional ]  # 标题
+    timeout: 3  # 超时秒数
+  click:
+    desc: 点击元素
+    params:
+      # common_params
+      count: 1   # 点击次数
+    example:
+      - tool: browser
+        cmd: interact
+        url: "https://www.bing.com"
+        action: click
+        id: "search-icon"
+        count: 2
+
+  input:
+    desc: 文本输入
+    params:
+      # common_params
+      text: "输入内容"
+      clear: true  # 自动清空输入框
+      enter: [true|false]  # 输入完成后自动回车 默认为true
+    example:
+      - tool: browser
+        cmd: interact
+        action: input
+        url: "https://www.gmail.com"
+        selector: "input.email"
+        text: "user@example.com"
