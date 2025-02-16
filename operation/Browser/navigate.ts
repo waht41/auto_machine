@@ -36,6 +36,5 @@ export async function navigate(options: NavigateOptions): Promise<BrowserResult>
 
     return {
         success: true,
-        page: page
     };
 }

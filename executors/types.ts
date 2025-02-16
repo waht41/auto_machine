@@ -1,5 +1,6 @@
 import { BaseCommand } from "@executors/base";
 import { FileCommand } from "@executors/implementations/file";
+import { BrowserCommand } from "@executors/implementations";
 
 
 
@@ -10,6 +11,7 @@ interface CommandMap {
     define: MacroDefinition;
     external: ExternalCommand;
     file: FileCommand;
+    browser: BrowserCommand;
 }
 
 export interface ClickCommand extends BaseCommand<'click'> {
