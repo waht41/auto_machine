@@ -112,7 +112,7 @@ export const analyze = async (options: AnalyzeOptions): Promise<AnalyzeResult[]>
     console.log('页面加载完成');
 
     const interactiveElements = await Promise.all((await page.$$('a, button, input, select, textarea, [role="button"], [tabindex]:not([tabindex="-1"])')).map(async element => {
-        const selector = await getElementSelector(element);
+        const selector = options.selector? await getElementSelector(element) : undefined;
         return element.evaluate((el, selector) => {
             const element = el as HTMLElement;
             const inputElement = element as HTMLInputElement;

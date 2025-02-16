@@ -8,6 +8,7 @@ import Browser, {
     OpenOptions,
     SearchOptions
 } from "@operation/Browser";
+import * as yaml from 'js-yaml';
 
 @RegisterExecutor('browser')
 export class BrowserCommandExecutor implements CommandExecutor {
@@ -18,18 +19,18 @@ export class BrowserCommandExecutor implements CommandExecutor {
                 return 'success';
             case 'search':
                 const searchRes = await Browser.search(command);
-                return JSON.stringify(searchRes.data);
+                return yaml.dump(searchRes.data);
             case 'state':
-                return JSON.stringify(await Browser.state());
+                return yaml.dump(await Browser.state());
             case 'analyze':
-                return JSON.stringify(await Browser.analyze(command));
+                return yaml.dump(await Browser.analyze(command));
             case 'navigation':
                 await Browser.navigate(command);
                 return 'success';
             case 'interact':
                 const res = await Browser.interact(command)
                 if (res.isNewPage) {
-                    return 'success get get new page: ' + JSON.stringify(res.data);
+                    return 'success get get new page: ' + yaml.dump(res.data);
                 } else {
                     return 'success'
                 }
