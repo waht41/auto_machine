@@ -1,24 +1,38 @@
 import { CommandExecutor } from "../command-executor";
-import File from "@operation/File"
-import { CreateOptions, EditOptions, ListOptions, ReadOptions, SearchOptions } from "@operation/File/type";
 import { BaseCommand } from "@executors/base";
 import { RegisterExecutor } from "@executors/registry";
-import Browser, { AnalyzeOptions, InteractOptions, NavigateOptions, OpenOptions } from "@operation/Browser";
+import Browser, {
+    AnalyzeOptions,
+    InteractOptions,
+    NavigateOptions,
+    OpenOptions,
+    SearchOptions
+} from "@operation/Browser";
 
 @RegisterExecutor('browser')
 export class BrowserCommandExecutor implements CommandExecutor {
-    execute(command: BrowserCommand, context: any): any {
+    async execute(command: BrowserCommand, context: any): Promise<any> {
         switch (command.cmd) {
             case 'open':
-                return Browser.open(command);
+                await Browser.open(command);
+                return 'success';
+            case 'search':
+                const searchRes = await Browser.search(command);
+                return JSON.stringify(searchRes.data);
             case 'state':
-                return Browser.state();
+                return JSON.stringify(await Browser.state());
             case 'analyze':
-                return Browser.analyze(command);
+                return JSON.stringify(await Browser.analyze(command));
             case 'navigation':
-                return Browser.navigate(command);
+                await Browser.navigate(command);
+                return 'success';
             case 'interact':
-                return Browser.interact(command);
+                const res = await Browser.interact(command)
+                if (res.isNewPage) {
+                    return 'success get get new page: ' + JSON.stringify(res.data);
+                } else {
+                    return 'success'
+                }
             default:
                 throw new Error(`Unknown action: ${command}`);
         }
@@ -29,6 +43,9 @@ export type BrowserCommand = BaseCommand<'browser'> & (
     {
         cmd: 'open';
     } & OpenOptions |
+    {
+        cmd: 'search';
+    } & SearchOptions |
     {
         cmd: 'state';
     } |

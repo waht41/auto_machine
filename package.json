@@ -90,6 +90,7 @@
     "web-tree-sitter": "^0.22.6",
     "ws": "^8.18.0",
     "zod": "^3.23.8",
-    "js-yaml": "^4.1.0"
+    "js-yaml": "^4.1.0",
+    "@playwright/test": "^1.50.1"
   }
 }

@@ -127,6 +127,8 @@ export class WorkerManager {
         const watcher = chokidar.watch([
             path.join(__dirname,'../vscode'),
             path.join(__dirname,'../src'),
+            path.join(__dirname,'../operation'),
+            path.join(__dirname,'../executors'),
         ], {
             ignored: ignored,
             persistent: true,

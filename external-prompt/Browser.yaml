@@ -5,8 +5,19 @@ open:
     url: 网址
   example:
     - tool: browser
-      url: "https://www.baidu.com"
+      url: "https://www.example.com"
       cmd: open
+
+search:
+    description: 搜索指定内容
+    params:
+        keyword: 搜索关键字
+        engine: [optional] # 支持bing baidu，默认为bing。  由于google的反爬虫机制，暂不支持
+    example:
+      - tool: browser
+        keyword: "hello world"
+        cmd: search
+        engine: "bing"
 
 state:
   description: 获取所有页面状态
