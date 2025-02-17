@@ -67,7 +67,7 @@ export interface AnalyzeOptions {
 }
 
 export interface AnalyzeResult {
-    selector: string;           // 元素的选择器路径
+    selector?: string;           // 元素的选择器路径
     tag: string;              // 元素类型（标签名）
     id?: string;               // 元素ID
     text?: string;             // 文本内容

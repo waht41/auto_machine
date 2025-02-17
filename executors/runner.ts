@@ -1,19 +1,13 @@
 import { Command } from './types';
-import { CommandExecutor, ExecutionContext } from './command-executor';
+import { CommandExecutor } from './command-executor';
 import { ExecutorRegistry } from './registry';
-// Import implementations to trigger decorators
-import './implementations';
+import './implementations'; // Import implementations to trigger decorators
 
 export class CommandRunner {
     private registry: ExecutorRegistry;
-    private context: ExecutionContext;
 
     constructor() {
         this.registry = ExecutorRegistry.getInstance();
-        this.context = {
-            variables: new Map(),
-            macros: new Map()
-        };
     }
 
     async runCommand(command: Command, context: any): Promise<any> {
@@ -31,22 +25,7 @@ export class CommandRunner {
         this.registry.register(type, executor);
     }
 
-    // 获取已定义的宏
-    getMacro(name: string): Command[] | undefined {
-        return this.context.macros.get(name);
-    }
-
-    // 设置变量
-    setVariable(name: string, value: any): void {
-        this.context.variables.set(name, value);
-    }
-
-    // 获取变量
-    getVariable(name: string): any {
-        return this.context.variables.get(name);
-    }
-
-    get types(): string[] {
+    get executorNames(): string[] {
         return Array.from(this.registry.getAllExecutors().keys());
     }
 }

@@ -1139,7 +1139,7 @@ export class Cline {
 
 	async applyTool(block: ToolUse, context?: any): Promise<any> {
 		console.log('[waht] try apply tool',block)
-		if (this.executor.types.includes(block.name)) {
+		if (this.executor.executorNames.includes(block.name)) {
 			const command = {
 				type: block.name,
 				...block.params
