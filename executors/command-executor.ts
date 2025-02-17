@@ -1,5 +1,3 @@
-import { Command } from './types';
-
 export type ExecutionContext = any
 
 export interface CommandExecutor {
