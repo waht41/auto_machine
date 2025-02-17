@@ -395,63 +395,60 @@ export class Cline {
 
 	async say(sayType: ClineSay, text?: string, images?: string[], partial?: boolean, replacing = false): Promise<undefined> {
 		if (this.abort) {
-			throw new Error("Roo Code instance aborted")
+			throw new Error("Roo Code instance aborted");
 		}
+		const lastMessage = this.clineMessages.at(-1);
+		const isUpdatingPreviousPartial =
+			lastMessage && lastMessage.partial && (lastMessage.say === sayType || replacing);
+
+		const handlePartialUpdate = async () => {
+			if (isUpdatingPreviousPartial) {
+				// existing partial message, so update it
+				lastMessage.type = "say";
+				lastMessage.say = sayType;
+				lastMessage.text = text;
+				lastMessage.images = images;
+				lastMessage.partial = true;
+				await this.providerRef
+					.deref()
+					?.postMessageToWebview({ type: "partialMessage", partialMessage: lastMessage });
+			} else {
+				await addMessage();
+			}
+		};
+
+		const handleCompletion = async () => {
+			if (isUpdatingPreviousPartial) {
+				// this is the complete version of a previously partial message, so replace the partial with the complete version
+				this.lastMessageTs = lastMessage.ts;
+				lastMessage.type = "say";
+				lastMessage.say = sayType;
+				lastMessage.text = text;
+				lastMessage.images = images;
+				lastMessage.partial = false;
+
+				// instead of streaming partialMessage events, we do a save and post like normal to persist to disk
+				await this.saveClineMessages();
+				await this.providerRef
+					.deref()
+					?.postMessageToWebview({ type: "partialMessage", partialMessage: lastMessage }); // more performant than an entire postStateToWebview
+			} else {
+				await addMessage();
+			}
+		};
+
+		const addMessage = async () => {
+			// this is a new non-partial message, so add it like normal
+			const sayTs = Date.now();
+			this.lastMessageTs = sayTs;
+			await this.addToClineMessages({ ts: sayTs, type: "say", say: sayType, text, images });
+			await this.providerRef.deref()?.postStateToWebview();
+		};
 
 		if (partial !== undefined) {
-			const lastMessage = this.clineMessages.at(-1)
-			const isUpdatingPreviousPartial =
-				lastMessage && lastMessage.partial && (lastMessage.say === sayType || replacing)
-			if (partial) {
-				if (isUpdatingPreviousPartial) {
-					// existing partial message, so update it
-					lastMessage.type = "say"
-					lastMessage.say = sayType
-					lastMessage.text = text
-					lastMessage.images = images
-					lastMessage.partial = partial
-					await this.providerRef
-						.deref()
-						?.postMessageToWebview({ type: "partialMessage", partialMessage: lastMessage })
-				} else {
-					// this is a new partial message, so add it with partial state
-					const sayTs = Date.now()
-					this.lastMessageTs = sayTs
-					await this.addToClineMessages({ ts: sayTs, type: "say", say: sayType, text, images, partial })
-					await this.providerRef.deref()?.postStateToWebview()
-				}
-			} else {
-				// partial=false means its a complete version of a previously partial message
-				if (isUpdatingPreviousPartial) {
-					// this is the complete version of a previously partial message, so replace the partial with the complete version
-					this.lastMessageTs = lastMessage.ts
-					// lastMessage.ts = sayTs
-					lastMessage.type = "say"
-					lastMessage.say = sayType
-					lastMessage.text = text
-					lastMessage.images = images
-					lastMessage.partial = false
-
-					// instead of streaming partialMessage events, we do a save and post like normal to persist to disk
-					await this.saveClineMessages()
-					// await this.providerRef.deref()?.postStateToWebview()
-					await this.providerRef
-						.deref()
-						?.postMessageToWebview({ type: "partialMessage", partialMessage: lastMessage }) // more performant than an entire postStateToWebview
-				} else {
-					// this is a new partial=false message, so add it like normal
-					const sayTs = Date.now()
-					this.lastMessageTs = sayTs
-					await this.addToClineMessages({ ts: sayTs, type: "say", say: sayType, text, images })
-					await this.providerRef.deref()?.postStateToWebview()
-				}
-			}
+			partial ? await handlePartialUpdate() : await handleCompletion();
 		} else {
-			// this is a new non-partial message, so add it like normal
-			const sayTs = Date.now()
-			this.lastMessageTs = sayTs
-			await this.addToClineMessages({ ts: sayTs, type: "say", say: sayType, text, images })
-			await this.providerRef.deref()?.postStateToWebview()
+			await addMessage();
 		}
 	}
 
