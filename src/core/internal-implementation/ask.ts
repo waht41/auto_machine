@@ -8,7 +8,7 @@ export class AskCommandExecutor implements CommandExecutor {
     }
 }
 
-export type IAskCommand = {
+export type IAskCommand = {type:'ask'} & ({
     askType: 'followup';
     question: string;
 } | {
@@ -22,4 +22,4 @@ export type IAskCommand = {
 } | {
     askType: 'attempt_completion';
     question: string;
-}
+})

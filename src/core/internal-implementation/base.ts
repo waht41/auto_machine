@@ -10,7 +10,10 @@ export class BaseCommandExecutor implements CommandExecutor {
     }
 }
 
-export type IBaseCommand = {
-    type: 'log';
+export type IBaseCommand = {type:'base'} & ({
+    cmd: 'log';
     text: string;
-}
+} | {
+    cmd: 'think'; //某些思考模型自带的，模型不会主动调用
+    text: string;
+})

@@ -1,7 +1,9 @@
+import { Command } from "@executors/types";
+
 export type ExecutionContext = any
 
 export interface CommandExecutor {
-    execute(command: any, context: any): any;
+    execute(command: Command, context: any): any;
 }
 
 export class SafeCommandExecutor implements CommandExecutor {
@@ -10,7 +12,7 @@ export class SafeCommandExecutor implements CommandExecutor {
         private errorHandler: (error: Error, command: any) => void = defaultErrorHandler
     ) {}
 
-    async execute<T>(command: T, context: ExecutionContext) {
+    async execute(command: Command, context: ExecutionContext) {
         try {
             return await this.wrapped.execute(command, context);
         } catch (e) {
@@ -19,7 +21,7 @@ export class SafeCommandExecutor implements CommandExecutor {
     }
 }
 
-export function defaultErrorHandler<T>(error: Error, command: T) {
+export function defaultErrorHandler(error: Error, command: Command) {
     const errorMessage = `Error executing command ${command} - ${error}`;
     console.error(errorMessage);
     return errorMessage;

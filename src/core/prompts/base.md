@@ -20,9 +20,6 @@ configuration:
       description: 用于请求用户回复。 askType包括[ask_followup_question, ask_multiple_choice, ask_choice,attempt_completion]
 
 examples:
-  - tool: base
-    cmd: thinking
-    content: 我应该先思考需要实施那些步骤
   - tool: ask
     askType: followup
     question: 请输入文件搜索范围？
