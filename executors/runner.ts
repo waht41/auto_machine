@@ -1,5 +1,5 @@
 import { Command } from './types';
-import { ExecutionContext } from './command-executor';
+import { CommandExecutor, ExecutionContext } from './command-executor';
 import { ExecutorRegistry } from './registry';
 // Import implementations to trigger decorators
 import './implementations';
@@ -25,6 +25,10 @@ export class CommandRunner {
         }
 
         return await executor.execute(command, context);
+    }
+
+    registerExecutor(type: string, executor: CommandExecutor) {
+        this.registry.register(type, executor);
     }
 
     // 获取已定义的宏

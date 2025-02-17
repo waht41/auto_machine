@@ -7,8 +7,8 @@ export interface TextContent {
 }
 
 export const toolUseNames = [
+	"base",
 	"ask",
-	// external
 	"external",
 	"file"
 ] as const

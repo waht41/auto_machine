@@ -1,4 +1,3 @@
-import { CommandType } from './types';
 import { CommandExecutor, SafeCommandExecutor } from './command-executor';
 
 export class ExecutorRegistry {
@@ -14,7 +13,10 @@ export class ExecutorRegistry {
         return ExecutorRegistry.instance;
     }
 
-    register(type: CommandType, executor: CommandExecutor): void {
+    register(type: string, executor: CommandExecutor): void {
+        if (this.executors.has(type)) {
+            console.error(`Executor already registered for type: ${type}`);
+        }
         const safeExecutor = executor instanceof SafeCommandExecutor
             ? executor
             : new SafeCommandExecutor(executor);
@@ -31,7 +33,7 @@ export class ExecutorRegistry {
 }
 
 // 装饰器工厂
-export function RegisterExecutor(type: CommandType) {
+export function RegisterExecutor(type: string) {
     return function(constructor: new () => CommandExecutor) {
         const registry = ExecutorRegistry.getInstance();
         registry.register(type, new constructor());

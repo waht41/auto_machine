@@ -40,6 +40,7 @@ import { McpHub } from "@/services/mcp/McpHub"
 import crypto from "crypto"
 import { CommandRunner } from "@executors/runner";
 import { parseBlocks } from "@core/assistant-message/parse-assistant-message";
+import { registerInternalImplementation } from "@core/internal-implementation";
 
 const cwd =
 	vscode.workspace.workspaceFolders?.map((folder) => folder.uri.fsPath).at(0) ?? path.join(os.homedir(), "Desktop") // may or may not exist but fs checking existence would immediately ask for permission which would be bad UX, need to come up with a better solution
@@ -112,11 +113,11 @@ export class Cline {
 		this.fuzzyMatchThreshold = fuzzyMatchThreshold ?? 1.0
 		this.providerRef = new WeakRef(provider)
 		this.diffViewProvider = new DiffViewProvider(cwd)
+		registerInternalImplementation(this.executor)
 
 		if (historyItem) {
 			this.taskId = historyItem.id
 		}
-
 		// Initialize diffStrategy based on current state
 		this.updateDiffStrategy(experimentalDiffStrategy)
 
@@ -1093,20 +1094,15 @@ export class Cline {
 					break
 				}
 
-				if (block.name === 'ask'){
-					console.log('[waht] 开始执行ask', block)
-					await this.ask(block.params.askType as ClineAsk,block.params.question,false,replacing)
-				} else {
-					try {
-						console.log('[waht] 开始执行tool', block)
-						const res = await this.applyTool(block, {'cline':this,'replacing':replacing})
-						if (typeof res === "string") {
-							console.log('[waht] 执行tool 返回结果: ',res)
-							pushToolResult(res)
-						}
-					} catch (e) {
-						await handleError(`executing tool ${block.name}, `, e)
+				try {
+					console.log('[waht] 开始执行tool', block)
+					const res = await this.applyTool(block, {'cline':this,'replacing':replacing})
+					if (typeof res === "string") {
+						console.log('[waht] 执行tool 返回结果: ',res)
+						pushToolResult(res)
 					}
+				} catch (e) {
+					await handleError(`executing tool ${block.name}, `, e)
 				}
 		}
 

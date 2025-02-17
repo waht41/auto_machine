@@ -13,15 +13,15 @@
 # 统一结构
 configuration:
   tools:
-    thinking:
-      description: 用于放置不需要被用户看见的内容
+    base:
+      thinking: 用于放置不需要被用户看见的内容
+      log: 用于记录日志
     ask:
       description: 用于请求用户回复。 askType包括[ask_followup_question, ask_multiple_choice, ask_choice,attempt_completion]
-    log:
-      description: 用于记录日志
 
 examples:
-  - tool: thinking
+  - tool: base
+    cmd: thinking
     content: 我应该先思考需要实施那些步骤
   - tool: ask
     askType: followup
@@ -37,8 +37,9 @@ examples:
   - tool: ask
     askType: attempt_completion
     question: 已完成任务A,B,C 请求确认
-  - tool: log
-    summary: 用户反馈
+  - tool: base
+    cmd: log
+    title: 用户反馈 # 会自动添加时间
     content: 用户对方案表示满意
 ```
 

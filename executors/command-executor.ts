@@ -1,31 +1,28 @@
 import { Command } from './types';
 
-export interface ExecutionContext {
-    variables: Map<string, any>;
-    macros: Map<string, Command[]>;
-}
+export type ExecutionContext = any
 
 export interface CommandExecutor {
-    execute(command: Command, context: any): any;
+    execute(command: any, context: any): any;
 }
 
 export class SafeCommandExecutor implements CommandExecutor {
     constructor(
         private wrapped: CommandExecutor,
-        private errorHandler: (error: Error, command: Command) => void = defaultErrorHandler
+        private errorHandler: (error: Error, command: any) => void = defaultErrorHandler
     ) {}
 
-    async execute(command: Command, context: ExecutionContext) {
+    async execute<T>(command: T, context: ExecutionContext) {
         try {
             return await this.wrapped.execute(command, context);
         } catch (e) {
-            return this.errorHandler(e as Error, command);
+            return this.errorHandler(e, command);
         }
     }
 }
 
-export function defaultErrorHandler(error: Error, command: Command) {
-    const errorMessage = `Error executing command ${command.type}: ${error.message}`;
+export function defaultErrorHandler<T>(error: Error, command: T) {
+    const errorMessage = `Error executing command ${command} - ${error}`;
     console.error(errorMessage);
     return errorMessage;
 }
