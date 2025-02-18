@@ -7,8 +7,8 @@ import {
 	ClineAskUseMcpServer,
 	ClineMessage,
 	ClineSayTool,
-} from "../../../../src/shared/ExtensionMessage"
-import { COMMAND_OUTPUT_STRING } from "../../../../src/shared/combineCommandSequences"
+} from "@/shared/ExtensionMessage"
+import { COMMAND_OUTPUT_STRING } from "@/shared/combineCommandSequences"
 import { useExtensionState } from "../../context/ExtensionStateContext"
 import { findMatchingResourceOrTemplate } from "../../utils/mcp"
 import { vscode } from "../../utils/vscode"
@@ -20,6 +20,7 @@ import Thumbnails from "../common/Thumbnails"
 import McpResourceRow from "../mcp/McpResourceRow"
 import McpToolRow from "../mcp/McpToolRow"
 import { highlightMentions } from "./TaskHeader"
+import { IBaseCommand } from "@core/internal-implementation/type";
 
 interface ChatRowProps {
 	message: ClineMessage
@@ -249,6 +250,26 @@ export const ChatRowContent = ({
 				className={`codicon codicon-${name}`}
 				style={{ color: "var(--vscode-foreground)", marginBottom: "-1.5px" }}></span>
 		)
+		const newTool = tool as any as IBaseCommand
+		switch (newTool.type){
+			case "base":
+				if (newTool.cmd === "log"){
+					console.log('[waht] 开始渲染log工具')
+					return (
+						<>
+							<div style={headerStyle}>
+								{toolIcon("output")}
+								<span style={{ fontWeight: "bold" }}>Roo wants to log: {newTool.title}</span>
+								<div>{newTool.content}</div>
+							</div>
+						</>
+					)
+				}
+				break
+
+			default:
+				break
+		}
 
 		switch (tool.tool) {
 			case "editedExistingFile":

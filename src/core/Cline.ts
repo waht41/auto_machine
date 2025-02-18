@@ -413,7 +413,7 @@ export class Cline {
 					.deref()
 					?.postMessageToWebview({ type: "partialMessage", partialMessage: lastMessage });
 			} else {
-				await addMessage();
+				await addMessage(partial);
 			}
 		};
 
@@ -437,11 +437,11 @@ export class Cline {
 			}
 		};
 
-		const addMessage = async () => {
+		const addMessage = async (partial?:boolean) => {
 			// this is a new non-partial message, so add it like normal
 			const sayTs = Date.now();
 			this.lastMessageTs = sayTs;
-			await this.addToClineMessages({ ts: sayTs, type: "say", say: sayType, text, images });
+			await this.addToClineMessages({ ts: sayTs, type: "say", say: sayType, text, images, partial });
 			await this.providerRef.deref()?.postStateToWebview();
 		};
 

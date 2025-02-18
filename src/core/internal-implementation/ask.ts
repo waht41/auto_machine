@@ -1,4 +1,5 @@
 import { CommandExecutor } from "@executors/command-executor";
+import { IAskCommand } from "@core/internal-implementation/type";
 
 export class AskCommandExecutor implements CommandExecutor {
     async execute(command: IAskCommand, context: any): Promise<void> {
@@ -8,18 +9,3 @@ export class AskCommandExecutor implements CommandExecutor {
     }
 }
 
-export type IAskCommand = {type:'ask'} & ({
-    askType: 'followup';
-    question: string;
-} | {
-    askType: 'choice';
-    question: string;
-    choices: string[];
-} | {
-    askType: 'multiple_choice';
-    question: string;
-    choices: string[];
-} | {
-    askType: 'attempt_completion';
-    question: string;
-})

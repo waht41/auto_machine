@@ -5,14 +5,13 @@ import react from '@vitejs/plugin-react'
 
 const root = process.cwd()
 const pathResolve = (path: string) => resolve(__dirname, path)
-console.log('root:', root)
-console.log('@core', pathResolve('src/core'))
 const alias = [
     {find: '@', replacement: pathResolve('src')},
     {find: '@core', replacement: pathResolve('src/core')},
     {find: 'vscode', replacement: pathResolve('vscode')},
     {find:'@executors', replacement: pathResolve('executors')},
     {find:'@operation', replacement: pathResolve('operation')},
+    {find:'@webview', replacement: pathResolve('webview-ui/src')},
 ]
 export default defineConfig({
     resolve: {

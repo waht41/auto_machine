@@ -14,7 +14,15 @@
 		"resolveJsonModule": true,
 		"isolatedModules": true,
 		"noEmit": true,
-		"jsx": "react-jsx"
+		"jsx": "react-jsx",
+		"paths": {
+			"@/*": ["../src/*"],
+			"@core/*": ["../src/core/*"],
+			"vscode": ["../vscode"],
+			"@executors/*": ["../executors/*"],
+			"@operation/*": ["../operation/*"],
+			"@webview/*": ["webview/*"]
+		}
 	},
 	"include": ["src", "../src/shared"]
 }
