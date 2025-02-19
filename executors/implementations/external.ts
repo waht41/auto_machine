@@ -1,4 +1,3 @@
-import { ExternalCommand } from '../types';
 import { CommandExecutor } from '../command-executor';
 import { RegisterExecutor } from '../registry';
 import file from "fs/promises";
@@ -17,4 +16,9 @@ export class ExternalCommandExecutor implements CommandExecutor{
         }
 
     }
+}
+
+export type ExternalCommand = {
+    type: 'external';
+    request: string;
 }
