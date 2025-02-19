@@ -80,6 +80,7 @@ export interface WebviewMessage {
 		| "setopenAiCustomModelInfo"
 		| "openCustomModesSettings"
 		| "resumeTask"
+	    | "answer"
 	text?: string
 	disabled?: boolean
 	askResponse?: ClineAskResponse
@@ -101,6 +102,7 @@ export interface WebviewMessage {
 	slug?: string
 	modeConfig?: ModeConfig
 	timeout?: number
+	payload?: Record<string, any>
 }
 
 export type ClineAskResponse = "yesButtonClicked" | "noButtonClicked" | "messageResponse"

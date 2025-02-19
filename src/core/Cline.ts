@@ -1102,6 +1102,10 @@ export class Cline {
 					break
 				}
 
+				if (block.name === 'ask'){ // assign UUID to receive corresponding answers
+					block.params.uuid = crypto.randomUUID();
+				}
+
 				try {
 					console.log('[waht] 开始执行tool', block)
 					const res = await this.applyTool(block, {'cline':this,'replacing':replacing})

@@ -20,7 +20,8 @@ import Thumbnails from "../common/Thumbnails"
 import McpResourceRow from "../mcp/McpResourceRow"
 import McpToolRow from "../mcp/McpToolRow"
 import { highlightMentions } from "./TaskHeader"
-import { IBaseCommand } from "@core/internal-implementation/type";
+import { IAskCommand, IBaseCommand } from "@core/internal-implementation/type";
+import ASelect from "../common/ASelect";
 
 interface ChatRowProps {
 	message: ClineMessage
@@ -250,7 +251,7 @@ export const ChatRowContent = ({
 				className={`codicon codicon-${name}`}
 				style={{ color: "var(--vscode-foreground)", marginBottom: "-1.5px" }}></span>
 		)
-		const newTool = tool as any as IBaseCommand
+		const newTool = tool as any as (IBaseCommand | IAskCommand)
 		switch (newTool.type){
 			case "base":
 				if (newTool.cmd === "log"){
@@ -267,8 +268,28 @@ export const ChatRowContent = ({
 				}
 				break
 
-			default:
-				break
+			case "ask":
+				if (newTool.askType === "choice"){
+					console.log('[waht]', newTool)
+					return (
+						<>
+							<div style={headerStyle}>
+								{toolIcon("question")}
+								<span style={{ fontWeight: "bold" }}>Roo has a question:</span>
+							</div>
+							<ASelect title={newTool.question} options={newTool.choices}
+									 onConfirm={(value) => {
+										 vscode.postMessage({
+											 type: "answer",
+											 payload: {result: value, uuid: newTool.uuid}
+										 })
+									 }}
+									 result={newTool.result}
+							/>
+						</>
+					)
+				}
+
 		}
 
 		switch (tool.tool) {

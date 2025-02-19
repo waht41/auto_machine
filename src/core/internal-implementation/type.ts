@@ -14,7 +14,7 @@ export type IBaseCommand = {type:'base'} & ({
     content: string;
 })
 
-export type IAskCommand = {type:'ask'} & ({
+export type IAskCommand = {type:'ask'; uuid: string, result?: string} & ({
     askType: 'followup';
     question: string;
 } | {

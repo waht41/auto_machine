@@ -1257,6 +1257,25 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 							await this.updateGlobalState("mode", defaultModeSlug)
 							await this.postStateToWebview()
 						}
+						break
+					case "answer":
+						for (let clineMessage of this.cline?.clineMessages || []) {
+							if (clineMessage.type !== "ask") {
+								continue
+							}
+							if (clineMessage.text){
+								const command = JSON.parse(clineMessage.text)
+								if (command.uuid === message.payload?.uuid) {
+									command.result = message.payload?.result;
+									clineMessage.text = JSON.stringify(command)
+									console.log('[waht] answer cline',clineMessage.text)
+									await this.cline?.overwriteClineMessages(this.cline.clineMessages);
+									break
+								}
+							}
+						}
+						break
+
 				}
 			},
 			null,
