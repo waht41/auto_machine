@@ -50,6 +50,8 @@ type UserContent = Array<
 	Anthropic.TextBlockParam | Anthropic.ImageBlockParam | Anthropic.ToolUseBlockParam | Anthropic.ToolResultBlockParam
 >
 
+const endHint = 'roo stop the conversion, should resume?';
+
 export class Cline {
 	readonly taskId: string
 	api: ApiHandler
@@ -87,6 +89,7 @@ export class Cline {
 	private didGetNewMessage = false
 	private didCompleteReadingStream = false
 	private executor = new CommandRunner()
+	private asking = false;
 
 	constructor(
 		provider: ClineProvider,
@@ -254,7 +257,7 @@ export class Cline {
 		partial?: boolean,
 		replacing?: boolean
 	}) {
-		return await this.ask(askType, text, partial, replacing)
+		return await this.ask(askType, text, partial, replacing, true)
 	}
 
 	async ask(
@@ -262,6 +265,7 @@ export class Cline {
 		text?: string,
 		partial?: boolean,
 		replacing = false,
+		noReturn = false
 	): Promise<{ response: ClineAskResponse; text?: string; images?: string[] }> {
 		if (this.abort) {
 			throw new Error("Roo Code instance aborted");
@@ -341,6 +345,11 @@ export class Cline {
 			await addNewAsk();
 		}
 
+		if (noReturn) {
+			this.asking = true;
+			//@ts-ignore
+			return;
+		}
 		await this.waitForResponse(askTs);
 		return this.getResponseResult();
 	}
@@ -482,8 +491,7 @@ export class Cline {
 			...imageBlocks,
 		])
 	}
-
-	private toUserContent(text?: string, images?: string[]): UserContent {
+	toUserContent(text?: string, images?: string[]): UserContent {
 		const userContent: UserContent = []
 		if (text) {
 			userContent.push({ type: "text", text })
@@ -498,8 +506,47 @@ export class Cline {
 	private async resumeTask(text?: string, images?: string[]) {
 		this.clineMessages = await this.getSavedClineMessages()
 		this.apiConversationHistory = await this.getSavedApiConversationHistory()
+		if (this.clineMessages.at(-1)?.text === endHint) {
+			this.clineMessages.pop();
+		}
 		await this.say("text", text, images, true)
 		const userContent: UserContent = this.toUserContent(text, images)
+		this.initiateTaskLoop(userContent)
+	}
+
+	async receiveAnswer({uuid, result, images}: {
+		uuid: string, result: string, images?: string[]
+	}) {
+		if (!uuid) {
+			throw new Error("No uuid provided for answer")
+		}
+		this.clineMessages = await this.getSavedClineMessages()
+		this.apiConversationHistory = await this.getSavedApiConversationHistory()
+		const length = this.clineMessages.length -1;
+		for (let i = length ; i>=0 ; i--) {
+			const clineMessage = this.clineMessages[i]
+			if (clineMessage.type !== "ask") {
+				continue
+			}
+			if (clineMessage.text === endHint) {
+				this.clineMessages.splice(i, 1);
+				continue;
+			}
+			if (clineMessage.text) {
+				try {
+					const command = JSON.parse(clineMessage.text)
+					if (command.uuid === uuid) {
+						command.result = result;
+						clineMessage.text = JSON.stringify(command)
+						// await this.overwriteClineMessages(this.clineMessages);
+						break
+					}
+				} catch (error) {
+					console.error("Failed to parse command from text:", error)
+				}
+			}
+		}
+		const userContent: UserContent = this.toUserContent(result, images)
 		this.initiateTaskLoop(userContent)
 	}
 
@@ -1418,14 +1465,19 @@ export class Cline {
 					// })
                     await this.askP({
                         askType: 'followup',
-                        text: 'roo stop the conversion, should resume?',
+                        text: endHint,
                         partial: false,
                         replacing: false
                     })
 					this.consecutiveMistakeCount++
 					console.log('[waht] no new message get')
 					return true;
-				} else {
+				} else if (this.asking){
+					console.log('[waht] asking')
+					this.asking = false;
+					return true;
+				}
+				else {
 					didEndLoop = await this.recursivelyMakeClineRequests(this.userMessageContent)
 				}
 			} else {
@@ -1666,3 +1718,4 @@ export class Cline {
 		return `<environment_details>\n${details.trim()}\n</environment_details>`
 	}
 }
+
