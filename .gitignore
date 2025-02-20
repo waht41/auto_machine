@@ -25,3 +25,5 @@ dist-electron
 *.sw?
 
 tasks
+tests
+userData
