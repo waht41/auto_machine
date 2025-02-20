@@ -9,15 +9,15 @@ export class MockExtensionContext implements vscode.ExtensionContext {
     subscriptions: { dispose(): any }[] = [];
     workspaceState: vscode.Memento = new BaseMemento();
     globalState: GlobalState = new GlobalState();
-    extensionUri: vscode.Uri = vscode.Uri.file(__dirname);
+    extensionUri: vscode.Uri = vscode.Uri.file('.');
     extensionPath: string = __dirname;
     environmentVariableCollection: GlobalEnvironmentVariableCollection = new MockEnvironmentVariableCollection();
     asAbsolutePath(relativePath: string): string {
         return require('path').join(this.extensionPath, relativePath);
     }
-    storageUri: vscode.Uri | undefined = vscode.Uri.file(__dirname);
-    globalStorageUri: vscode.Uri = vscode.Uri.file(__dirname);
-    logUri: vscode.Uri = vscode.Uri.file(__dirname);
+    storageUri: vscode.Uri | undefined = vscode.Uri.file('.');
+    globalStorageUri: vscode.Uri = vscode.Uri.file('.');
+    logUri: vscode.Uri = vscode.Uri.file('.');
     extensionMode: vscode.ExtensionMode = vscode.ExtensionMode.Test;
     secrets: vscode.SecretStorage = new MockSecretStorage();
 }
