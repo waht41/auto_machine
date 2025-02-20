@@ -1,8 +1,8 @@
 import { chromium, Browser, Page, BrowserContext } from 'playwright';
 import { BrowserOptions, PageOptions } from './type';
-import * as fs from 'fs';
-import * as path from 'path';
-import { DEFAULT_USER_DATA_PATH } from "@operation/Browser/const";
+import * as process from "node:process";
+import path from "node:path";
+import fs from "node:fs";
 
 let browserContext: BrowserContext | null = null;
 export let lastActivePage: Page | null = null;
@@ -10,8 +10,10 @@ let userDataDir: string | null = null;
 
 export async function getBrowser(options: BrowserOptions = {}): Promise<BrowserContext> {
     if (!browserContext) {
-        userDataDir = options.userDataDir || DEFAULT_USER_DATA_PATH;
-
+        userDataDir = options.userDataDir || getDefaultUserDataDir();
+        if (!fs.existsSync(userDataDir)) {
+            fs.mkdirSync(userDataDir, {recursive: true});
+        }
         browserContext = await chromium.launchPersistentContext(userDataDir, {
             headless: options.headless ?? false,
             channel: options.channel ?? 'chrome',
@@ -150,4 +152,8 @@ export async function closeBrowser(): Promise<void> {
         await browserContext.close();
         browserContext = null;
     }
+}
+
+export const getDefaultUserDataDir = () => {
+    return path.join(process.cwd(),'userData');
 }
