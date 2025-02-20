@@ -18,6 +18,12 @@ export async function getBrowser(options: BrowserOptions = {}): Promise<BrowserC
             headless: options.headless ?? false,
             channel: options.channel ?? 'chrome',
             viewport: null, // 使用默认窗口大小
+            args: [
+                '--disable-blink-features=AutomationControlled'
+            ],
+            ignoreDefaultArgs: [
+                '--enable-automation' // 禁用自动化标记
+            ]
         });
     }
     return browserContext;
