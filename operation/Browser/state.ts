@@ -1,6 +1,6 @@
 import { Page } from 'playwright';
 import { PageState } from './type';
-import { getPages } from './common';
+import { getPages, lastActivePage } from './common';
 
 /**
  * 检查页面是否存在验证码
@@ -75,11 +75,13 @@ export async function state(): Promise<PageState[]> {
             if (loadState !== 'complete') {
                 state = 'loading';
             }
+            const isCurrentPage = page === lastActivePage;
 
             states.push({
                 url,
                 title,
                 state,
+                isCurrentPage,
                 ...(captchaInfo && { captchaInfo })
             });
         } catch (error) {

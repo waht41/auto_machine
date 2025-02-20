@@ -1,30 +1,41 @@
 import { chromium, Browser, Page, BrowserContext } from 'playwright';
 import { BrowserOptions, PageOptions } from './type';
+import * as fs from 'fs';
+import * as path from 'path';
+import { DEFAULT_USER_DATA_PATH } from "@operation/Browser/const";
 
-let browserInstance: Browser | null = null;
 let browserContext: BrowserContext | null = null;
-let lastActivePage: Page | null = null;
+export let lastActivePage: Page | null = null;
+let userDataDir: string | null = null;
 
-export async function getBrowser(options: BrowserOptions = {}): Promise<Browser> {
-    if (!browserInstance) {
-        browserInstance = await chromium.launch({
+export async function getBrowser(options: BrowserOptions = {}): Promise<BrowserContext> {
+    if (!browserContext) {
+        userDataDir = options.userDataDir || DEFAULT_USER_DATA_PATH;
+
+        browserContext = await chromium.launchPersistentContext(userDataDir, {
             headless: options.headless ?? false,
             channel: options.channel ?? 'chrome',
-        });
-        // 创建一个共享的上下文
-        browserContext = await browserInstance.newContext({
-            viewport: null // 使用默认窗口大小
+            viewport: null, // 使用默认窗口大小
         });
     }
-    return browserInstance;
+    return browserContext;
 }
 
 export async function getPage(options: PageOptions = {}): Promise<Page> {
-    await getBrowser(); // 确保浏览器和上下文已创建
-    
-    if (!browserContext) {
-        throw new Error('Browser context not initialized');
+    // 如果提供了新的身份验证状态，需要重新创建上下文
+    if (options.userDataDir && browserContext) {
+        if (userDataDir && userDataDir !== options.userDataDir) {
+            await browserContext.close();
+            browserContext = null;
+            lastActivePage = null;
+        }
     }
+
+    const context = await getBrowser({
+        headless: false,
+        channel: 'chrome',
+        userDataDir: options.userDataDir
+    });
     
     // 如果没有任何选项，返回上一次操作的页面或创建新页面
     if (!options.url && !options.title && !options.createNew) {
@@ -47,14 +58,14 @@ export async function getPage(options: PageOptions = {}): Promise<Page> {
         }
         
         // 如果没有有效的上一次操作页面，创建新页面
-        const page = await browserContext.newPage();
+        const page = await context.newPage();
         lastActivePage = page;
         return page;
     }
 
     // 如果要求创建新页面
     if (options.createNew) {
-        const page = await browserContext.newPage();
+        const page = await context.newPage();
         if (options.url) {
             await page.goto(options.url, {
                 waitUntil: options.waitForUrl ? 'networkidle' : 'commit'
@@ -64,7 +75,7 @@ export async function getPage(options: PageOptions = {}): Promise<Page> {
         return page;
     }
 
-    const pages = browserContext.pages();
+    const pages = context.pages();
 
     // 尝试在现有页面中查找匹配的页面
     for (const page of pages) {
@@ -107,7 +118,7 @@ export async function getPage(options: PageOptions = {}): Promise<Page> {
 
     // 如果没有找到匹配的页面，创建新页面
     if (options.url) {
-        const page = await browserContext.newPage();
+        const page = await context.newPage();
         await page.goto(options.url, {
             waitUntil: options.waitForUrl ? 'networkidle' : 'commit'
         });
@@ -117,7 +128,7 @@ export async function getPage(options: PageOptions = {}): Promise<Page> {
     }
 
     // 创建新页面
-    const page = await browserContext.newPage();
+    const page = await context.newPage();
     pages.push(page);
     lastActivePage = page;
     return page;
@@ -138,9 +149,5 @@ export async function closeBrowser(): Promise<void> {
     if (browserContext) {
         await browserContext.close();
         browserContext = null;
-    }
-    if (browserInstance) {
-        await browserInstance.close();
-        browserInstance = null;
     }
 }

@@ -5,6 +5,7 @@ import * as navigate from './navigate';
 import * as interact from './interact';
 import * as analyze from './analyze';
 import * as state from './state';
+import * as auth from './auth';
 
 export * from './type';
-export default { ...open, ...search, ...navigate, ...interact, ...analyze, ...state };
+export default { ...open, ...search, ...navigate, ...interact, ...analyze, ...state, ...auth };

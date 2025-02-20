@@ -3,10 +3,12 @@
 export interface BrowserOptions {
     headless?: boolean;
     channel?: string;
+    userDataDir?: string; // 用户数据目录路径，用于持久化存储
 }
 
 export interface OpenOptions {
     url: string;
+    userDataDir?: string;    // 身份验证状态文件路径
 }
 
 export interface SearchOptions {
@@ -57,6 +59,7 @@ export interface PageOptions {
     title?: string;     // 通过标题匹配页面
     createNew?: boolean; // 是否创建新页面
     waitForUrl?: boolean; // 是否等待URL加载完成
+    userDataDir?: string; // 用户数据目录路径
 }
 
 export interface AnalyzeOptions {
@@ -83,6 +86,14 @@ export interface PageState {
         selector: string;                   // 验证码元素选择器
         type: 'image' | 'recaptcha' | 'other';  // 验证码类型
     };
+    isCurrentPage?: boolean;  // 是否是当前页面
+}
+
+export interface AuthOptions {
+    action: 'save'|'delete';
+    url?: string;
+    title?: string;
+    path?: string;    // 保存身份验证状态的文件路径
 }
 
 // 通用的浏览器操作结果接口

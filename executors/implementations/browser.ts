@@ -3,6 +3,7 @@ import { BaseCommand } from "@executors/base";
 import { RegisterExecutor } from "@executors/registry";
 import Browser, {
     AnalyzeOptions,
+    AuthOptions,
     InteractOptions,
     NavigateOptions,
     OpenOptions,
@@ -34,6 +35,9 @@ export class BrowserCommandExecutor implements CommandExecutor {
                 } else {
                     return 'success'
                 }
+            case 'auth':
+                await Browser.auth(command);
+                return 'success';
             default:
                 throw new Error(`Unknown action: ${command}`);
         }
@@ -58,5 +62,8 @@ export type BrowserCommand = BaseCommand<'browser'> & (
     } & NavigateOptions |
     {
         cmd: 'interact';
-    } & InteractOptions
+    } & InteractOptions |
+    {
+        cmd: 'auth';
+    } & AuthOptions
     );

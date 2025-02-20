@@ -112,3 +112,15 @@ interact:  # 页面交互类
         url: "https://www.gmail.com"
         selector: "input.email"
         text: "user@example.com"
+
+auth:
+  description: 保存或删除登录状态。
+  params:
+    url: 网址
+    cmd: [save|delete] # 用户手动登录后执行save可保存当前的cookie,localstorage,sessionstorage等信息，执行delete可删除保存的信息
+  example:
+    - tool: browser
+      cmd: auth
+      action: save
+      url: "https://www.bilibili.com"
+
