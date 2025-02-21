@@ -30,10 +30,12 @@ analyze:
   params:
     url: [optional] # 网址 和 title至少需要一个
     title: [optional]  # 标题
+    action: [interactive,static] # 返回交互式信息、静态内容等，默认只返回interactive信息（如按钮、输入框、跳链），可多选
     with_selector: [true|false] # 是否返回元素选择器,默认为false  由于返回的数据量较大，建议关闭
   example:
     - tool: browser
       url: "https://www.bilibili.com"
+      action: [interactive,static]
       cmd: analyze
 
 

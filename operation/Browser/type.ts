@@ -65,16 +65,18 @@ export interface PageOptions {
 export interface AnalyzeOptions {
     url?: string;              // 网页URL
     title?: string;            // 页面标题
-    selector: string;          // CSS或XPath选择器
-    depth?: number;            // 分析深度，默认为1
+    action?: ('interactive' | 'static')[];  // 分析动作类型
+    with_selector?: boolean;   // 是否返回选择器信息
 }
 
 export interface AnalyzeResult {
-    selector?: string;           // 元素的选择器路径
+    selector?: string;         // 元素的选择器路径
     tag: string;              // 元素类型（标签名）
-    id?: string;               // 元素ID
-    text?: string;             // 文本内容
-    href?: string;             // 链接URL（仅链接元素）
+    id?: string;              // 元素ID
+    type?: string;            // 元素类型
+    text?: string;            // 文本内容
+    href?: string;            // 链接URL（仅链接元素）
+    html?: string;            // 静态HTML内容
 }
 
 export interface PageState {
