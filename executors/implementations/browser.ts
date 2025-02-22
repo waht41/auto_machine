@@ -3,7 +3,8 @@ import { BaseCommand } from "@executors/base";
 import { RegisterExecutor } from "@executors/registry";
 import Browser, {
     AnalyzeOptions,
-    AuthOptions, DownloadOptions,
+    AuthOptions,
+    DownloadOptions,
     InteractOptions,
     NavigateOptions,
     OpenOptions,

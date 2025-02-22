@@ -1,8 +1,7 @@
 import { chromium, Browser, Page, BrowserContext, ElementHandle } from 'playwright';
 import { BrowserOptions, PageOptions } from './type';
-import * as process from "node:process";
-import path from "node:path";
-import fs from "node:fs";
+import path from "path";
+import fs from "fs";
 
 let browserContext: BrowserContext | null = null;
 export let lastActivePage: Page | null = null;
@@ -161,7 +160,7 @@ export async function closeBrowser(): Promise<void> {
 }
 
 export const getDefaultUserDataDir = () => {
-    return path.join(process.cwd(),'userData');
+    return path.join('.','userData');
 }
 
 export const getElementSelector = async (element: ElementHandle): Promise<string> => {

@@ -12,7 +12,7 @@ export class CommandRunner {
 
     async runCommand(command: Command, context: any): Promise<any> {
         const executor = this.registry.getExecutor(command.type);
-        
+
         if (!executor) {
             console.error(`No executor found for command type: ${command.type}`);
             return;
