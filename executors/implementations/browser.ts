@@ -3,7 +3,7 @@ import { BaseCommand } from "@executors/base";
 import { RegisterExecutor } from "@executors/registry";
 import Browser, {
     AnalyzeOptions,
-    AuthOptions,
+    AuthOptions, DownloadOptions,
     InteractOptions,
     NavigateOptions,
     OpenOptions,
@@ -38,6 +38,9 @@ export class BrowserCommandExecutor implements CommandExecutor {
             case 'auth':
                 await Browser.auth(command);
                 return 'success';
+            case 'download':
+                const downloadResult = await Browser.download(command);
+                return 'success, download at:' + downloadResult.data;
             default:
                 throw new Error(`Unknown action: ${command}`);
         }
@@ -65,5 +68,8 @@ export type BrowserCommand = BaseCommand<'browser'> & (
     } & InteractOptions |
     {
         cmd: 'auth';
-    } & AuthOptions
+    } & AuthOptions |
+    {
+        cmd: 'download';
+    } & DownloadOptions
     );

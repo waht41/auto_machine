@@ -102,6 +102,9 @@ export interface DownloadOptions {
     url: string;                // 文件URL
     path?: string;              // 保存路径
     selector?: string;          // 下载链接选择器
+    tag?: string;               // 下载链接标签
+    id?: string;                // 下载链接ID
+    text?: string;              // 下载链接文本
     userDataDir?: string;      // 用户数据目录路径
 }
 

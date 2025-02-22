@@ -4,6 +4,7 @@ import * as path from 'path';
 import fs from "node:fs";
 import https from 'node:https';
 import http from 'node:http';
+import { interact } from "@operation/Browser/interact";
 
 export async function download(options: DownloadOptions): Promise<BrowserResult> {
     const targetDir = path.resolve(options.path ? path.dirname(options.path) : './download');
@@ -12,16 +13,14 @@ export async function download(options: DownloadOptions): Promise<BrowserResult>
         fs.mkdirSync(targetDir, { recursive: true, mode: 0o755 }); // 显式设置权限
     }
 
-    if (options.selector) {
-        const page = await getPage({ url: options.url, userDataDir: options.userDataDir });
+    if (options.selector || options.tag || options.text || options.id) {
+        const page = await getPage({ url: options.url });
         const [download] = await Promise.all([
             page.waitForEvent('download'),
-            page.goto(options.url)
         ]);
         const filename = download.suggestedFilename();
         const downloadPath = path.join(targetDir, filename);
-        await page.waitForSelector(options.selector);
-        await page.click(options.selector);
+        await interact({ ...options, action: 'click' });
         try {
             await download.saveAs(downloadPath);
         } catch (error) {

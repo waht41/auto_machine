@@ -119,8 +119,11 @@ download:
   description: 下载指定文件
   params:
     url: 文件下载地址
-    path: [optional]  # 默认为./download/${downloadEvent.suggestedFilename()}
-    selector: [optional] # 元素选择器,用于指定下载按钮，没有会直接作为静态资源下载
+    path: [optional]  # 默认为./download/${downloadEvent.suggestedFilename()}. 如非明确要求，放在./download文件夹下
+    selector: optional # 元素选择器
+    id: optional # 元素ID
+    text: optional # 元素文本
+    tag: optional # 元素标签  # 以上四个参数用于指定下载按钮，没有会直接作为静态资源下载
   example:
     - tool: browser
       url: "https://www.example.com/file.zip"
