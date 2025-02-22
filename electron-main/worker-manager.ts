@@ -71,8 +71,8 @@ export class WorkerManager {
 
     private startWorker() {
         const workerPath = join(__dirname,
-            this.isDev ? '../src/background-worker/start-background.ts'
-                : '../background/start-background.js'
+            this.isDev ? '../../src/background-worker/start-background.ts'
+                : join(process.resourcesPath, 'background/start-background.js')
         );
 
         this.worker = fork(workerPath, [], {
