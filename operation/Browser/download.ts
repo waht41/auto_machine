@@ -7,6 +7,7 @@ import http from 'http';
 import { interact } from "@operation/Browser/interact";
 import { promisify } from 'util';
 import { pipeline } from 'stream';
+import type { Download } from 'playwright';
 
 // 配置常量
 const DEFAULT_DOWNLOAD_DIR = './download';
@@ -16,6 +17,14 @@ const DEFAULT_FILENAME_PREFIX = 'download';
 
 // 流管道异步化
 const asyncPipeline = promisify(pipeline);
+
+// 新增字节格式化函数
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log2(bytes) / 10);
+  return `${(bytes / Math.pow(1024, i)).toFixed(2)} ${units[i]}`;
+}
 
 export async function download(options: DownloadOptions): Promise<BrowserResult> {
     const { targetDir, userFilename } = parseUserPath(options.path);
@@ -53,7 +62,6 @@ async function handleBrowserDownload(
     const page = await getPage({ url: options.url });
     const [download] = await Promise.all([page.waitForEvent('download')]);
 
-    // 生成最终文件名
     const filename = userFilename || download.suggestedFilename() || generateTimestampFilename();
     const downloadPath = path.join(targetDir, sanitizeFilename(filename));
 
@@ -69,7 +77,8 @@ async function handleBrowserDownload(
         }
     }
 
-    await page.close();
+    console.log(`✅ 下载完成: ${path.basename(downloadPath)}`);
+    console.log(`📄 文件大小: ${formatBytes(fs.statSync(downloadPath).size)}`);
     return { success: true, data: downloadPath };
 }
 
@@ -130,7 +139,7 @@ function shouldUseBrowserDownload(options: DownloadOptions): boolean {
 
 /** 处理Windows系统重试逻辑 */
 async function handleWindowsRetry(
-    download: any,
+    download: Download,
     downloadPath: string
 ): Promise<void> {
     await new Promise(resolve => setTimeout(resolve, WINDOWS_RETRY_DELAY));
@@ -161,7 +170,6 @@ async function fetchResponse(
         req.on('error', reject);
     });
 }
-
 
 /** 验证响应状态 */
 function validateResponseStatus(
@@ -196,17 +204,37 @@ function getDownloadPath(directory: string, filename: string): string {
     return path.join(directory, sanitizeFilename(filename));
 }
 
-
 /** 保存文件到本地 */
 async function saveFile(
     response: http.IncomingMessage,
     filePath: string
 ): Promise<void> {
     const fileStream = fs.createWriteStream(filePath);
+    const totalBytes = parseInt(response.headers['content-length'] || '0', 10);
+    let receivedBytes = 0;
+    let lastLogged = 0;
+
+    console.log(`🟢 开始下载: ${path.basename(filePath)}`);
+    if (totalBytes > 0) {
+        console.log(`📦 文件大小: ${formatBytes(totalBytes)}`);
+    }
+
+    response.on('data', (chunk) => {
+        receivedBytes += chunk.length;
+        if (totalBytes > 0) {
+            const percent = (receivedBytes / totalBytes * 100).toFixed(1);
+            if (Date.now() - lastLogged > 1000) {
+                console.log(`📥 下载进度: ${percent}% (${formatBytes(receivedBytes)} / ${formatBytes(totalBytes)})`);
+                lastLogged = Date.now();
+            }
+        }
+    });
 
     try {
         await asyncPipeline(response, fileStream);
     } finally {
         fileStream.close();
     }
+    console.log(`✅ 下载完成: ${path.basename(filePath)}`);
+    console.log(`📄 文件大小: ${formatBytes(fs.statSync(filePath).size)}`);
 }
