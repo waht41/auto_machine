@@ -160,7 +160,7 @@ export async function closeBrowser(): Promise<void> {
 }
 
 export const getDefaultUserDataDir = () => {
-    return path.join('.','userData');
+    return path.resolve(path.join('.','userData'));
 }
 
 export const getElementSelector = async (element: ElementHandle): Promise<string> => {

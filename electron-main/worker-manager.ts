@@ -11,6 +11,10 @@ const writeLog = (...message   : any[]) => {
     logStream.write(logMessage+'\n');
 }
 
+export const getAssetsPath = (): string => {
+    return join(process.resourcesPath, 'assets')
+}
+
 export class WorkerManager {
     private worker: ChildProcess | null = null;
     private restartAttempts = 0;
@@ -78,8 +82,15 @@ export class WorkerManager {
     private startWorker() {
         const workerPath =this.isDev ? join(__dirname,
              '../../src/background-worker/start-background.ts') : join(app.getAppPath(), 'build', 'background','start-background.js');
+        const workerEnv = {
+            ...process.env,
+            NODE_ENV: this.isDev ? 'development' : 'production',
+            ASSETS_PATH: getAssetsPath() // 注入关键路径
+        }
+
         this.worker = fork(workerPath, [], {
-            execArgv: this.isDev ? ['--import', 'tsx'] : []
+            execArgv: this.isDev ? ['--import', 'tsx'] : [],
+            env: workerEnv,
         });
 
         this.worker.on('message', (message: any) => {

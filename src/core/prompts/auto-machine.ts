@@ -1,12 +1,15 @@
 import fs from "fs";
 import path from "path";
+import * as process from "node:process";
 
 let prompt = ''
+
 export const AM_PROMPT = async (
-  ...prop: any
+    ...prop: any
 ): Promise<string> => {
-    if (!prompt){
-        prompt = fs.readFileSync(path.join(__dirname, 'base.md'), 'utf8')
+    if (!prompt) {
+        const assetPath = process.env.ASSET_PATH ?? path.join(process.cwd(), './assets')
+        prompt = fs.readFileSync(path.join(assetPath, 'base.md'), 'utf8')
     }
     return prompt
 }
