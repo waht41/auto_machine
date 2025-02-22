@@ -98,6 +98,12 @@ export interface AuthOptions {
     path?: string;    // 保存身份验证状态的文件路径
 }
 
+export interface DownloadOptions {
+    url: string;                // 文件URL
+    path?: string;              // 保存路径
+    userDataDir?: string;      // 用户数据目录路径
+}
+
 // 通用的浏览器操作结果接口
 export interface BrowserResult<T = any> {
     success: boolean;

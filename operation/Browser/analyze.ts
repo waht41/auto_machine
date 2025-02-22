@@ -2,28 +2,34 @@ import { ElementHandle, Page } from 'playwright';
 import { getElementSelector, getPage, waitForPageLoad } from './common';
 import { AnalyzeOptions, AnalyzeResult } from "./type";
 
-// 浏览器端函数
-const isElementVisible = (element: HTMLElement): boolean => {
-    // 检查当前元素是否可见
-    const style = window.getComputedStyle(element);
-    if (style.display === 'none' || style.visibility === 'hidden' || 
-        style.opacity === '0' || element.hidden) {
+// 递归检查元素可见性链条
+const checkVisibilityChain = (node: Node | null): boolean => {
+    // 终止条件：非元素节点或 null
+    if (!(node instanceof HTMLElement)) return true;
+
+    // 检查当前节点可见性
+    const style = window.getComputedStyle(node);
+    if (style.display === 'none' ||
+        style.visibility === 'hidden' ||
+        style.opacity === '0' ||
+        node.hidden) {
         return false;
     }
 
-    // 检查所有父元素是否可见
-    let parent = element.parentElement;
-    while (parent) {
-        const parentStyle = window.getComputedStyle(parent);
-        if (parentStyle.display === 'none' || parentStyle.visibility === 'hidden' || 
-            parentStyle.opacity === '0' || parent.hidden) {
-            return false;
-        }
-        parent = parent.parentElement;
-    }
-
-    return true;
+    // 三路递归检查（普通父元素、Shadow Host、插槽宿主）
+    return checkVisibilityChain(node.assignedSlot) &&          // 检查插槽链路
+        checkVisibilityChain(node.parentElement) &&        // 检查常规父元素
+        checkVisibilityChain(node.getRootNode().host);     // 检查 Shadow Host
 };
+
+// 浏览器端函数
+const isElementVisible = (element: HTMLElement): boolean => {
+    console.log('检查元素可见性', element);
+
+    // 初始检查从目标元素开始
+    return checkVisibilityChain(element);
+};
+
 
 const processElement = (element: HTMLElement): any => {
     // 检查元素是否可见
@@ -63,6 +69,7 @@ function functionToExecutableString(fn: Function, variableName: string): string 
 
 // 生成注入代码
 const injectionScript = [
+    functionToExecutableString(checkVisibilityChain, 'checkVisibilityChain'),
     functionToExecutableString(isElementVisible, 'isElementVisible'),
     functionToExecutableString(processElement, 'processElement')
 ].join('\n');

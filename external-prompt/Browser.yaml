@@ -115,3 +115,13 @@ interact:  # 页面交互类
         selector: "input.email"
         text: "user@example.com"
 
+download:
+  description: 下载指定文件
+  params:
+    url: 文件下载地址
+    path: [optional]  # 默认为./download/${downloadEvent.suggestedFilename()}
+    selector: [optional] # 元素选择器,用于下载按钮，没有会直接下载网页
+  example:
+    - tool: browser
+      url: "https://www.example.com/file.zip"
+      path: "./file.zip"
