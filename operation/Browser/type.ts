@@ -101,6 +101,7 @@ export interface AuthOptions {
 export interface DownloadOptions {
     url: string;                // 文件URL
     path?: string;              // 保存路径
+    selector?: string;          // 下载链接选择器
     userDataDir?: string;      // 用户数据目录路径
 }
 
