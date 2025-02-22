@@ -10,7 +10,7 @@ export class MockExtensionContext implements vscode.ExtensionContext {
     workspaceState: vscode.Memento = new BaseMemento();
     globalState: GlobalState = new GlobalState();
     extensionUri: vscode.Uri = vscode.Uri.file('.');
-    extensionPath: string = __dirname;
+    extensionPath: string = './extension';
     environmentVariableCollection: GlobalEnvironmentVariableCollection = new MockEnvironmentVariableCollection();
     asAbsolutePath(relativePath: string): string {
         return require('path').join(this.extensionPath, relativePath);

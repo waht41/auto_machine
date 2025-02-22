@@ -1,9 +1,15 @@
-import { BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain } from 'electron';
 import { ChildProcess, fork } from 'child_process';
 import { join } from 'path';
 import * as path from 'path';
 import chokidar from 'chokidar';
-import { Stats } from "fs";
+import fs, { Stats } from "fs";
+
+const logStream = fs.createWriteStream( 'work_manager.log', { flags: 'a' });
+const writeLog = (...message   : any[]) => {
+    const logMessage = message.map(item => typeof item === 'object' ? JSON.stringify(item) : String(item)).join(' ');
+    logStream.write(logMessage+'\n');
+}
 
 export class WorkerManager {
     private worker: ChildProcess | null = null;
@@ -70,11 +76,8 @@ export class WorkerManager {
     }
 
     private startWorker() {
-        const workerPath = join(__dirname,
-            this.isDev ? '../../src/background-worker/start-background.ts'
-                : join(process.resourcesPath, 'background/start-background.js')
-        );
-
+        const workerPath =this.isDev ? join(__dirname,
+             '../../src/background-worker/start-background.ts') : join(app.getAppPath(), 'build', 'background','start-background.js');
         this.worker = fork(workerPath, [], {
             execArgv: this.isDev ? ['--import', 'tsx'] : []
         });

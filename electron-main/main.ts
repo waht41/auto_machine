@@ -3,12 +3,13 @@ import * as path from 'path';
 import { createMenu } from './menu';
 import { WorkerManager } from './worker-manager';
 
+const isDev = process.env.NODE_ENV === 'development';
 const createWindow = async () => {
     const win = new BrowserWindow({
         width: 1600,
         height: 600,
         webPreferences: {
-            preload: path.join(__dirname, 'preload.js'),
+            preload: isDev ? path.join(__dirname, 'preload.js'): path.join(app.getAppPath(), 'build','electron', 'preload.js'),
             contextIsolation: true,
         }
     })
@@ -21,15 +22,10 @@ const createWindow = async () => {
     createMenu(win, workerManager.send);
 
     if (process.env.NODE_ENV === 'development') {
-        console.log('[waht] Loading development URL...');
         await win.loadURL(process.env.VITE_DEV_SERVER_URL!)
     } else {
         await win.loadFile(
-            path.join(__dirname, '../renderer/index.html'),
-            {
-                // 关键配置：设置根路径基准
-                search: `?basePath=${path.dirname(__dirname)}`
-            }
+            path.join(app.getAppPath(),'build','index.html'),
         )
     }
 }

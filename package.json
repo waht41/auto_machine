@@ -15,13 +15,12 @@
     ]
   },
   "scripts": {
-    "start-electron": "cross-env-shell \"node -e \\\"process.platform === 'win32' && process.exit(1)\\\" || (chcp 65001 && vite) || vite\"",
     "dev-win": "rimraf dist-electron && chcp 65001 && vite",
     "dev-mac": "rimraf dist-electron && vite",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "electron .",
-    "package": "electron-builder"
+    "package": "electron-builder",
+    "release": "npm run build && npm run package"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.2",
