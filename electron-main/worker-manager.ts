@@ -12,7 +12,7 @@ const writeLog = (...message   : any[]) => {
 }
 
 export const getAssetsPath = (): string => {
-    return join(process.resourcesPath, 'assets')
+    return join(process.cwd(), 'resources','assets')
 }
 
 export class WorkerManager {

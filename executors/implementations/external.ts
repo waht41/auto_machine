@@ -10,7 +10,7 @@ export class ExternalCommandExecutor implements CommandExecutor {
         console.log(`Executing: Open External "${command.request}"`);
         try {
             const fileNames = command.request.split(',').map(name => name.trim());
-            const assetPath = process.env.ASSET_PATH ?? path.join(process.cwd(), './assets')
+            const assetPath = process.env.ASSETS_PATH ?? path.join(process.cwd(), './assets')
             const prompts = await Promise.all(
                 fileNames.map(fileName =>
                     file.readFile(path.join(assetPath, 'external-prompt', `${fileName}.yaml`), 'utf8')
