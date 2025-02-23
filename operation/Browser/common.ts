@@ -1,4 +1,4 @@
-import { chromium, Browser, Page, BrowserContext, ElementHandle } from 'playwright';
+import { chromium, Page, BrowserContext, ElementHandle } from 'playwright';
 import { BrowserOptions, PageOptions } from './type';
 import path from "path";
 import fs from "fs";
@@ -21,11 +21,31 @@ export async function getBrowser(options: BrowserOptions = {}): Promise<BrowserC
                 '--disable-blink-features=AutomationControlled'
             ],
             ignoreDefaultArgs: [
-                '--enable-automation' // 禁用自动化标记
-            ]
+                '--enable-automation' // 禁用自动化标记，降低被当成机器人的概率
+            ],
         });
     }
     return browserContext;
+}
+
+/**
+ * 获取空白页面或创建新页面
+ * @param context 浏览器上下文
+ * @returns 返回页面对象
+ */
+async function getOrCreatePage(context: BrowserContext): Promise<Page> {
+    // 获取所有页面
+    const pages = context.pages();
+    
+    // 查找空白页面（about:blank）
+    const blankPage = pages.find(page => page.url() === 'about:blank');
+    
+    if (blankPage) {
+        return blankPage;
+    }
+    
+    // 如果没有空白页面，创建新页面
+    return await context.newPage();
 }
 
 export async function getPage(options: PageOptions = {}): Promise<Page> {
@@ -65,8 +85,8 @@ export async function getPage(options: PageOptions = {}): Promise<Page> {
         }
         
         // 如果没有有效的上一次操作页面，创建新页面
-        const page = await context.newPage();
-        lastActivePage = page;
+        const page = await getOrCreatePage(context);
+    lastActivePage = page;
         return page;
     }
 
@@ -82,33 +102,33 @@ export async function getPage(options: PageOptions = {}): Promise<Page> {
         return page;
     }
 
+    // 尝试在现有页面中查找匹配的页面
     const pages = context.pages();
 
-    // 尝试在现有页面中查找匹配的页面
-    for (const page of pages) {
+    for (const p of pages) {
         try {
             if (options.url) {
-                const currentUrl = page.url();
+                const currentUrl = p.url();
                 const normalizedCurrentUrl = new URL(currentUrl).hostname.replace(/^www\./, '') + new URL(currentUrl).pathname;
                 const normalizedTargetUrl = new URL(options.url).hostname.replace(/^www\./, '') + new URL(options.url).pathname;
                 
                 if (normalizedCurrentUrl === normalizedTargetUrl) {
-                    lastActivePage = page;
+                    lastActivePage = p;
                     console.log('Found matching page by URL:', options.url);
-                    return page;
+                    return p;
                 }
             }
             
             if (options.title) {
-                const pageTitle = await page.title();
+                const pageTitle = await p.title();
                 if (pageTitle === options.title) {
-                    lastActivePage = page;
-                    return page;
+                    lastActivePage = p;
+                    return p;
                 }
             }
         } catch (error) {
             // 页面可能已关闭，从列表中移除
-            if (lastActivePage === page) {
+            if (lastActivePage === p) {
                 lastActivePage = null;
             }
         }
@@ -125,7 +145,7 @@ export async function getPage(options: PageOptions = {}): Promise<Page> {
 
     // 如果没有找到匹配的页面，创建新页面
     if (options.url) {
-        const page = await context.newPage();
+        const page = await getOrCreatePage(context);
         await page.goto(options.url, {
             waitUntil: options.waitForUrl ? 'networkidle' : 'commit'
         });
