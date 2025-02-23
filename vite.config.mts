@@ -64,7 +64,7 @@ const getElectronConfig = (mode: string) => {
         preloadConfig,
     ];
     if (mode === 'production') {
-        configs.push(backgroundConfig);
+        // configs.push(backgroundConfig);
     }
 
     return configs;

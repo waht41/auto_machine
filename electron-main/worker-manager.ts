@@ -5,11 +5,11 @@ import * as path from 'path';
 import chokidar from 'chokidar';
 import fs, { Stats } from "fs";
 
-const logStream = fs.createWriteStream( 'work_manager.log', { flags: 'a' });
-const writeLog = (...message   : any[]) => {
-    const logMessage = message.map(item => typeof item === 'object' ? JSON.stringify(item) : String(item)).join(' ');
-    logStream.write(logMessage+'\n');
-}
+// const logStream = fs.createWriteStream( 'work_manager.log', { flags: 'a' });
+// const writeLog = (...message   : any[]) => {
+//     const logMessage = message.map(item => typeof item === 'object' ? JSON.stringify(item) : String(item)).join(' ');
+//     logStream.write(logMessage+'\n');
+// }
 
 export const getAssetsPath = (): string => {
     return join(process.cwd(), 'resources','assets')
