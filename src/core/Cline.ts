@@ -21,7 +21,14 @@ import { ApiConfiguration } from "@/shared/api"
 import { findLastIndex } from "@/shared/array"
 import { combineApiRequests } from "@/shared/combineApiRequests"
 import { combineCommandSequences } from "@/shared/combineCommandSequences"
-import { ClineApiReqCancelReason, ClineApiReqInfo, ClineAsk, ClineMessage, ClineSay, } from "@/shared/ExtensionMessage"
+import {
+	ClineApiReqCancelReason,
+	ClineApiReqInfo,
+	ClineAsk,
+	ClineMessage,
+	ClineSay,
+	ExtensionMessage,
+} from "@/shared/ExtensionMessage"
 import { getApiMetrics } from "@/shared/getApiMetrics"
 import { HistoryItem } from "@/shared/HistoryItem"
 import { ClineAskResponse } from "@/shared/WebviewMessage"
@@ -94,6 +101,7 @@ export class Cline {
 	constructor(
 		provider: ClineProvider,
 		apiConfiguration: ApiConfiguration,
+		private postMessageToWebview:  (message: ExtensionMessage) => Promise<void>,
 		customInstructions?: string,
 		enableDiff?: boolean,
 		fuzzyMatchThreshold?: number,
@@ -286,9 +294,7 @@ export class Cline {
 				// todo be more efficient about saving and posting only new data or one whole message at a time so ignore partial for saves, and only post parts of partial message instead of whole array in new listener
 				// await this.saveClineMessages()
 				// await this.providerRef.deref()?.postStateToWebview()
-				await this.providerRef
-					.deref()
-					?.postMessageToWebview({ type: "partialMessage", partialMessage: lastMessage })
+				await this.postMessageToWebview({ type: "partialMessage", partialMessage: lastMessage })
 				throw new Error("Current ask promise was ignored 1")
 			} else {
 				// this is a new partial message, so add it with partial state
@@ -319,9 +325,7 @@ export class Cline {
 				lastMessage.text = text
 				lastMessage.partial = false
 				await this.saveClineMessages()
-				await this.providerRef
-					.deref()
-					?.postMessageToWebview({ type: "partialMessage", partialMessage: lastMessage })
+				await this.postMessageToWebview({ type: "partialMessage", partialMessage: lastMessage })
 
 			} else {
 				await addNewAsk();
@@ -418,9 +422,7 @@ export class Cline {
 				lastMessage.text = text;
 				lastMessage.images = images;
 				lastMessage.partial = true;
-				await this.providerRef
-					.deref()
-					?.postMessageToWebview({ type: "partialMessage", partialMessage: lastMessage });
+				await this.postMessageToWebview({ type: "partialMessage", partialMessage: lastMessage });
 			} else {
 				await addMessage(partial);
 			}
@@ -438,9 +440,7 @@ export class Cline {
 
 				// instead of streaming partialMessage events, we do a save and post like normal to persist to disk
 				await this.saveClineMessages();
-				await this.providerRef
-					.deref()
-					?.postMessageToWebview({ type: "partialMessage", partialMessage: lastMessage }); // more performant than an entire postStateToWebview
+				await this.postMessageToWebview({ type: "partialMessage", partialMessage: lastMessage }); // more performant than an entire postStateToWebview
 			} else {
 				await addMessage();
 			}

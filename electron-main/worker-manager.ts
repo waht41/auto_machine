@@ -82,10 +82,12 @@ export class WorkerManager {
     private startWorker() {
         const workerPath =this.isDev ? join(__dirname,
              '../../src/background-worker/start-background.ts') : join(app.getAppPath(), 'build', 'background','start-background.js');
-        const workerEnv = {
+        const workerEnv: any = {
             ...process.env,
             NODE_ENV: this.isDev ? 'development' : 'production',
-            ASSETS_PATH: getAssetsPath() // 注入关键路径
+        }
+        if (!this.isDev){
+            workerEnv.ASSETS_PATH = getAssetsPath();
         }
 
         this.worker = fork(workerPath, [], {
@@ -131,7 +133,7 @@ export class WorkerManager {
     }
 
    private setupDevWatcher() {
-        const ignored = (file: string, _s: Stats| undefined) => {
+        const ignored = (file: string, _s: Stats | undefined) => {
             if (!_s?.isFile()){
                 return false;
             }
@@ -139,10 +141,10 @@ export class WorkerManager {
             return !watchedTypes.some((type) => file.endsWith(type));
         }
         const watcher = chokidar.watch([
-            path.join(__dirname,'../vscode'),
-            path.join(__dirname,'../src'),
-            path.join(__dirname,'../operation'),
-            path.join(__dirname,'../executors'),
+            path.join(__dirname,'../../vscode'),
+            path.join(__dirname,'../../src'),
+            path.join(__dirname,'../../operation'),
+            path.join(__dirname,'../../executors'),
         ], {
             ignored: ignored,
             persistent: true,

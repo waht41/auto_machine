@@ -347,6 +347,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		this.cline = new Cline(
 			this,
 			apiConfiguration,
+			this.postMessageToWebview.bind(this),
 			effectiveInstructions,
 			diffEnabled,
 			fuzzyMatchThreshold,
@@ -375,6 +376,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		this.cline = new Cline(
 			this,
 			apiConfiguration,
+			this.postMessageToWebview.bind(this),
 			effectiveInstructions,
 			diffEnabled,
 			fuzzyMatchThreshold,
