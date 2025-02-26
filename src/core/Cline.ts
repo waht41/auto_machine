@@ -48,9 +48,9 @@ import crypto from "crypto"
 import { CommandRunner } from "@executors/runner";
 import { parseBlocks } from "@core/assistant-message/parse-assistant-message";
 import { registerInternalImplementation } from "@core/internal-implementation";
+import process from "node:process";
 
-const cwd =
-	vscode.workspace.workspaceFolders?.map((folder) => folder.uri.fsPath).at(0) ?? path.join(os.homedir(), "Desktop") // may or may not exist but fs checking existence would immediately ask for permission which would be bad UX, need to come up with a better solution
+const cwd = process.cwd()
 
 type ToolResponse = string | Array<Anthropic.TextBlockParam | Anthropic.ImageBlockParam>
 type UserContent = Array<
