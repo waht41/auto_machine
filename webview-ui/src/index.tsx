@@ -4,7 +4,9 @@ import "./index.css"
 import App from "./App"
 import reportWebVitals from "./reportWebVitals"
 import "../../node_modules/@vscode/codicons/dist/codicon.css"
+import { applyTheme } from "./utils/theme-manager";
 
+applyTheme("vscodeLight")
 const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement)
 root.render(
 	<React.StrictMode>
