@@ -95,6 +95,8 @@ export class Cline {
 	private didRejectTool = false
 	private didGetNewMessage = false
 	private didCompleteReadingStream = false
+
+
 	private executor = new CommandRunner()
 	private asking = false;
 
@@ -1208,34 +1210,285 @@ export class Cline {
 		return null;
 	}
 
+	private async handleMistakeLimit(userContent: UserContent) {
+		if (this.consecutiveMistakeCount < 3) return;
+
+		const { response, text, images } = await this.ask(
+			"mistake_limit_reached",
+			this.api.getModel().id.includes("claude")
+				? `This may indicate a failure in his thought process or inability to use a tool properly, which can be mitigated with some user guidance (e.g. "Try breaking down the task into smaller steps").`
+				: "Roo Code uses complex prompts and iterative task execution that may be challenging for less capable models. For best results, it's recommended to use Claude 3.5 Sonnet for its advanced agentic coding capabilities.",
+		)
+		if (response === "messageResponse") {
+			userContent.push(
+				...[
+					{
+						type: "text",
+						text: formatResponse.tooManyMistakes(text),
+					} as Anthropic.Messages.TextBlockParam,
+					...formatResponse.imageBlocks(images),
+				],
+			)
+		}
+		this.consecutiveMistakeCount = 0
+	}
+
+	async prepareUserContent(userContent: UserContent, lastApiReqIndex: number): Promise<UserContent> {
+		const [parsedUserContent] = await this.loadContext(userContent)
+		await this.addToApiConversationHistory({ role: "user", content: parsedUserContent })
+
+		// since we sent off a placeholder api_req_started message to update the webview while waiting to actually start the API request (to load potential details for example), we need to update the text of that message
+		this.clineMessages[lastApiReqIndex].text = JSON.stringify({
+			request: parsedUserContent.map((block) => formatContentBlockToMarkdown(block)).join("\n\n"),
+		} satisfies ClineApiReqInfo)
+		await this.saveClineMessages()
+		await this.providerRef.deref()?.postStateToWebview()
+
+		return parsedUserContent
+	}
+
+	async handleAssistantMessageComplete(assistantMessage: string) {
+		// now add to apiconversationhistory
+		// need to save assistant responses to file before proceeding to tool use since user can exit at any moment and we wouldn't be able to save the assistant's response
+		let didEndLoop = false
+		if (assistantMessage.length > 0) {
+			await this.addToApiConversationHistory({
+				role: "assistant",
+				content: [{ type: "text", text: assistantMessage }],
+			})
+
+			// NOTE: this comment is here for future reference - this was a workaround for userMessageContent not getting set to true. It was due to it not recursively calling for partial blocks when didRejectTool, so it would get stuck waiting for a partial block to complete before it could continue.
+			// in case the content blocks finished
+			// it may be the api stream finished after the last parsed content block was executed, so  we are able to detect out of bounds and set userMessageContentReady to true (note you should not call presentAssistantMessage since if the last block is completed it will be presented again)
+			// const completeBlocks = this.assistantMessageContent.filter((block) => !block.partial) // if there are any partial blocks after the stream ended we can consider them invalid
+			// if (this.currentStreamingContentIndex >= completeBlocks.length) {
+			// 	this.userMessageContentReady = true
+			// }
+			console.log('[waht] waiting for user message content ready', assistantMessage)
+			await pWaitFor(() => this.userMessageContentReady)
+			console.log('[waht] wait end')
+
+			// if the model did not tool use, then we need to tell it to either use a tool or attempt_completion
+			// const didToolUse = this.assistantMessageContent.some((block) => block.type === "tool_use")
+			if (!this.didGetNewMessage) {
+				// this.userMessageContent.push({
+				// 	type: "text",
+				// 	text: formatResponse.noToolsUsed(),
+				// })
+				await this.askP({
+					askType: 'followup',
+					text: endHint,
+					partial: false,
+					replacing: false
+				})
+				this.consecutiveMistakeCount++
+				console.log('[waht] no new message get')
+				return true;
+			} else if (this.asking){
+				console.log('[waht] asking')
+				this.asking = false;
+				return true;
+			}
+			else {
+				didEndLoop = await this.recursivelyMakeClineRequests(this.userMessageContent)
+			}
+		} else {
+			// if there's no assistant_responses, that means we got no text or tool_use content blocks from API which we should assume is an error
+			await this.say(
+				"error",
+				"Unexpected API Response: The language model did not provide any assistant messages. This may indicate an issue with the API or the model's output.",
+			)
+			await this.addToApiConversationHistory({
+				role: "assistant",
+				content: [{ type: "text", text: "Failure: I did not provide a response." }],
+			})
+		}
+
+		return didEndLoop
+	}
+
+	async handleStreamingMessage(previousApiReqIndex: number, lastApiReqIndex: number) {
+		let cacheWriteTokens = 0
+		let cacheReadTokens = 0
+		let inputTokens = 0
+		let outputTokens = 0
+		let totalCost: number | undefined
+
+		// update api_req_started. we can't use api_req_finished anymore since it's a unique case where it could come after a streaming message (ie in the middle of being updated or executed)
+		// fortunately api_req_finished was always parsed out for the gui anyways, so it remains solely for legacy purposes to keep track of prices in tasks from history
+		// (it's worth removing a few months from now)
+		const updateApiReqMsg = (cancelReason?: ClineApiReqCancelReason, streamingFailedMessage?: string) => {
+			this.clineMessages[lastApiReqIndex].text = JSON.stringify({
+				...JSON.parse(this.clineMessages[lastApiReqIndex].text || "{}"),
+				tokensIn: inputTokens,
+				tokensOut: outputTokens,
+				cacheWrites: cacheWriteTokens,
+				cacheReads: cacheReadTokens,
+				cost:
+					totalCost ??
+					calculateApiCost(
+						this.api.getModel().info,
+						inputTokens,
+						outputTokens,
+						cacheWriteTokens,
+						cacheReadTokens,
+					),
+				cancelReason,
+				streamingFailedMessage,
+			} satisfies ClineApiReqInfo)
+		}
+
+		const abortStream = async (cancelReason: ClineApiReqCancelReason, streamingFailedMessage?: string) => {
+			if (this.diffViewProvider.isEditing) {
+				await this.diffViewProvider.revertChanges() // closes diff view
+			}
+
+			// if last message is a partial we need to update and save it
+			const lastMessage = this.clineMessages.at(-1)
+			if (lastMessage && lastMessage.partial) {
+				// lastMessage.ts = Date.now() DO NOT update ts since it is used as a key for virtuoso list
+				lastMessage.partial = false
+				// instead of streaming partialMessage events, we do a save and post like normal to persist to disk
+				console.log("updating partial message", lastMessage)
+				// await this.saveClineMessages()
+			}
+
+			// Let assistant know their response was interrupted for when task is resumed
+			await this.addToApiConversationHistory({
+				role: "assistant",
+				content: [
+					{
+						type: "text",
+						text:
+							assistantMessage +
+							`\n\n[${
+								cancelReason === "streaming_failed"
+									? "Response interrupted by API Error"
+									: "Response interrupted by user"
+							}]`,
+					},
+				],
+			})
+
+			// update api_req_started to have cancelled and cost, so that we can display the cost of the partial stream
+			updateApiReqMsg(cancelReason, streamingFailedMessage)
+			await this.saveClineMessages()
+
+			// signals to provider that it can retrieve the saved messages from disk, as abortTask can not be awaited on in nature
+			this.didFinishAborting = true
+		}
+
+		// reset streaming state
+		this.currentStreamingContentIndex = 0
+		this.assistantMessageContent = []
+		this.didCompleteReadingStream = false
+		this.userMessageContent = []
+		this.userMessageContentReady = false
+		this.didRejectTool = false
+		this.didGetNewMessage = false
+		this.presentAssistantMessageLocked = false
+		this.presentAssistantMessageHasPendingUpdates = false
+		await this.diffViewProvider.reset()
+
+		const stream = this.attemptApiRequest(previousApiReqIndex) // yields only if the first chunk is successful, otherwise will allow the user to retry the request (most likely due to rate limit error, which gets thrown on the first chunk)
+		let assistantMessage = ""
+		let reasoningMessage = ""
+		try {
+			for await (const chunk of stream) {
+				switch (chunk.type) {
+					case "reasoning":
+						reasoningMessage += chunk.text
+						await this.say("reasoning", reasoningMessage, undefined, true)
+						break
+					case "usage":  //todo waht 不确定其它api回的是不是最终结果（腾讯云是）
+						inputTokens = chunk.inputTokens
+						outputTokens = chunk.outputTokens
+						cacheWriteTokens = chunk.cacheWriteTokens ?? 0
+						cacheReadTokens = chunk.cacheReadTokens ?? 0
+						totalCost = chunk.totalCost
+						break
+					case "text":
+						assistantMessage += chunk.text
+						console.log("返回的信息: ", chunk.text)
+						// parse raw assistant message into content blocks
+						const prevLength = this.assistantMessageContent.length
+						this.assistantMessageContent = parseBlocks(assistantMessage)
+						const replacing = this.assistantMessageContent.length <= prevLength
+						if (this.assistantMessageContent.length > prevLength) {
+							this.userMessageContentReady = false // new content we need to present, reset to false in case previous content set this to true
+						}
+						// present content to user
+						this.handleAssistantMessage(replacing)
+						break
+				}
+
+
+				if (this.abort) {
+					console.log("aborting stream...")
+					if (!this.abandoned) {
+						// only need to gracefully abort if this instance isn't abandoned (sometimes openrouter stream hangs, in which case this would affect future instances of cline)
+						await abortStream("user_cancelled")
+					}
+					break // aborts the stream
+				}
+
+				if (this.didRejectTool) {
+					// userContent has a tool rejection, so interrupt the assistant's response to present the user's feedback
+					assistantMessage += "\n\n[Response interrupted by user feedback]"
+					// this.userMessageContentReady = true // instead of setting this premptively, we allow the present iterator to finish and set userMessageContentReady when its ready
+					break
+				}
+
+			}
+		} catch (error) {
+			console.error("error when receive chunk: ", error)
+			// abandoned happens when extension is no longer waiting for the cline instance to finish aborting (error is thrown here when any function in the for loop throws due to this.abort)
+			if (!this.abandoned) {
+				this.abortTask() // if the stream failed, there's various states the task could be in (i.e. could have streamed some tools the user may have executed), so we just resort to replicating a cancel task
+				await abortStream(
+					"streaming_failed",
+					error.message ?? JSON.stringify(serializeError(error), null, 2),
+				)
+				const history = await this.providerRef.deref()?.getTaskWithId(this.taskId)
+				if (history) {
+					await this.providerRef.deref()?.initClineWithHistoryItem(history.historyItem)
+					// await this.providerRef.deref()?.postStateToWebview()
+				}
+			}
+		}
+
+		// need to call here in case the stream was aborted
+		if (this.abort) {
+			throw new Error("Roo Code instance aborted")
+		}
+
+		this.didCompleteReadingStream = true
+
+		// set any blocks to be complete to allow presentAssistantMessage to finish and set userMessageContentReady to true
+		// (could be a text block that had no subsequent tool uses, or a text block at the very end, or an invalid tool use, etc. whatever the case, presentAssistantMessage relies on these blocks either to be completed or the user to reject a block in order to proceed and eventually set userMessageContentReady to true)
+		const partialBlocks = this.assistantMessageContent.filter((block) => block.partial)
+		partialBlocks.forEach((block) => {
+			block.partial = false
+		})
+		if (partialBlocks.length > 0) {
+			await this.handleAssistantMessage() // if there is content to update then it will complete and update this.userMessageContentReady to true, which we pwaitfor before making the next request. all this is really doing is presenting the last partial message that we just set to complete
+		}
+
+		updateApiReqMsg()
+		await this.saveClineMessages()
+		await this.providerRef.deref()?.postStateToWebview()
+
+		return this.handleAssistantMessageComplete(assistantMessage);
+	}
+
 	async recursivelyMakeClineRequests(
 		userContent: UserContent,
-		includeFileDetails: boolean = false,
 	): Promise<boolean> {
 		if (this.abort) {
 			throw new Error("Roo Code instance aborted")
 		}
 
-		if (this.consecutiveMistakeCount >= 3) {
-			const { response, text, images } = await this.ask(
-				"mistake_limit_reached",
-				this.api.getModel().id.includes("claude")
-					? `This may indicate a failure in his thought process or inability to use a tool properly, which can be mitigated with some user guidance (e.g. "Try breaking down the task into smaller steps").`
-					: "Roo Code uses complex prompts and iterative task execution that may be challenging for less capable models. For best results, it's recommended to use Claude 3.5 Sonnet for its advanced agentic coding capabilities.",
-			)
-			if (response === "messageResponse") {
-				userContent.push(
-					...[
-						{
-							type: "text",
-							text: formatResponse.tooManyMistakes(text),
-						} as Anthropic.Messages.TextBlockParam,
-						...formatResponse.imageBlocks(images),
-					],
-				)
-			}
-			this.consecutiveMistakeCount = 0
-		}
+		await this.handleMistakeLimit(userContent)
 
 		// get previous api req's index to check token usage and determine if we need to truncate conversation history
 		const previousApiReqIndex = findLastIndex(this.clineMessages, (m) => m.say === "api_req_started")
@@ -1250,249 +1503,12 @@ export class Cline {
 			}),
 		)
 
-		const [parsedUserContent] = await this.loadContext(userContent)
-		userContent = parsedUserContent
-		// add environment details as its own text block, separate from tool results
-		// userContent.push({ type: "text", text: environmentDetails }) // 删除环境信息
-
-		await this.addToApiConversationHistory({ role: "user", content: userContent })
-
-		// since we sent off a placeholder api_req_started message to update the webview while waiting to actually start the API request (to load potential details for example), we need to update the text of that message
 		const lastApiReqIndex = findLastIndex(this.clineMessages, (m) => m.say === "api_req_started")
-		this.clineMessages[lastApiReqIndex].text = JSON.stringify({
-			request: userContent.map((block) => formatContentBlockToMarkdown(block)).join("\n\n"),
-		} satisfies ClineApiReqInfo)
-		await this.saveClineMessages()
-		await this.providerRef.deref()?.postStateToWebview()
+
+		await this.prepareUserContent(userContent, lastApiReqIndex)
 
 		try {
-			let cacheWriteTokens = 0
-			let cacheReadTokens = 0
-			let inputTokens = 0
-			let outputTokens = 0
-			let totalCost: number | undefined
-
-			// update api_req_started. we can't use api_req_finished anymore since it's a unique case where it could come after a streaming message (ie in the middle of being updated or executed)
-			// fortunately api_req_finished was always parsed out for the gui anyways, so it remains solely for legacy purposes to keep track of prices in tasks from history
-			// (it's worth removing a few months from now)
-			const updateApiReqMsg = (cancelReason?: ClineApiReqCancelReason, streamingFailedMessage?: string) => {
-				this.clineMessages[lastApiReqIndex].text = JSON.stringify({
-					...JSON.parse(this.clineMessages[lastApiReqIndex].text || "{}"),
-					tokensIn: inputTokens,
-					tokensOut: outputTokens,
-					cacheWrites: cacheWriteTokens,
-					cacheReads: cacheReadTokens,
-					cost:
-						totalCost ??
-						calculateApiCost(
-							this.api.getModel().info,
-							inputTokens,
-							outputTokens,
-							cacheWriteTokens,
-							cacheReadTokens,
-						),
-					cancelReason,
-					streamingFailedMessage,
-				} satisfies ClineApiReqInfo)
-			}
-
-			const abortStream = async (cancelReason: ClineApiReqCancelReason, streamingFailedMessage?: string) => {
-				if (this.diffViewProvider.isEditing) {
-					await this.diffViewProvider.revertChanges() // closes diff view
-				}
-
-				// if last message is a partial we need to update and save it
-				const lastMessage = this.clineMessages.at(-1)
-				if (lastMessage && lastMessage.partial) {
-					// lastMessage.ts = Date.now() DO NOT update ts since it is used as a key for virtuoso list
-					lastMessage.partial = false
-					// instead of streaming partialMessage events, we do a save and post like normal to persist to disk
-					console.log("updating partial message", lastMessage)
-					// await this.saveClineMessages()
-				}
-
-				// Let assistant know their response was interrupted for when task is resumed
-				await this.addToApiConversationHistory({
-					role: "assistant",
-					content: [
-						{
-							type: "text",
-							text:
-								assistantMessage +
-								`\n\n[${
-									cancelReason === "streaming_failed"
-										? "Response interrupted by API Error"
-										: "Response interrupted by user"
-								}]`,
-						},
-					],
-				})
-
-				// update api_req_started to have cancelled and cost, so that we can display the cost of the partial stream
-				updateApiReqMsg(cancelReason, streamingFailedMessage)
-				await this.saveClineMessages()
-
-				// signals to provider that it can retrieve the saved messages from disk, as abortTask can not be awaited on in nature
-				this.didFinishAborting = true
-			}
-
-			// reset streaming state
-			this.currentStreamingContentIndex = 0
-			this.assistantMessageContent = []
-			this.didCompleteReadingStream = false
-			this.userMessageContent = []
-			this.userMessageContentReady = false
-			this.didRejectTool = false
-			this.didGetNewMessage = false
-			this.presentAssistantMessageLocked = false
-			this.presentAssistantMessageHasPendingUpdates = false
-			await this.diffViewProvider.reset()
-
-			const stream = this.attemptApiRequest(previousApiReqIndex) // yields only if the first chunk is successful, otherwise will allow the user to retry the request (most likely due to rate limit error, which gets thrown on the first chunk)
-			let assistantMessage = ""
-			let reasoningMessage = ""
-			try {
-				for await (const chunk of stream) {
-					switch (chunk.type) {
-						case "reasoning":
-							reasoningMessage += chunk.text
-							await this.say("reasoning", reasoningMessage, undefined, true)
-							break
-						case "usage":  //todo waht 不确定其它api回的是不是最终结果（腾讯云是）
-							inputTokens = chunk.inputTokens
-							outputTokens = chunk.outputTokens
-							cacheWriteTokens = chunk.cacheWriteTokens ?? 0
-							cacheReadTokens = chunk.cacheReadTokens ?? 0
-							totalCost = chunk.totalCost
-							break
-						case "text":
-							assistantMessage += chunk.text
-							console.log("返回的信息: ", chunk.text)
-							// parse raw assistant message into content blocks
-							const prevLength = this.assistantMessageContent.length
-							this.assistantMessageContent = parseBlocks(assistantMessage)
-							const replacing = this.assistantMessageContent.length <= prevLength
-							if (this.assistantMessageContent.length > prevLength) {
-								this.userMessageContentReady = false // new content we need to present, reset to false in case previous content set this to true
-							}
-							// present content to user
-							this.handleAssistantMessage(replacing)
-							break
-					}
-
-
-					if (this.abort) {
-						console.log("aborting stream...")
-						if (!this.abandoned) {
-							// only need to gracefully abort if this instance isn't abandoned (sometimes openrouter stream hangs, in which case this would affect future instances of cline)
-							await abortStream("user_cancelled")
-						}
-						break // aborts the stream
-					}
-
-					if (this.didRejectTool) {
-						// userContent has a tool rejection, so interrupt the assistant's response to present the user's feedback
-						assistantMessage += "\n\n[Response interrupted by user feedback]"
-						// this.userMessageContentReady = true // instead of setting this premptively, we allow the present iterator to finish and set userMessageContentReady when its ready
-						break
-					}
-
-				}
-			} catch (error) {
-				console.error("error when receive chunk: ", error)
-				// abandoned happens when extension is no longer waiting for the cline instance to finish aborting (error is thrown here when any function in the for loop throws due to this.abort)
-				if (!this.abandoned) {
-					this.abortTask() // if the stream failed, there's various states the task could be in (i.e. could have streamed some tools the user may have executed), so we just resort to replicating a cancel task
-					await abortStream(
-						"streaming_failed",
-						error.message ?? JSON.stringify(serializeError(error), null, 2),
-					)
-					const history = await this.providerRef.deref()?.getTaskWithId(this.taskId)
-					if (history) {
-						await this.providerRef.deref()?.initClineWithHistoryItem(history.historyItem)
-						// await this.providerRef.deref()?.postStateToWebview()
-					}
-				}
-			}
-
-			// need to call here in case the stream was aborted
-			if (this.abort) {
-				throw new Error("Roo Code instance aborted")
-			}
-
-			this.didCompleteReadingStream = true
-
-			// set any blocks to be complete to allow presentAssistantMessage to finish and set userMessageContentReady to true
-			// (could be a text block that had no subsequent tool uses, or a text block at the very end, or an invalid tool use, etc. whatever the case, presentAssistantMessage relies on these blocks either to be completed or the user to reject a block in order to proceed and eventually set userMessageContentReady to true)
-			const partialBlocks = this.assistantMessageContent.filter((block) => block.partial)
-			partialBlocks.forEach((block) => {
-				block.partial = false
-			})
-			if (partialBlocks.length > 0) {
-				await this.handleAssistantMessage() // if there is content to update then it will complete and update this.userMessageContentReady to true, which we pwaitfor before making the next request. all this is really doing is presenting the last partial message that we just set to complete
-			}
-
-			updateApiReqMsg()
-			await this.saveClineMessages()
-			await this.providerRef.deref()?.postStateToWebview()
-
-			// now add to apiconversationhistory
-			// need to save assistant responses to file before proceeding to tool use since user can exit at any moment and we wouldn't be able to save the assistant's response
-			let didEndLoop = false
-			if (assistantMessage.length > 0) {
-				await this.addToApiConversationHistory({
-					role: "assistant",
-					content: [{ type: "text", text: assistantMessage }],
-				})
-
-				// NOTE: this comment is here for future reference - this was a workaround for userMessageContent not getting set to true. It was due to it not recursively calling for partial blocks when didRejectTool, so it would get stuck waiting for a partial block to complete before it could continue.
-				// in case the content blocks finished
-				// it may be the api stream finished after the last parsed content block was executed, so  we are able to detect out of bounds and set userMessageContentReady to true (note you should not call presentAssistantMessage since if the last block is completed it will be presented again)
-				// const completeBlocks = this.assistantMessageContent.filter((block) => !block.partial) // if there are any partial blocks after the stream ended we can consider them invalid
-				// if (this.currentStreamingContentIndex >= completeBlocks.length) {
-				// 	this.userMessageContentReady = true
-				// }
-				console.log('[waht] waiting for user message content ready', assistantMessage)
-				await pWaitFor(() => this.userMessageContentReady)
-				console.log('[waht] wait end')
-
-				// if the model did not tool use, then we need to tell it to either use a tool or attempt_completion
-				// const didToolUse = this.assistantMessageContent.some((block) => block.type === "tool_use")
-				if (!this.didGetNewMessage) {
-					// this.userMessageContent.push({
-					// 	type: "text",
-					// 	text: formatResponse.noToolsUsed(),
-					// })
-                    await this.askP({
-                        askType: 'followup',
-                        text: endHint,
-                        partial: false,
-                        replacing: false
-                    })
-					this.consecutiveMistakeCount++
-					console.log('[waht] no new message get')
-					return true;
-				} else if (this.asking){
-					console.log('[waht] asking')
-					this.asking = false;
-					return true;
-				}
-				else {
-					didEndLoop = await this.recursivelyMakeClineRequests(this.userMessageContent)
-				}
-			} else {
-				// if there's no assistant_responses, that means we got no text or tool_use content blocks from API which we should assume is an error
-				await this.say(
-					"error",
-					"Unexpected API Response: The language model did not provide any assistant messages. This may indicate an issue with the API or the model's output.",
-				)
-				await this.addToApiConversationHistory({
-					role: "assistant",
-					content: [{ type: "text", text: "Failure: I did not provide a response." }],
-				})
-			}
-
-			return didEndLoop
+			return this.handleStreamingMessage(previousApiReqIndex, lastApiReqIndex)
 		} catch (error) {
 			console.error("Error in recursivelyMakeClineRequests:", error)
 			// this should never happen since the only thing that can throw an error is the attemptApiRequest, which is wrapped in a try catch that sends an ask where if noButtonClicked, will clear current task and destroy this instance. However to avoid unhandled promise rejection, we will end this loop which will end execution of this instance (see startTask)
