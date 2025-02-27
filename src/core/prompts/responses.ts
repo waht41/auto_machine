@@ -1,6 +1,7 @@
 import { Anthropic } from "@anthropic-ai/sdk"
 import * as path from "path"
 import * as diff from "diff"
+import { formatImagesIntoBlocks } from "@core/prompts/utils";
 
 export const formatResponse = {
 	toolDenied: () => `The user denied this operation.`,
@@ -95,21 +96,6 @@ Otherwise, if you have not completed the task and do not need additional informa
 		const prettyPatchLines = lines.slice(4)
 		return prettyPatchLines.join("\n")
 	},
-}
-
-// to avoid circular dependency
-const formatImagesIntoBlocks = (images?: string[]): Anthropic.ImageBlockParam[] => {
-	return images
-		? images.map((dataUrl) => {
-				// data:image/png;base64,base64string
-				const [rest, base64] = dataUrl.split(",")
-				const mimeType = rest.split(":")[1].split(";")[0]
-				return {
-					type: "image",
-					source: { type: "base64", media_type: mimeType, data: base64 },
-				} as Anthropic.ImageBlockParam
-			})
-		: []
 }
 
 const toolUseInstructionsReminder = `# Reminder: Instructions for Tool Use

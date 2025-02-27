@@ -1,14 +1,12 @@
 import { Anthropic } from "@anthropic-ai/sdk"
 import cloneDeep from "clone-deep"
 import { DiffStrategy, getDiffStrategy } from "./diff/DiffStrategy"
-import { isToolAllowedForMode, ToolName, validateToolUse } from "./mode-validator"
+import { ToolName, validateToolUse } from "./mode-validator"
 import delay from "delay"
 import fs from "fs/promises"
-import os from "os"
 import pWaitFor from "p-wait-for"
 import * as path from "path"
 import { serializeError } from "serialize-error"
-import * as vscode from "vscode"
 import { ApiHandler, buildApiHandler } from "@/api"
 import { ApiStream, ApiStreamChunk } from "@/api/transform/stream"
 import { DiffViewProvider } from "@/integrations/editor/DiffViewProvider"
@@ -16,7 +14,6 @@ import { findToolName, formatContentBlockToMarkdown } from "@/integrations/misc/
 import { truncateOutput, } from "@/integrations/misc/extract-text"
 import { TerminalManager } from "@/integrations/terminal/TerminalManager"
 import { UrlContentFetcher } from "@/services/browser/UrlContentFetcher"
-import { listFiles } from "@/services/glob/list-files"
 import { ApiConfiguration } from "@/shared/api"
 import { findLastIndex } from "@/shared/array"
 import { combineApiRequests } from "@/shared/combineApiRequests"
@@ -34,12 +31,11 @@ import { HistoryItem } from "@/shared/HistoryItem"
 import { ClineAskResponse } from "@/shared/WebviewMessage"
 import { calculateApiCost } from "@/utils/cost"
 import { fileExistsAtPath } from "@/utils/fs"
-import { arePathsEqual } from "@/utils/path"
 import { parseMentions } from "./mentions"
 import { AssistantMessageContent, ToolUse, ToolUseName } from "./assistant-message"
 import { formatResponse } from "./prompts/responses"
 import { SYSTEM_PROMPT } from "./prompts/system"
-import { defaultModeSlug, getModeBySlug } from "@/shared/modes"
+import { defaultModeSlug } from "@/shared/modes"
 import { truncateHalfConversation } from "./sliding-window"
 import { ClineProvider, GlobalFileNames } from "./webview/ClineProvider"
 import { BrowserSession } from "@/services/browser/BrowserSession"
@@ -49,13 +45,12 @@ import { CommandRunner } from "@executors/runner";
 import { parseBlocks } from "@core/assistant-message/parse-assistant-message";
 import { registerInternalImplementation } from "@core/internal-implementation";
 import process from "node:process";
+import { toUserContent, UserContent } from "@core/prompts/utils";
 
 const cwd = process.cwd()
 
 type ToolResponse = string | Array<Anthropic.TextBlockParam | Anthropic.ImageBlockParam>
-type UserContent = Array<
-	Anthropic.TextBlockParam | Anthropic.ImageBlockParam | Anthropic.ToolUseBlockParam | Anthropic.ToolResultBlockParam
->
+
 
 const endHint = 'roo stop the conversion, should resume?';
 
@@ -493,17 +488,6 @@ export class Cline {
 			...imageBlocks,
 		])
 	}
-	toUserContent(text?: string, images?: string[]): UserContent {
-		const userContent: UserContent = []
-		if (text) {
-			userContent.push({ type: "text", text })
-		}
-		if (images) {
-			const imageBlocks = formatResponse.imageBlocks(images)
-			userContent.push(...imageBlocks)
-		}
-		return userContent
-	}
 
 	private async resumeTask(text?: string, images?: string[]) {
 		this.clineMessages = await this.getSavedClineMessages()
@@ -512,13 +496,13 @@ export class Cline {
 			this.clineMessages.pop();
 		}
 		await this.say("text", text, images, true)
-		const userContent: UserContent = this.toUserContent(text, images)
+		const userContent: UserContent = toUserContent(text, images)
 		this.initiateTaskLoop(userContent)
 	}
 
-	async receiveAnswer({uuid, result, images}: {
-		uuid: string, result: string, images?: string[]
-	}) {
+	async receiveAnswer({uuid, result, images}:
+						{ uuid: string, result: string, images?: string[] })
+	{
 		if (!uuid) {
 			throw new Error("No uuid provided for answer")
 		}
@@ -548,7 +532,7 @@ export class Cline {
 				}
 			}
 		}
-		const userContent: UserContent = this.toUserContent(result, images)
+		const userContent: UserContent = toUserContent(result, images)
 		this.initiateTaskLoop(userContent)
 	}
 
