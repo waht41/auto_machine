@@ -495,7 +495,7 @@ export class Cline {
 		if (this.clineMessages.at(-1)?.text === endHint) {
 			this.clineMessages.pop();
 		}
-		await this.say("text", text, images, true)
+		await this.say("user_feedback", text, images, true)
 		const userContent: UserContent = toUserContent(text, images)
 		this.initiateTaskLoop(userContent)
 	}
