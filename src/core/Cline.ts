@@ -10,7 +10,7 @@ import * as path from "path"
 import { serializeError } from "serialize-error"
 import * as vscode from "vscode"
 import { ApiHandler, buildApiHandler } from "@/api"
-import { ApiStream } from "@/api/transform/stream"
+import { ApiStream, ApiStreamChunk } from "@/api/transform/stream"
 import { DiffViewProvider } from "@/integrations/editor/DiffViewProvider"
 import { findToolName, formatContentBlockToMarkdown } from "@/integrations/misc/export-markdown"
 import { truncateOutput, } from "@/integrations/misc/extract-text"
@@ -780,10 +780,8 @@ export class Cline {
 
 	private async initiateTaskLoop(userContent: UserContent): Promise<void> {
 		let nextUserContent = userContent
-		let includeFileDetails = true
 		while (!this.abort) {
-			const didEndLoop = await this.recursivelyMakeClineRequests(nextUserContent, includeFileDetails)
-			includeFileDetails = false // we only need file details the first time
+			const didEndLoop = await this.recursivelyMakeClineRequests(nextUserContent)
 
 			//  The way this agentic loop works is that cline will be given a task that he then calls tools to complete. unless there's an attempt_completion call, we keep responding back to him with his tool's responses until he either attempt_completion or does not use anymore tools. If he does not use anymore tools, we ask him to consider if he's completed the task and then call attempt_completion, otherwise proceed with completing the task.
 			// There is a MAX_REQUESTS_PER_TASK limit to prevent infinite requests, but Cline is prompted to finish the task as efficiently as he can.
@@ -1307,77 +1305,73 @@ export class Cline {
 		return didEndLoop
 	}
 
-	async handleStreamingMessage(previousApiReqIndex: number, lastApiReqIndex: number) {
-		let cacheWriteTokens = 0
-		let cacheReadTokens = 0
-		let inputTokens = 0
-		let outputTokens = 0
-		let totalCost: number | undefined
+	updateApiReq (apiReq: ClineApiReqInfo, lastApiReqIndex: number) {
+		this.clineMessages[lastApiReqIndex].text = JSON.stringify(apiReq)
+	}
 
-		// update api_req_started. we can't use api_req_finished anymore since it's a unique case where it could come after a streaming message (ie in the middle of being updated or executed)
-		// fortunately api_req_finished was always parsed out for the gui anyways, so it remains solely for legacy purposes to keep track of prices in tasks from history
-		// (it's worth removing a few months from now)
-		const updateApiReqMsg = (cancelReason?: ClineApiReqCancelReason, streamingFailedMessage?: string) => {
-			this.clineMessages[lastApiReqIndex].text = JSON.stringify({
-				...JSON.parse(this.clineMessages[lastApiReqIndex].text || "{}"),
-				tokensIn: inputTokens,
-				tokensOut: outputTokens,
-				cacheWrites: cacheWriteTokens,
-				cacheReads: cacheReadTokens,
-				cost:
-					totalCost ??
-					calculateApiCost(
-						this.api.getModel().info,
-						inputTokens,
-						outputTokens,
-						cacheWriteTokens,
-						cacheReadTokens,
-					),
-				cancelReason,
-				streamingFailedMessage,
-			} satisfies ClineApiReqInfo)
+	private async abortStream  (cancelReason: ClineApiReqCancelReason, assistantMessage: string, apiReq:ClineApiReqInfo, lastApiReqIndex:number, streamingFailedMessage?: string){
+		if (this.diffViewProvider.isEditing) {
+			await this.diffViewProvider.revertChanges() // closes diff view
 		}
 
-		const abortStream = async (cancelReason: ClineApiReqCancelReason, streamingFailedMessage?: string) => {
-			if (this.diffViewProvider.isEditing) {
-				await this.diffViewProvider.revertChanges() // closes diff view
-			}
-
-			// if last message is a partial we need to update and save it
-			const lastMessage = this.clineMessages.at(-1)
-			if (lastMessage && lastMessage.partial) {
-				// lastMessage.ts = Date.now() DO NOT update ts since it is used as a key for virtuoso list
-				lastMessage.partial = false
-				// instead of streaming partialMessage events, we do a save and post like normal to persist to disk
-				console.log("updating partial message", lastMessage)
-				// await this.saveClineMessages()
-			}
-
-			// Let assistant know their response was interrupted for when task is resumed
-			await this.addToApiConversationHistory({
-				role: "assistant",
-				content: [
-					{
-						type: "text",
-						text:
-							assistantMessage +
-							`\n\n[${
-								cancelReason === "streaming_failed"
-									? "Response interrupted by API Error"
-									: "Response interrupted by user"
-							}]`,
-					},
-				],
-			})
-
-			// update api_req_started to have cancelled and cost, so that we can display the cost of the partial stream
-			updateApiReqMsg(cancelReason, streamingFailedMessage)
-			await this.saveClineMessages()
-
-			// signals to provider that it can retrieve the saved messages from disk, as abortTask can not be awaited on in nature
-			this.didFinishAborting = true
+		// if last message is a partial we need to update and save it
+		const lastMessage = this.clineMessages.at(-1)
+		if (lastMessage && lastMessage.partial) {
+			// lastMessage.ts = Date.now() DO NOT update ts since it is used as a key for virtuoso list
+			lastMessage.partial = false
+			// instead of streaming partialMessage events, we do a save and post like normal to persist to disk
+			console.log("updating partial message", lastMessage)
+			// await this.saveClineMessages()
 		}
 
+		// Let assistant know their response was interrupted for when task is resumed
+		await this.addToApiConversationHistory({
+			role: "assistant",
+			content: [
+				{
+					type: "text",
+					text:
+						assistantMessage +
+						`\n\n[${
+							cancelReason === "streaming_failed"
+								? "Response interrupted by API Error"
+								: "Response interrupted by user"
+						}]`,
+				},
+			],
+		})
+
+		// update api_req_started to have cancelled and cost, so that we can display the cost of the partial stream
+		apiReq.cancelReason = cancelReason
+		apiReq.streamingFailedMessage = streamingFailedMessage
+		this.updateApiReq(apiReq, lastApiReqIndex)
+		await this.saveClineMessages()
+
+		// signals to provider that it can retrieve the saved messages from disk, as abortTask can not be awaited on in nature
+		this.didFinishAborting = true
+	}
+
+	private async handleStreamError (error: Error, assistantMessage:string, apiReq:ClineApiReqInfo, lastApiReqIndex: number){
+		console.error("error when receive chunk: ", error)
+		// abandoned happens when extension is no longer waiting for the cline instance to finish aborting (error is thrown here when any function in the for loop throws due to this.abort)
+		if (!this.abandoned) {
+			this.abortTask() // if the stream failed, there's various states the task could be in (i.e. could have streamed some tools the user may have executed), so we just resort to replicating a cancel task
+			await this.abortStream(
+				"streaming_failed",
+				assistantMessage,
+				apiReq,
+				lastApiReqIndex,
+				error.message ?? JSON.stringify(serializeError(error), null, 2),
+			)
+			const history = await this.providerRef.deref()?.getTaskWithId(this.taskId)
+			if (history) {
+				await this.providerRef.deref()?.initClineWithHistoryItem(history.historyItem)
+				// await this.providerRef.deref()?.postStateToWebview()
+			}
+		}
+	}
+
+	private async resetStream() {
 		// reset streaming state
 		this.currentStreamingContentIndex = 0
 		this.assistantMessageContent = []
@@ -1389,45 +1383,66 @@ export class Cline {
 		this.presentAssistantMessageLocked = false
 		this.presentAssistantMessageHasPendingUpdates = false
 		await this.diffViewProvider.reset()
+	}
+
+	async handleChunk(chunk: ApiStreamChunk, apiReq:ClineApiReqInfo, reasoningMessage: string, assistantMessage: string) {
+		switch (chunk.type) {
+			case "reasoning":
+				reasoningMessage += chunk.text
+				await this.say("reasoning", reasoningMessage, undefined, true)
+				break
+			case "usage":  //todo waht 不确定其它api回的是不是最终结果（腾讯云是）
+
+				apiReq.tokensIn = chunk.inputTokens
+				apiReq.tokensOut = chunk.outputTokens
+				apiReq.cacheWrites = chunk.cacheWriteTokens ?? 0
+				apiReq.cacheReads = chunk.cacheReadTokens ?? 0
+				apiReq.cost = chunk.totalCost
+				break
+			case "text":
+				assistantMessage += chunk.text
+				console.log("返回的信息: ", chunk.text)
+				// parse raw assistant message into content blocks
+				const prevLength = this.assistantMessageContent.length
+				this.assistantMessageContent = parseBlocks(assistantMessage)
+				const replacing = this.assistantMessageContent.length <= prevLength
+				if (this.assistantMessageContent.length > prevLength) {
+					this.userMessageContentReady = false // new content we need to present, reset to false in case previous content set this to true
+				}
+				// present content to user
+				this.handleAssistantMessage(replacing)
+				break
+		}
+		return {reasoningMessage, assistantMessage}
+	}
+
+	async handleStreamingMessage(previousApiReqIndex: number, lastApiReqIndex: number) {
+
+		const apiReq: ClineApiReqInfo = JSON.parse(this.clineMessages[lastApiReqIndex].text || "{}")
+		apiReq.tokensIn = 0
+		apiReq.tokensOut = 0
+		apiReq.cacheWrites = 0
+		apiReq.cacheReads = 0
+
+		await this.resetStream()
 
 		const stream = this.attemptApiRequest(previousApiReqIndex) // yields only if the first chunk is successful, otherwise will allow the user to retry the request (most likely due to rate limit error, which gets thrown on the first chunk)
 		let assistantMessage = ""
 		let reasoningMessage = ""
 		try {
 			for await (const chunk of stream) {
-				switch (chunk.type) {
-					case "reasoning":
-						reasoningMessage += chunk.text
-						await this.say("reasoning", reasoningMessage, undefined, true)
-						break
-					case "usage":  //todo waht 不确定其它api回的是不是最终结果（腾讯云是）
-						inputTokens = chunk.inputTokens
-						outputTokens = chunk.outputTokens
-						cacheWriteTokens = chunk.cacheWriteTokens ?? 0
-						cacheReadTokens = chunk.cacheReadTokens ?? 0
-						totalCost = chunk.totalCost
-						break
-					case "text":
-						assistantMessage += chunk.text
-						console.log("返回的信息: ", chunk.text)
-						// parse raw assistant message into content blocks
-						const prevLength = this.assistantMessageContent.length
-						this.assistantMessageContent = parseBlocks(assistantMessage)
-						const replacing = this.assistantMessageContent.length <= prevLength
-						if (this.assistantMessageContent.length > prevLength) {
-							this.userMessageContentReady = false // new content we need to present, reset to false in case previous content set this to true
-						}
-						// present content to user
-						this.handleAssistantMessage(replacing)
-						break
-				}
+				const prop = await this.handleChunk(chunk, apiReq, reasoningMessage, assistantMessage)
+				reasoningMessage = prop.reasoningMessage
+				assistantMessage = prop.assistantMessage
 
+				apiReq.cost = apiReq.cost ??
+					calculateApiCost(this.api.getModel().info, apiReq.tokensIn, apiReq.tokensOut, apiReq.cacheWrites, apiReq.cacheReads)
 
 				if (this.abort) {
 					console.log("aborting stream...")
 					if (!this.abandoned) {
 						// only need to gracefully abort if this instance isn't abandoned (sometimes openrouter stream hangs, in which case this would affect future instances of cline)
-						await abortStream("user_cancelled")
+						await this.abortStream("user_cancelled",assistantMessage,apiReq,lastApiReqIndex)
 					}
 					break // aborts the stream
 				}
@@ -1441,20 +1456,7 @@ export class Cline {
 
 			}
 		} catch (error) {
-			console.error("error when receive chunk: ", error)
-			// abandoned happens when extension is no longer waiting for the cline instance to finish aborting (error is thrown here when any function in the for loop throws due to this.abort)
-			if (!this.abandoned) {
-				this.abortTask() // if the stream failed, there's various states the task could be in (i.e. could have streamed some tools the user may have executed), so we just resort to replicating a cancel task
-				await abortStream(
-					"streaming_failed",
-					error.message ?? JSON.stringify(serializeError(error), null, 2),
-				)
-				const history = await this.providerRef.deref()?.getTaskWithId(this.taskId)
-				if (history) {
-					await this.providerRef.deref()?.initClineWithHistoryItem(history.historyItem)
-					// await this.providerRef.deref()?.postStateToWebview()
-				}
-			}
+			await this.handleStreamError(error, assistantMessage, apiReq, lastApiReqIndex)
 		}
 
 		// need to call here in case the stream was aborted
@@ -1474,7 +1476,7 @@ export class Cline {
 			await this.handleAssistantMessage() // if there is content to update then it will complete and update this.userMessageContentReady to true, which we pwaitfor before making the next request. all this is really doing is presenting the last partial message that we just set to complete
 		}
 
-		updateApiReqMsg()
+		this.updateApiReq(apiReq, lastApiReqIndex)
 		await this.saveClineMessages()
 		await this.providerRef.deref()?.postStateToWebview()
 
