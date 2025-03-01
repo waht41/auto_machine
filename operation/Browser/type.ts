@@ -1,5 +1,7 @@
 // Browser操作的类型定义
 
+import { Diff } from "@operation/Browser/utils/objectDiff";
+
 export interface BrowserOptions {
     headless?: boolean;
     channel?: string;
@@ -41,6 +43,16 @@ export type InteractOptions = {
 
     timeout?: number;      // 最多等待时间，单位为秒
 } & (ClickOptions | InputOptions);
+
+export interface InteractDiffResult {
+    isCreateNewPage: boolean;
+    newPages: {
+        url: string;
+        title: string;
+    }[]
+    changes: Diff<AnalyzeResult>[];
+}
+
 
 interface ClickOptions {
     action: 'click';
