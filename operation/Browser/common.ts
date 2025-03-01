@@ -3,6 +3,7 @@ import { BrowserOptions, PageOptions } from './type';
 import path from "path";
 import fs from "fs";
 
+
 let browserContext: BrowserContext | null = null;
 export let lastActivePage: Page | null = null;
 let userDataDir: string | null = null;
@@ -185,51 +186,76 @@ export const getDefaultUserDataDir = () => {
 
 export const getElementSelector = async (element: ElementHandle): Promise<string> => {
     return element.evaluate((node: Element) => {
-        const segments: string[] = [];
-        let current: Element | null = node;
-
-        while (current && current.nodeType === 1) {
-            let selector = current.tagName.toLowerCase();
-
-            // 处理ID
-            if (current.id) {
-                // 如果ID以数字开头，使用属性选择器
-                if (/^[0-9]/.test(current.id)) {
-                    selector += `[id="${current.id}"]`;
-                } else {
-                    selector += `#${current.id}`;
-                }
-                segments.unshift(selector);
-                break;
-            }
-
-            // 处理类名
-            if (current.classList.length > 0) {
-                const classes = Array.from(current.classList)
-                    .filter(c => !/^[0-9]/.test(c))  // 过滤掉以数字开头的类名
-                    .map(c => `.${c}`)
-                    .join('');
-                if (classes) {
-                    selector += classes;
-                }
-            }
-
-            // 计算同类型元素中的位置
-            let sibling = current.previousElementSibling;
-            let index = 1;
-            while (sibling) {
-                if (sibling.tagName === current.tagName) index++;
-                sibling = sibling.previousElementSibling;
-            }
-            if (index > 1) {
-                selector += `:nth-of-type(${index})`;
-            }
-
-            segments.unshift(selector);
-            current = current.parentElement;
+        // 快速生成唯一选择器
+        
+        // 如果元素有ID，直接使用ID选择器
+        if (node.id && !node.id.match(/^[0-9]/)) {
+            return `#${node.id}`;
         }
-
-        return segments.join(' > ');
+        
+        // 如果元素有data-testid属性，使用它
+        const testId = node.getAttribute('data-testid');
+        if (testId) {
+            return `[data-testid="${testId}"]`;
+        }
+        
+        // 如果元素有name属性，使用它
+        const name = (node as HTMLInputElement).name;
+        if (name) {
+            return `${node.tagName.toLowerCase()}[name="${name}"]`;
+        }
+        
+        // 尝试使用类名生成选择器
+        if (node.classList.length > 0) {
+            const classes = Array.from(node.classList)
+                .filter(c => !/^[0-9]/.test(c))  // 过滤掉以数字开头的类名
+                .filter(c => /^[a-zA-Z0-9_-]+$/.test(c))  // 只保留合法的CSS类名字符
+                .map(c => `.${c}`)
+                .join('');
+                
+            if (classes) {
+                // 验证此选择器是否唯一
+                const matchingElements = document.querySelectorAll(`${node.tagName.toLowerCase()}${classes}`);
+                if (matchingElements.length === 1) {
+                    return `${node.tagName.toLowerCase()}${classes}`;
+                }
+            }
+        }
+        
+        // 使用精简的定位方法
+        let path = '';
+        let current: Element | null = node;
+        let i = 0;
+        
+        while (current && current.nodeType === 1 && i < 3) {
+            let selector = current.tagName.toLowerCase();
+            
+            // 尝试加入文本内容进行约束
+            const buttonText = current.textContent?.trim();
+            if (buttonText && current.tagName.toLowerCase() === 'button' && buttonText.length < 20) {
+                return `button:has-text("${buttonText}")`;
+            }
+            
+            // 计算位置索引
+            let pos = 0;
+            let temp = current;
+            while (temp) {
+                if (temp.nodeName === current.nodeName) pos++;
+                temp = temp.previousElementSibling;
+            }
+            if (pos > 1) {
+                selector += `:nth-child(${pos})`;
+            }
+            
+            // 添加到路径
+            path = path ? `${selector} > ${path}` : selector;
+            
+            // 向上移动
+            current = current.parentElement;
+            i++;
+        }
+        
+        return path;
     });
 };
 
