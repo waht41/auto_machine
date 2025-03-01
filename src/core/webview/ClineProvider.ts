@@ -34,6 +34,7 @@ import { supportPrompt } from "../../shared/support-prompt"
 
 import { ACTION_NAMES } from "../CodeActionProvider"
 import { GlobalState } from "@/core/record/global-state";
+import { configPath, createIfNotExists } from "@core/record/common";
 
 /*
 https://github.com/microsoft/vscode-webview-ui-toolkit-samples/blob/main/default/weather-webview/src/providers/WeatherViewProvider.ts
@@ -138,7 +139,8 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		readonly context: vscode.ExtensionContext,
 		private readonly outputChannel: vscode.OutputChannel,
 	) {
-		this.globalState = new GlobalState(path.join(this.context.globalStorageUri.fsPath, "auto_machine_global_state.json"))
+		createIfNotExists(configPath)
+		this.globalState = new GlobalState(path.join(configPath, "auto_machine_global_state.json"))
 		this.outputChannel.appendLine("ClineProvider instantiated")
 		ClineProvider.activeInstances.add(this)
 		this.workspaceTracker = new WorkspaceTracker(this)
@@ -883,7 +885,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 								// Try to get enhancement config first, fall back to current config
 								let configToUse: ApiConfiguration = apiConfiguration
 								if (enhancementApiConfigId) {
-									const config = listApiConfigMeta?.find((c) => c.id === enhancementApiConfigId)
+									const config = listApiConfigMeta?.find((c: any) => c.id === enhancementApiConfigId)
 									if (config?.name) {
 										const loadedConfig = await this.configManager.loadConfig(config.name)
 										if (loadedConfig.apiProvider) {
@@ -1944,7 +1946,6 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		} = config;
 
 		const customModes = await this.customModesManager.getCustomModes();
-
 		let apiProvider: ApiProvider
 		if (storedApiProvider) {
 			apiProvider = storedApiProvider
