@@ -1,10 +1,4 @@
-import { Command } from "@executors/types";
-
-export type ExecutionContext = any
-
-export interface CommandExecutor {
-    execute(command: Command, context: any): any;
-}
+import { Command, CommandExecutor, ExecutionContext } from "@executors/types";
 
 export class SafeCommandExecutor implements CommandExecutor {
     constructor(

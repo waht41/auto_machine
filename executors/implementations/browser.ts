@@ -1,6 +1,3 @@
-import { CommandExecutor } from "../command-executor";
-import { BaseCommand } from "@executors/base";
-import { RegisterExecutor } from "@executors/registry";
 import Browser, {
     AnalyzeOptions,
     AuthOptions,
@@ -11,8 +8,8 @@ import Browser, {
     SearchOptions
 } from "@operation/Browser";
 import * as yaml from 'js-yaml';
+import { CommandExecutor } from "@executors/types";
 
-@RegisterExecutor('browser')
 export class BrowserCommandExecutor implements CommandExecutor {
     async execute(command: BrowserCommand, context: any): Promise<any> {
         switch (command.cmd) {
@@ -48,7 +45,7 @@ export class BrowserCommandExecutor implements CommandExecutor {
     }
 }
 
-export type BrowserCommand = BaseCommand<'browser'> & (
+export type BrowserCommand = {type:'browser'} & (
     {
         cmd: 'open';
     } & OpenOptions |

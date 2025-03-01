@@ -1,10 +1,7 @@
-import { CommandExecutor } from "../command-executor";
 import File from "@operation/File"
 import { CreateOptions, EditOptions, ListOptions, ReadOptions, SearchOptions } from "@operation/File/type";
-import { BaseCommand } from "@executors/base";
-import { RegisterExecutor } from "@executors/registry";
+import { CommandExecutor } from "@executors/types";
 
-@RegisterExecutor('file')
 export class FileCommandExecutor implements CommandExecutor {
     execute(command: FileCommand, context: any): any {
         switch (command.cmd) {
@@ -24,7 +21,7 @@ export class FileCommandExecutor implements CommandExecutor {
     }
 }
 
-export type FileCommand = BaseCommand<'file'> & (
+export type FileCommand = {type: 'file'} & (
     {
         cmd: 'read';
     } & ReadOptions |

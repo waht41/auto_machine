@@ -1,10 +1,8 @@
-import { CommandExecutor } from '../command-executor';
-import { RegisterExecutor } from '../registry';
 import file from "fs/promises";
 import path from "path";
 import process from "node:process";
+import { CommandExecutor } from "@executors/types";
 
-@RegisterExecutor('external')
 export class ExternalCommandExecutor implements CommandExecutor {
     async execute(command: ExternalCommand, context: any) {
         console.log(`Executing: Open External "${command.request}"`);

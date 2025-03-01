@@ -1,4 +1,5 @@
-import { CommandExecutor, SafeCommandExecutor } from './command-executor';
+import {  SafeCommandExecutor } from './command-executor';
+import { CommandExecutor } from "@executors/types";
 
 export class ExecutorRegistry {
     private static instance: ExecutorRegistry;
@@ -30,12 +31,4 @@ export class ExecutorRegistry {
     getAllExecutors(): Map<string, CommandExecutor> {
         return new Map(this.executors);
     }
-}
-
-// 装饰器工厂
-export function RegisterExecutor(type: string) {
-    return function(constructor: new () => CommandExecutor) {
-        const registry = ExecutorRegistry.getInstance();
-        registry.register(type, new constructor());
-    };
 }
