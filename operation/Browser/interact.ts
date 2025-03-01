@@ -1,15 +1,16 @@
 import { getPage, getPages } from './common';
-import { InteractOptions, BrowserResult, AnalyzeResult } from './type';
+import { InteractOptions, BrowserResult, AnalyzeResult, InteractDiffResult } from './type';
+import { analyze } from "@operation/Browser/analyze";
+import { diffObjects } from "@operation/Browser/utils/objectDiff";
 
 export async function interact(options: InteractOptions, analyzeResult?: AnalyzeResult[]): Promise<BrowserResult> {
 
     if (!options.url && !options.title) {
         throw new Error('交互操作需要提供url或title,从而指定页面');
     }
-
-    const pages = await getPages();
     const page = await getPage({url: options.url, title: options.title});
-    
+    const pages = await getPages();
+
     let selector = options.selector;
     if (!selector) {
         if (options.id) {
@@ -29,6 +30,9 @@ export async function interact(options: InteractOptions, analyzeResult?: Analyze
     await page.waitForSelector(selector, {
         timeout: wait * 1000
     });
+
+    const beforeResult = await analyze({url: options.url, action: ['interactive','static'], with_selector: true});
+
 
     switch (options.action) {
         case 'click':
@@ -58,18 +62,32 @@ export async function interact(options: InteractOptions, analyzeResult?: Analyze
 
     await page.waitForTimeout(1000);  // 等待1秒
 
-    const newPages = (await getPages()).filter(p => !pages.includes(p));  // 获取新打开的页面
+    const afterResult = await analyze({url: options.url, action: ['interactive','static'], with_selector: true});
+    const changes = diffObjects(beforeResult, afterResult, 'selector');
+
+    const filteredPages = (await getPages()).filter(p => !pages.includes(p));
+    const newPages = await Promise.all(
+        filteredPages.map(async (p) => ({
+            url: p.url(),
+            title: await p.title() // 确保每个 title 被解析
+        }))
+    );
     const isCreateNewPage = newPages.length > 0;  // 判断是否创建了新页面
+
+    const result: InteractDiffResult = {
+        isCreateNewPage,
+        newPages,
+        changes,
+        beforeResult,
+        afterResult
+    }
 
     return {
         success: true,
         page: page,
-        isNewPage: isCreateNewPage,  // 返回是否创建了新页面的信息
-        data: isCreateNewPage ? newPages.map(p => {
-            return {
-                url: p.url(), title: p.title()
-            }
-        }) : undefined
+        data: result
     };
 
 }
+
+
