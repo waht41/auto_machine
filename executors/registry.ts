@@ -18,10 +18,7 @@ export class ExecutorRegistry {
         if (this.executors.has(type)) {
             console.error(`Executor already registered for type: ${type}`);
         }
-        const safeExecutor = executor instanceof SafeCommandExecutor
-            ? executor
-            : new SafeCommandExecutor(executor);
-        this.executors.set(type, safeExecutor);
+        this.executors.set(type, executor);
     }
 
     getExecutor(type: string): CommandExecutor | undefined {

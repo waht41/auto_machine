@@ -1,6 +1,5 @@
 import { Command, CommandExecutor, ExecutionContext, Middleware } from './types';
 import { ExecutorRegistry } from './registry';
-import './implementations'; // Import implementations to trigger decorators
 
 export class CommandRunner {
     private registry: ExecutorRegistry;
