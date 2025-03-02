@@ -1,4 +1,4 @@
-import { CommandExecutor } from "@executors/command-executor";
+import { CommandExecutor } from "@executors/types";
 import { IBaseCommand, IInternalContext } from "@core/internal-implementation/type";
 
 export class BaseCommandExecutor implements CommandExecutor {
