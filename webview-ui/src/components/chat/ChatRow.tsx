@@ -2,12 +2,7 @@ import { VSCodeBadge, VSCodeButton, VSCodeProgressRing } from "@vscode/webview-u
 import deepEqual from "fast-deep-equal"
 import React, { memo, useEffect, useMemo, useRef, useState } from "react"
 import { useSize } from "react-use"
-import {
-	ClineApiReqInfo,
-	ClineAskUseMcpServer,
-	ClineMessage,
-	ClineSayTool,
-} from "@/shared/ExtensionMessage"
+import { ClineApiReqInfo, ClineAskUseMcpServer, ClineMessage, ClineSayTool, } from "@/shared/ExtensionMessage"
 import { COMMAND_OUTPUT_STRING } from "@/shared/combineCommandSequences"
 import { useExtensionState } from "../../context/ExtensionStateContext"
 import { findMatchingResourceOrTemplate } from "../../utils/mcp"
@@ -20,8 +15,8 @@ import Thumbnails from "../common/Thumbnails"
 import McpResourceRow from "../mcp/McpResourceRow"
 import McpToolRow from "../mcp/McpToolRow"
 import { highlightMentions } from "./TaskHeader"
-import { IAskCommand, IBaseCommand } from "@core/internal-implementation/type";
-import ASelect from "../common/ASelect";
+import renderSpecialTool from "../special-tool";
+import { Tool } from "../special-tool/type";
 
 interface ChatRowProps {
 	message: ClineMessage
@@ -251,46 +246,6 @@ export const ChatRowContent = ({
 				className={`codicon codicon-${name}`}
 				style={{ color: "var(--vscode-foreground)", marginBottom: "-1.5px" }}></span>
 		)
-		const newTool = tool as any as (IBaseCommand | IAskCommand)
-		switch (newTool.type){
-			case "base":
-				if (newTool.cmd === "log"){
-					console.log('[waht] 开始渲染log工具')
-					return (
-						<>
-							<div style={headerStyle}>
-								{toolIcon("output")}
-								<span style={{ fontWeight: "bold" }}>Roo wants to log: {newTool.title}</span>
-								<div>{newTool.content}</div>
-							</div>
-						</>
-					)
-				}
-				break
-
-			case "ask":
-				if (newTool.askType === "choice"){
-					console.log('[waht]', newTool)
-					return (
-						<>
-							<div style={headerStyle}>
-								{toolIcon("question")}
-								<span style={{ fontWeight: "bold" }}>Roo has a question:</span>
-							</div>
-							<ASelect title={newTool.question} options={newTool.choices}
-									 onConfirm={(value) => {
-										 vscode.postMessage({
-											 type: "answer",
-											 payload: {result: value, uuid: newTool.uuid}
-										 })
-									 }}
-									 result={newTool.result}
-							/>
-						</>
-					)
-				}
-
-		}
 
 		switch (tool.tool) {
 			case "editedExistingFile":
@@ -516,8 +471,10 @@ export const ChatRowContent = ({
 					</>
 				)
 			default:
-				return null
+				break
 		}
+		const newTool = tool as any as (Tool)
+		return renderSpecialTool(newTool)
 	}
 
 	switch (message.type) {
