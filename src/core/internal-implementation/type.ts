@@ -29,3 +29,8 @@ export type IAskCommand = {type:'ask'; uuid: string, result?: string} & ({
     askType: 'attempt_completion';
     question: string;
 })
+
+export type IAskApprovalCommand = {
+    type: 'askApproval';
+    content: any;
+}

@@ -46,6 +46,7 @@ import { parseBlocks } from "@core/assistant-message/parse-assistant-message";
 import { registerInternalImplementation } from "@core/internal-implementation";
 import process from "node:process";
 import { toUserContent, UserContent } from "@core/prompts/utils";
+import { ApprovalMiddleWrapper } from "@core/internal-implementation/middleware";
 
 const cwd = process.cwd()
 
@@ -122,6 +123,7 @@ export class Cline {
 		this.providerRef = new WeakRef(provider)
 		this.diffViewProvider = new DiffViewProvider(cwd)
 		registerInternalImplementation(this.executor)
+		this.executor.use(ApprovalMiddleWrapper([]))
 
 		if (historyItem) {
 			this.taskId = historyItem.id
