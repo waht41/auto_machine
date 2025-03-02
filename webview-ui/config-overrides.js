@@ -1,6 +1,11 @@
-const { override } = require("customize-cra")
+const { override, addWebpackAlias } = require("customize-cra")
+const path = require("path")
 
-module.exports = override()
+module.exports = override(
+  addWebpackAlias({
+    "@webview-ui": path.resolve(__dirname, "src")
+  })
+)
 
 // Jest configuration override
 module.exports.jest = function (config) {

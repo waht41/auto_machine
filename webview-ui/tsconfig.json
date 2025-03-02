@@ -21,8 +21,9 @@
 			"vscode": ["../vscode"],
 			"@executors/*": ["../executors/*"],
 			"@operation/*": ["../operation/*"],
-			"@webview/*": ["webview/*"]
-		}
+			"@webview-ui/*": ["./src/*"]
+		},
+		"baseUrl": "."
 	},
 	"include": ["src", "../src/shared"]
 }

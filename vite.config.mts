@@ -13,6 +13,7 @@ const alias = [
     { find: '@executors', replacement: pathResolve('executors') },
     { find: '@operation', replacement: pathResolve('operation') },
     { find: '@webview', replacement: pathResolve('webview-ui/src') },
+    { find: '@webview-ui', replacement: pathResolve('webview-ui/src') },
 ];
 
 const getElectronConfig = (mode: string) => {
