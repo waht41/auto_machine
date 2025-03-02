@@ -6,7 +6,7 @@ export class GlobalState {
         this.memento = new Memento(statePath)
     }
     async updateTaskHistory(item: HistoryItem): Promise<HistoryItem[]> {
-        const history = ((await this.getGlobalState("taskHistory")) as HistoryItem[] | undefined) || []
+        const history = ((await this.get("taskHistory")) as HistoryItem[] | undefined) || []
         const existingItemIndex = history.findIndex((h) => h.id === item.id)
 
         if (existingItemIndex !== -1) {
@@ -14,15 +14,15 @@ export class GlobalState {
         } else {
             history.push(item)
         }
-        await this.updateGlobalState("taskHistory", history)
+        await this.set("taskHistory", history)
         return history
     }
 
-    async getGlobalState<T>(key: string): Promise<T | undefined> {
+    async get<T>(key: string): Promise<T | undefined> {
         return this.memento.get(key)
     }
 
-    async updateGlobalState(key: string, value: any): Promise<void> {
+    async set<T>(key: string, value: T): Promise<void> {
         return this.memento.update(key, value)
     }
 

@@ -35,6 +35,7 @@ import { supportPrompt } from "../../shared/support-prompt"
 import { ACTION_NAMES } from "../CodeActionProvider"
 import { GlobalState } from "@/core/record/global-state";
 import { configPath, createIfNotExists } from "@core/record/common";
+import { ApprovalMiddleWrapper } from "@core/internal-implementation/middleware";
 
 /*
 https://github.com/microsoft/vscode-webview-ui-toolkit-samples/blob/main/default/weather-webview/src/providers/WeatherViewProvider.ts
@@ -134,6 +135,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 	configManager: ConfigManager
 	customModesManager: CustomModesManager
 	private globalState: GlobalState
+	private allowedCommandsRef: {value: string[] } = {value: []}
 
 	constructor(
 		readonly context: vscode.ExtensionContext,
@@ -297,7 +299,9 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 			mode,
 			customInstructions: globalInstructions,
 			experimentalDiffStrategy,
+			allowedCommands
 		} = await this.getState()
+		this.allowedCommandsRef.value = allowedCommands ?? []
 
 		const modePrompt = customModePrompts?.[mode] as PromptComponent
 		const effectiveInstructions = [globalInstructions, modePrompt?.customInstructions].filter(Boolean).join("\n\n")
@@ -313,6 +317,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 				task,
 				images,
 				experimentalDiffStrategy,
+				middleWares: [ApprovalMiddleWrapper(this.allowedCommandsRef)]
 			}
 		)
 		this.cline.start({task,images})
@@ -343,6 +348,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 				fuzzyMatchThreshold,
 				historyItem,
 				experimentalDiffStrategy,
+				middleWares: [ApprovalMiddleWrapper(this.allowedCommandsRef)]
 			}
 		)
 		this.cline.resume({text:historyItem.newMessage,images:historyItem.newImages})
@@ -602,7 +608,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 
 						break
 					case "allowedCommands":
-						await this.globalState.updateGlobalState("allowedCommands", message.commands)
+						await this.globalState.set("allowedCommands", message.commands)
 						// Also update workspace settings
 						await vscode.workspace
 							.getConfiguration("roo-cline")
@@ -1772,8 +1778,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 			autoApprovalEnabled,
 		} = await this.getState()
 
-		const allowedCommands = vscode.workspace.getConfiguration("roo-cline").get<string[]>("allowedCommands") || []
-
+		const allowedCommands = await this.globalState.get("allowedCommands") || []
 		return {
 			version: this.context.extension?.packageJSON?.version ?? "",
 			apiConfiguration,
@@ -2075,11 +2080,11 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 	// global
 
 	async updateGlobalState(key: GlobalStateKey, value: any) {
-		await this.globalState.updateGlobalState(key, value)
+		await this.globalState.set(key, value)
 	}
 
 	async getGlobalState(key: GlobalStateKey) {
-		return await this.globalState.getGlobalState(key)
+		return await this.globalState.get(key)
 	}
 
 	async getGlobalStates() {
@@ -2130,7 +2135,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		}
 
 		for (const key in this.globalState.keys()) {
-			await this.globalState.updateGlobalState(key, undefined)
+			await this.globalState.set(key, undefined)
 		}
 		const secretKeys: SecretKey[] = [
 			"apiKey",

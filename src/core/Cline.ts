@@ -46,8 +46,7 @@ import { parseBlocks } from "@core/assistant-message/parse-assistant-message";
 import { registerInternalImplementation } from "@core/internal-implementation";
 import process from "node:process";
 import { toUserContent, UserContent } from "@core/prompts/utils";
-import { ApprovalMiddleWrapper } from "@core/internal-implementation/middleware";
-import { Command } from "@executors/types";
+import { Command, Middleware } from "@executors/types";
 
 const cwd = process.cwd()
 
@@ -67,6 +66,7 @@ interface IProp {
 	images?: string[] | undefined,
 	historyItem?: HistoryItem | undefined,
 	experimentalDiffStrategy: boolean,
+	middleWares?: Middleware[],
 }
 
 export class Cline {
@@ -114,7 +114,7 @@ export class Cline {
 	constructor(
 		prop: IProp
 	) {
-		const { provider, apiConfiguration, postMessageToWebview, customInstructions, enableDiff, fuzzyMatchThreshold, historyItem, experimentalDiffStrategy } = prop
+		const { provider, apiConfiguration, postMessageToWebview, customInstructions, enableDiff, fuzzyMatchThreshold, historyItem, experimentalDiffStrategy, middleWares = [] } = prop
 		this.postMessageToWebview = postMessageToWebview
 		this.taskId = crypto.randomUUID()
 		this.api = buildApiHandler(apiConfiguration)
@@ -127,7 +127,9 @@ export class Cline {
 		this.providerRef = new WeakRef(provider)
 		this.diffViewProvider = new DiffViewProvider(cwd)
 		registerInternalImplementation(this.executor)
-		this.executor.use(ApprovalMiddleWrapper([]))
+		for (const middleware of middleWares) {
+			this.executor.use(middleware)
+		}
 
 		if (historyItem) {
 			this.taskId = historyItem.id
@@ -1165,7 +1167,6 @@ export class Cline {
 				}
 
 				try {
-					console.log('[waht] 开始执行tool', block)
 					const res = await this.applyToolUse(block, {'cline':this,'replacing':replacing})
 					if (typeof res === "string") {
 						console.log('[waht] 执行tool 返回结果: ',res)
