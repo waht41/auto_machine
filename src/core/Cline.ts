@@ -47,6 +47,7 @@ import { registerInternalImplementation } from "@core/internal-implementation";
 import process from "node:process";
 import { toUserContent, UserContent } from "@core/prompts/utils";
 import { ApprovalMiddleWrapper } from "@core/internal-implementation/middleware";
+import { Command } from "@executors/types";
 
 const cwd = process.cwd()
 
@@ -54,6 +55,19 @@ type ToolResponse = string | Array<Anthropic.TextBlockParam | Anthropic.ImageBlo
 
 
 const endHint = 'roo stop the conversion, should resume?';
+
+interface IProp {
+	provider: ClineProvider,
+	apiConfiguration: ApiConfiguration,
+	postMessageToWebview:  (message: ExtensionMessage) => Promise<void>,
+	customInstructions?: string,
+	enableDiff?: boolean,
+	fuzzyMatchThreshold?: number,
+	task?: string | undefined,
+	images?: string[] | undefined,
+	historyItem?: HistoryItem | undefined,
+	experimentalDiffStrategy: boolean,
+}
 
 export class Cline {
 	readonly taskId: string
@@ -80,6 +94,7 @@ export class Cline {
 	didFinishAborting = false
 	abandoned = false
 	private diffViewProvider: DiffViewProvider
+	private postMessageToWebview: (message: ExtensionMessage) => Promise<void>
 
 	// streaming
 	private currentStreamingContentIndex = 0
@@ -97,21 +112,10 @@ export class Cline {
 	private asking = false;
 
 	constructor(
-		provider: ClineProvider,
-		apiConfiguration: ApiConfiguration,
-		private postMessageToWebview:  (message: ExtensionMessage) => Promise<void>,
-		customInstructions?: string,
-		enableDiff?: boolean,
-		fuzzyMatchThreshold?: number,
-		task?: string | undefined,
-		images?: string[] | undefined,
-		historyItem?: HistoryItem | undefined,
-		experimentalDiffStrategy: boolean = false,
+		prop: IProp
 	) {
-		if (!task && !images && !historyItem) {
-			throw new Error("Either historyItem or task/images must be provided")
-		}
-
+		const { provider, apiConfiguration, postMessageToWebview, customInstructions, enableDiff, fuzzyMatchThreshold, historyItem, experimentalDiffStrategy } = prop
+		this.postMessageToWebview = postMessageToWebview
 		this.taskId = crypto.randomUUID()
 		this.api = buildApiHandler(apiConfiguration)
 		this.terminalManager = new TerminalManager()
@@ -130,16 +134,23 @@ export class Cline {
 		}
 		// Initialize diffStrategy based on current state
 		this.updateDiffStrategy(experimentalDiffStrategy)
+	}
 
+	async start({task, images}: {task?: string, images?: string[]}) {
+		if (!task && !images) {
+			throw new Error("Either historyItem or task/images must be provided")
+		}
 		if (task || images) {
 			this.startTask(task, images)
-		} else if (historyItem) {
-			if (historyItem.newMessage || historyItem.newImages) {
-				this.resumeTask(historyItem.newMessage,historyItem.newImages)
-			}
-			else {
-				this.resumeTaskFromHistory()
-			}
+		}
+	}
+
+	async resume(historyItem: HistoryItem) {
+		if (historyItem.newMessage || historyItem.newImages) {
+			this.resumeTask(historyItem.newMessage,historyItem.newImages)
+		}
+		else {
+			this.resumeTaskFromHistory()
 		}
 	}
 
@@ -536,6 +547,18 @@ export class Cline {
 		}
 		const userContent: UserContent = toUserContent(result, images)
 		this.initiateTaskLoop(userContent)
+	}
+
+	async receiveApproval({tool}:
+						{ tool: any })
+	{
+		//todo waht 还没写完
+		console.log('[waht]','receiveApproval', tool);
+		await this.say("text", `approval for ${tool.content.type}`);
+		// const result = await this.applyCommand(tool,{'cline':this,replacing:false})
+		// console.log('[waht]','done ', result);
+		// const userContent: UserContent = toUserContent(result)
+		// this.initiateTaskLoop(userContent)
 	}
 
 	private async resumeTaskFromHistory() {
@@ -1141,7 +1164,7 @@ export class Cline {
 
 				try {
 					console.log('[waht] 开始执行tool', block)
-					const res = await this.applyTool(block, {'cline':this,'replacing':replacing})
+					const res = await this.applyToolUse(block, {'cline':this,'replacing':replacing})
 					if (typeof res === "string") {
 						console.log('[waht] 执行tool 返回结果: ',res)
 						pushToolResult(res)
@@ -1182,15 +1205,16 @@ export class Cline {
 		}
 	}
 
-	async applyTool(block: ToolUse, context?: any): Promise<any> {
-		console.log('[waht] try apply tool',block)
-		if (this.executor.executorNames.includes(block.name)) {
-			const command = {
-				type: block.name,
-				...block.params
-			}
-			return await this.executor.runCommand(command as any, context) ?? 'no result return'
+	async applyToolUse(block: ToolUse, context?: any): Promise<any> {
+		return await this.applyCommand({...block.params, type:block.name}, context)
+	}
+
+	async applyCommand(command: Command, context?: any): Promise<any> {
+		console.log('[waht] try apply tool',command)
+		if (this.executor.executorNames.includes(command.type)) {
+			return await this.executor.runCommand(command, context) ?? 'no result return'
 		}
+		console.log('[waht]','no executor found for',command.type)
 		return null;
 	}
 

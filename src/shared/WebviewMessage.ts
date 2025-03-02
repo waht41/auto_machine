@@ -81,6 +81,7 @@ export interface WebviewMessage {
 		| "openCustomModesSettings"
 		| "resumeTask"
 	    | "answer"
+	    | "userApproval"
 	text?: string
 	disabled?: boolean
 	askResponse?: ClineAskResponse

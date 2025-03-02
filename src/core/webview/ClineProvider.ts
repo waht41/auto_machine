@@ -303,17 +303,19 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		const effectiveInstructions = [globalInstructions, modePrompt?.customInstructions].filter(Boolean).join("\n\n")
 
 		this.cline = new Cline(
-			this,
-			apiConfiguration,
-			this.postMessageToWebview.bind(this),
-			effectiveInstructions,
-			diffEnabled,
-			fuzzyMatchThreshold,
-			task,
-			images,
-			undefined,
-			experimentalDiffStrategy,
+			{
+				provider:this,
+				apiConfiguration,
+				postMessageToWebview: this.postMessageToWebview.bind(this),
+				customInstructions: effectiveInstructions,
+				enableDiff: diffEnabled,
+				fuzzyMatchThreshold,
+				task,
+				images,
+				experimentalDiffStrategy,
+			}
 		)
+		this.cline.start({task,images})
 	}
 
 	public async initClineWithHistoryItem(historyItem: HistoryItem) {
@@ -332,17 +334,18 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		const effectiveInstructions = [globalInstructions, modePrompt?.customInstructions].filter(Boolean).join("\n\n")
 
 		this.cline = new Cline(
-			this,
-			apiConfiguration,
-			this.postMessageToWebview.bind(this),
-			effectiveInstructions,
-			diffEnabled,
-			fuzzyMatchThreshold,
-			undefined,
-			undefined,
-			historyItem,
-			experimentalDiffStrategy,
+			{
+				provider: this,
+				apiConfiguration,
+				postMessageToWebview:this.postMessageToWebview.bind(this),
+				customInstructions:effectiveInstructions,
+				enableDiff:diffEnabled,
+				fuzzyMatchThreshold,
+				historyItem,
+				experimentalDiffStrategy,
+			}
 		)
+		this.cline.resume(historyItem)
 	}
 
 	public async postMessageToWebview(message: ExtensionMessage) {
@@ -1142,7 +1145,8 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 						//@ts-ignore
 						this.cline?.receiveAnswer(message.payload)
 						break
-
+					case "userApproval":
+						this.cline?.receiveApproval(message.payload)
 				}
 			},
 			null,

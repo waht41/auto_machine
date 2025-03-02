@@ -3,6 +3,7 @@ import { type Cline } from "@core/Cline";
 export interface IInternalContext{
     cline: Cline;
     replacing?: boolean;
+    approval?: boolean;
 }
 
 export type IBaseCommand = {type:'base'} & ({
@@ -32,5 +33,10 @@ export type IAskCommand = {type:'ask'; uuid: string, result?: string} & ({
 
 export type IAskApprovalCommand = {
     type: 'askApproval';
+    content: any;
+}
+
+export type IApprovalCommand = {
+    type: 'approval';
     content: any;
 }
