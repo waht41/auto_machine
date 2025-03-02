@@ -23,31 +23,44 @@ export class CommandRunner {
             return;
         }
 
+        return await this.runMiddlewares(command, context);
+    }
+
+    // 更简洁的中间件执行方法（使用 reduce）
+    private async runMiddlewares(command: Command, context: ExecutionContext): Promise<any> {
         // 如果没有中间件，直接执行命令
         if (this.middlewares.length === 0) {
+            const executor = this.registry.getExecutor(command.type); //部分中间件会改变执行器
+            if (!executor) {
+                console.error(`No executor found for command type: ${command.type}`);
+                return;
+            }
             return await executor.execute(command, context);
         }
 
-        // 创建中间件执行链
-        const middlewareChain = this.createMiddlewareChain(executor, 0);
-        return await middlewareChain(command, context);
-    }
+        // 定义最终执行器作为初始 next 函数
+        let composedMiddleware = async (cmd: Command, ctx: ExecutionContext) => {
+            const executor = this.registry.getExecutor(cmd.type);
+            if (!executor) {
+                console.error(`No executor found for command type: ${cmd.type}`);
+                return;
+            }
+            return await executor.execute(cmd, ctx);
+        };
 
-    // 创建中间件执行链
-    private createMiddlewareChain(executor: CommandExecutor, index: number): (command: Command, context: ExecutionContext) => Promise<any> {
-        if (index >= this.middlewares.length) {
-            // 最后一个中间件执行完后，执行实际的命令
-            return async (command: Command, context: ExecutionContext) => {
-                return await executor.execute(command, context);
+        // 从右到左（从后向前）构建中间件链
+        for (let i = this.middlewares.length - 1; i >= 0; i--) {
+            const middleware = this.middlewares[i];
+            const currentNext = composedMiddleware; // 保存当前的 next 引用
+            
+            // 创建新的组合中间件，包装当前中间件和下一个中间件
+            composedMiddleware = async (cmd: Command, ctx: ExecutionContext) => {
+                return await middleware(cmd, ctx, currentNext);
             };
         }
 
-        const currentMiddleware = this.middlewares[index];
-        const nextMiddleware = this.createMiddlewareChain(executor, index + 1);
-
-        return async (command: Command, context: ExecutionContext) => {
-            return await currentMiddleware(command, context, nextMiddleware);
-        };
+        // 执行组合后的中间件链
+        return await composedMiddleware(command, context);
     }
 
     registerExecutor(type: string, executor: CommandExecutor) {

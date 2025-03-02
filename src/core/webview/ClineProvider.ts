@@ -345,7 +345,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 				experimentalDiffStrategy,
 			}
 		)
-		this.cline.resume(historyItem)
+		this.cline.resume({text:historyItem.newMessage,images:historyItem.newImages})
 	}
 
 	public async postMessageToWebview(message: ExtensionMessage) {
@@ -1147,6 +1147,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 						break
 					case "userApproval":
 						this.cline?.receiveApproval(message.payload)
+						break
 				}
 			},
 			null,

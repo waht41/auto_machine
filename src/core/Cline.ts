@@ -145,9 +145,12 @@ export class Cline {
 		}
 	}
 
-	async resume(historyItem: HistoryItem) {
-		if (historyItem.newMessage || historyItem.newImages) {
-			this.resumeTask(historyItem.newMessage,historyItem.newImages)
+	async resume({text, images}: {text?: string, images?: string[]}) {
+		if (!this.taskId){
+			throw new Error("Task ID not set")
+		}
+		if (text || images) {
+			this.resumeTaskWithNewMessage(text,images)
 		}
 		else {
 			this.resumeTaskFromHistory()
@@ -269,13 +272,15 @@ export class Cline {
 				   text,
 				   partial,
 		replacing = false,
+		noReturn = true
 			   }: {
 		askType: ClineAsk,
 		text?: string,
 		partial?: boolean,
-		replacing?: boolean
+		replacing?: boolean,
+		noReturn?: boolean
 	}) {
-		return await this.ask(askType, text, partial, replacing, true)
+		return await this.ask(askType, text, partial, replacing, noReturn)
 	}
 
 	async ask(
@@ -502,7 +507,7 @@ export class Cline {
 		])
 	}
 
-	private async resumeTask(text?: string, images?: string[]) {
+	private async resumeTaskWithNewMessage(text?: string, images?: string[]) {
 		this.clineMessages = await this.getSavedClineMessages()
 		this.apiConversationHistory = await this.getSavedApiConversationHistory()
 		if (this.clineMessages.at(-1)?.text === endHint) {
@@ -554,11 +559,8 @@ export class Cline {
 	{
 		//todo waht 还没写完
 		console.log('[waht]','receiveApproval', tool);
-		await this.say("text", `approval for ${tool.content.type}`);
-		// const result = await this.applyCommand(tool,{'cline':this,replacing:false})
-		// console.log('[waht]','done ', result);
-		// const userContent: UserContent = toUserContent(result)
-		// this.initiateTaskLoop(userContent)
+		const result = await this.applyCommand(tool,{'cline':this,replacing:false})
+		this.resume({text: typeof result === 'string'? result: undefined, images: []})
 	}
 
 	private async resumeTaskFromHistory() {
@@ -1287,7 +1289,8 @@ export class Cline {
 					askType: 'followup',
 					text: endHint,
 					partial: false,
-					replacing: false
+					replacing: false,
+					noReturn: true,
 				})
 				this.consecutiveMistakeCount++
 				console.log('[waht] no new message get')
