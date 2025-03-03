@@ -6,6 +6,7 @@ import { McpServer } from "./mcp"
 import { GitCommit } from "../utils/git"
 import { Mode, CustomModePrompts, ModeConfig } from "./modes"
 import { CustomSupportPrompts } from "./support-prompt"
+import { IToolCategory } from "@core/tool-adapter/type";
 
 export interface LanguageModelChatSelector {
 	vendor?: string
@@ -41,6 +42,7 @@ export interface ExtensionMessage {
 		| "autoApprovalEnabled"
 		| "updateCustomMode"
 		| "deleteCustomMode"
+		| "toolCategories"
 	text?: string
 	action?:
 		| "chatButtonClicked"
@@ -66,6 +68,7 @@ export interface ExtensionMessage {
 	mode?: Mode
 	customMode?: ModeConfig
 	slug?: string
+	toolCategories?: IToolCategory[]
 }
 
 export interface ApiConfigMeta {
@@ -111,6 +114,7 @@ export interface ExtensionState {
 	autoApprovalEnabled?: boolean
 	customModes: ModeConfig[]
 	toolRequirements?: Record<string, boolean> // Map of tool names to their requirements (e.g. {"apply_diff": true} if diffEnabled)
+	toolCategories?: IToolCategory[]
 }
 
 export interface ClineMessage {

@@ -16,6 +16,7 @@ import { McpServer } from "../../../src/shared/mcp"
 import { checkExistKey } from "../../../src/shared/checkExistApiConfig"
 import { Mode, CustomModePrompts, defaultModeSlug, defaultPrompts, ModeConfig } from "../../../src/shared/modes"
 import { CustomSupportPrompts } from "../../../src/shared/support-prompt"
+import { IToolCategory } from "@core/tool-adapter/type";
 
 export interface ExtensionStateContextType extends ExtensionState {
 	didHydrateState: boolean
@@ -69,6 +70,7 @@ export interface ExtensionStateContextType extends ExtensionState {
 	handleInputChange: (field: keyof ApiConfiguration) => (event: any) => void
 	customModes: ModeConfig[]
 	setCustomModes: (value: ModeConfig[]) => void
+	toolCategories: IToolCategory[]
 }
 
 export const ExtensionStateContext = createContext<ExtensionStateContextType | undefined>(undefined)
@@ -101,6 +103,7 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		experimentalDiffStrategy: false,
 		autoApprovalEnabled: false,
 		customModes: [],
+		toolCategories: [],
 	})
 
 	const [didHydrateState, setDidHydrateState] = useState(false)
@@ -113,6 +116,7 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 	const [openRouterModels, setOpenRouterModels] = useState<Record<string, ModelInfo>>({
 		[openRouterDefaultModelId]: openRouterDefaultModelInfo,
 	})
+	const [toolCategories, setToolCategories] = useState<IToolCategory[]>([])
 
 	const [openAiModels, setOpenAiModels] = useState<string[]>([])
 	const [mcpServers, setMcpServers] = useState<McpServer[]>([])
@@ -216,6 +220,11 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 					setListApiConfigMeta(message.listApiConfig ?? [])
 					break
 				}
+				case "toolCategories": {
+					console.log('[waht]','toolCategories',message.toolCategories)
+					setToolCategories(message.toolCategories ?? [])
+					break
+				}
 			}
 		},
 		[setListApiConfigMeta],
@@ -237,6 +246,7 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		openAiModels,
 		mcpServers,
 		filePaths,
+		toolCategories,
 		soundVolume: state.soundVolume,
 		fuzzyMatchThreshold: state.fuzzyMatchThreshold,
 		writeDelayMs: state.writeDelayMs,

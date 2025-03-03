@@ -34,8 +34,9 @@ import { supportPrompt } from "../../shared/support-prompt"
 
 import { ACTION_NAMES } from "../CodeActionProvider"
 import { GlobalState } from "@/core/record/global-state";
-import { configPath, createIfNotExists } from "@core/record/common";
+import { configPath, createIfNotExists, getAssetPath } from "@core/record/common";
 import { ApprovalMiddleWrapper } from "@core/internal-implementation/middleware";
+import { getToolCategory } from "@core/tool-adapter/getToolCategory";
 
 /*
 https://github.com/microsoft/vscode-webview-ui-toolkit-samples/blob/main/default/weather-webview/src/providers/WeatherViewProvider.ts
@@ -373,6 +374,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 						// Load custom modes first
 						const customModes = await this.customModesManager.getCustomModes()
 						await this.updateGlobalState("customModes", customModes)
+						await this.postMessageToWebview({ type: "toolCategories", toolCategories: getToolCategory(path.join(getAssetPath(),"external-prompt")) })
 
 						this.postStateToWebview()
 						this.workspaceTracker?.initializeFilePaths() // don't await
