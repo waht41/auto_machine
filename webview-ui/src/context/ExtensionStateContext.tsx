@@ -71,6 +71,7 @@ export interface ExtensionStateContextType extends ExtensionState {
 	customModes: ModeConfig[]
 	setCustomModes: (value: ModeConfig[]) => void
 	toolCategories: IToolCategory[]
+	allowedTools: string[]
 }
 
 export const ExtensionStateContext = createContext<ExtensionStateContextType | undefined>(undefined)
@@ -104,6 +105,7 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		autoApprovalEnabled: false,
 		customModes: [],
 		toolCategories: [],
+		allowedTools: [],
 	})
 
 	const [didHydrateState, setDidHydrateState] = useState(false)
@@ -117,6 +119,7 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		[openRouterDefaultModelId]: openRouterDefaultModelInfo,
 	})
 	const [toolCategories, setToolCategories] = useState<IToolCategory[]>([])
+	const [allowedTools, setAllowedTools] = useState<string[]>([])
 
 	const [openAiModels, setOpenAiModels] = useState<string[]>([])
 	const [mcpServers, setMcpServers] = useState<McpServer[]>([])
@@ -225,6 +228,10 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 					setToolCategories(message.toolCategories ?? [])
 					break
 				}
+				case "allowedTools": {
+					setAllowedTools(message.allowedTools ?? [])
+					break
+				}
 			}
 		},
 		[setListApiConfigMeta],
@@ -247,6 +254,7 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		mcpServers,
 		filePaths,
 		toolCategories,
+		allowedTools,
 		soundVolume: state.soundVolume,
 		fuzzyMatchThreshold: state.fuzzyMatchThreshold,
 		writeDelayMs: state.writeDelayMs,

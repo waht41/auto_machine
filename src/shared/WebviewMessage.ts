@@ -82,6 +82,7 @@ export interface WebviewMessage {
 		| "resumeTask"
 	    | "answer"
 	    | "userApproval"
+		| "toggleAllowedTool"
 	text?: string
 	disabled?: boolean
 	askResponse?: ClineAskResponse
@@ -103,7 +104,8 @@ export interface WebviewMessage {
 	slug?: string
 	modeConfig?: ModeConfig
 	timeout?: number
-	payload?: Record<string, any>
+	payload?: any
+	toolId?: string
 }
 
 export type ClineAskResponse = "yesButtonClicked" | "noButtonClicked" | "messageResponse"

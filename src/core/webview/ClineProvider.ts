@@ -37,6 +37,7 @@ import { GlobalState } from "@/core/record/global-state";
 import { configPath, createIfNotExists, getAssetPath } from "@core/record/common";
 import { ApprovalMiddleWrapper } from "@core/internal-implementation/middleware";
 import { getToolCategory } from "@core/tool-adapter/getToolCategory";
+import { AllowedToolTree } from "@core/tool-adapter/AllowedToolTree";
 
 /*
 https://github.com/microsoft/vscode-webview-ui-toolkit-samples/blob/main/default/weather-webview/src/providers/WeatherViewProvider.ts
@@ -136,7 +137,8 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 	configManager: ConfigManager
 	customModesManager: CustomModesManager
 	private globalState: GlobalState
-	private allowedCommandsRef: {value: string[] } = {value: []}
+	private toolCategories = getToolCategory(path.join(getAssetPath(),"external-prompt"))
+	private allowedToolTree = new AllowedToolTree(['base','external','ask','askApproval','approval'],this.toolCategories)
 
 	constructor(
 		readonly context: vscode.ExtensionContext,
@@ -302,7 +304,6 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 			experimentalDiffStrategy,
 			allowedCommands
 		} = await this.getState()
-		this.allowedCommandsRef.value = allowedCommands ?? []
 
 		const modePrompt = customModePrompts?.[mode] as PromptComponent
 		const effectiveInstructions = [globalInstructions, modePrompt?.customInstructions].filter(Boolean).join("\n\n")
@@ -318,7 +319,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 				task,
 				images,
 				experimentalDiffStrategy,
-				middleWares: [ApprovalMiddleWrapper(this.allowedCommandsRef)]
+				middleWares: [ApprovalMiddleWrapper(this.allowedToolTree)]
 			}
 		)
 		this.cline.start({task,images})
@@ -349,7 +350,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 				fuzzyMatchThreshold,
 				historyItem,
 				experimentalDiffStrategy,
-				middleWares: [ApprovalMiddleWrapper(this.allowedCommandsRef)]
+				middleWares: [ApprovalMiddleWrapper(this.allowedToolTree)]
 			}
 		)
 		this.cline.resume({text:historyItem.newMessage,images:historyItem.newImages})
@@ -374,7 +375,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 						// Load custom modes first
 						const customModes = await this.customModesManager.getCustomModes()
 						await this.updateGlobalState("customModes", customModes)
-						await this.postMessageToWebview({ type: "toolCategories", toolCategories: getToolCategory(path.join(getAssetPath(),"external-prompt")) })
+						await this.postMessageToWebview({ type: "toolCategories", toolCategories: this.toolCategories })
 
 						this.postStateToWebview()
 						this.workspaceTracker?.initializeFilePaths() // don't await
@@ -1150,17 +1151,28 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 						}
 						break
 					case "answer":
-						//@ts-ignore
 						this.cline?.receiveAnswer(message.payload)
 						break
 					case "userApproval":
 						this.cline?.receiveApproval(message.payload)
+						break
+					case "toggleAllowedTool":
+						this.toggleAllowedTool(message.toolId!)
 						break
 				}
 			},
 			null,
 			this.disposables,
 		)
+	}
+	private async toggleAllowedTool(toolId: string) {
+		const newCommands = this.allowedToolTree.toggle(toolId);
+
+		await this.globalState.set("allowedCommands", newCommands);
+		this.postMessageToWebview({
+			type: "allowedTools",
+			allowedTools: newCommands
+		});
 	}
 
 	/**

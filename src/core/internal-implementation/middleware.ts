@@ -1,13 +1,23 @@
 import { Middleware } from "@executors/types";
 import { IInternalContext } from "@core/internal-implementation/type";
 
-export const ApprovalMiddleWrapper = (allowedCommandsRef: { value: string[] }) => {
-    console.log('[waht]','allowedCommands: ',allowedCommandsRef.value)
+export const ApprovalMiddleWrapper = (allowedCommandJudge: { isAllowed: (commandStr:string)=>boolean }) => {
     const ApprovalMiddleware: Middleware = async (command, context: IInternalContext, next) => {
-        if (!allowedCommandsRef.value.includes(command.type)&& !context.approval && !['ask','askApproval','approval'].includes(command.type)) {
+        if (!allowedCommandJudge.isAllowed(getCommandStr(command))&& !context.approval) {
             return await next({type:'ask',askType:'askApproval',content:command}, context);
         }
         return await next(command, context);
     };
     return ApprovalMiddleware;
+}
+
+export const getCommandStr = (command: any)=> {
+    const possibleKeys = ['type', 'cmd','askType','action'];
+    const segments = [];
+    for (const key of possibleKeys) {
+        if (command[key]) {
+            segments.push(command[key]);
+        }
+    }
+    return segments.join('.');
 }

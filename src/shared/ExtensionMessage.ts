@@ -43,6 +43,7 @@ export interface ExtensionMessage {
 		| "updateCustomMode"
 		| "deleteCustomMode"
 		| "toolCategories"
+		| "allowedTools"
 	text?: string
 	action?:
 		| "chatButtonClicked"
@@ -69,6 +70,7 @@ export interface ExtensionMessage {
 	customMode?: ModeConfig
 	slug?: string
 	toolCategories?: IToolCategory[]
+	allowedTools?: string[]
 }
 
 export interface ApiConfigMeta {
@@ -115,6 +117,7 @@ export interface ExtensionState {
 	customModes: ModeConfig[]
 	toolRequirements?: Record<string, boolean> // Map of tool names to their requirements (e.g. {"apply_diff": true} if diffEnabled)
 	toolCategories?: IToolCategory[]
+	allowedTools?: string[]
 }
 
 export interface ClineMessage {

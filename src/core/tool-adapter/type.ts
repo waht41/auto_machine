@@ -11,4 +11,4 @@ export interface IToolCategory {
     tools: IToolNode[];
 }
 
-type IToolNode = IToolItem | IToolCategory;
+export type IToolNode = IToolItem | IToolCategory;
