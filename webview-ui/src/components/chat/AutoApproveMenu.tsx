@@ -34,15 +34,9 @@ const HeaderTitle = styled.span`
   margin-right: 8px;
 `;
 
-const ChevronIcon = styled.div`
-  flex-shrink: 0;
-  color: #687076;
-`;
-
 const BodyContainer = styled.div``;
 
 const Description = styled.div`
-  margin-bottom: 10px;
   color: #687076;
   font-size: 12px;
 `;
@@ -149,11 +143,7 @@ const AutoApproveMenu = ({toolCategories, allowedTools, onToggleTool}:IProp) => 
     <Container>
       <MenuContainer>
         <MenuHeader isExpanded={isExpanded} onClick={toggleExpanded} allowedTools={showedAllowedTools} tools={toolCategories || tools} onToggleTool={onToggleTool} />
-        <MenuBody
-          tools={toolCategories || tools}
-          allowedTools={showedAllowedTools}
-          onToggleTool={onToggleTool}
-        />
+        <MenuBody/>
       </MenuContainer>
     </Container>
   )
@@ -204,17 +194,12 @@ const MenuHeader = ({ isExpanded, onClick, allowedTools, tools, onToggleTool }: 
             }}
             treeCheckable={true}
             showCheckedStrategy={TreeSelect.SHOW_CHILD}
-            placeholder="请选择工具"
+            placeholder="click here to choose tools"
             dropdownStyle={{ maxHeight: 400, overflow: 'auto' }}
             treeDefaultExpandAll
             treeNodeLabelProp="title"
           />
         </div>
-        {isExpanded ? (
-          <ChevronIcon>&#x25BC;</ChevronIcon>
-        ) : (
-          <ChevronIcon>&#x25B6;</ChevronIcon>
-        )}
       </HeaderContent>
     </HeaderContainer>
   );
@@ -259,13 +244,7 @@ const convertToNodes = (toolCategories: IToolCategory[]): any[] => {
   }];
 };
 
-interface MenuBodyProps {
-  tools: IToolCategory[]
-  allowedTools: string[]
-  onToggleTool: (toolId: string[]) => void
-}
-
-const MenuBody = ({ tools, allowedTools, onToggleTool }: MenuBodyProps) => {
+const MenuBody = () => {
   return (
     <BodyContainer>
       <Description>
