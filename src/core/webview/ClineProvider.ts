@@ -1165,7 +1165,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 			this.disposables,
 		)
 	}
-	private async toggleAllowedTool(toolId: string) {
+	private async toggleAllowedTool(toolId: string| string[]) {
 		const newCommands = this.allowedToolTree.toggle(toolId);
 
 		await this.globalState.set("allowedCommands", newCommands);
