@@ -105,7 +105,7 @@ export interface WebviewMessage {
 	modeConfig?: ModeConfig
 	timeout?: number
 	payload?: any
-	toolId?: string
+	toolId?: string | string[]
 }
 
 export type ClineAskResponse = "yesButtonClicked" | "noButtonClicked" | "messageResponse"
