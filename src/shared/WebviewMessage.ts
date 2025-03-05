@@ -80,9 +80,9 @@ export interface WebviewMessage {
 		| "setopenAiCustomModelInfo"
 		| "openCustomModesSettings"
 		| "resumeTask"
-	    | "answer"
-	    | "userApproval"
-		| "toggleAllowedTool"
+    | "answer"
+    | "userApproval"
+		| "setAllowedTools"
 	text?: string
 	disabled?: boolean
 	askResponse?: ClineAskResponse

@@ -138,7 +138,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 	customModesManager: CustomModesManager
 	private globalState: GlobalState
 	private toolCategories = getToolCategory(path.join(getAssetPath(),"external-prompt"))
-	private allowedToolTree = new AllowedToolTree(['base','external','ask','askApproval','approval'],this.toolCategories)
+	private allowedToolTree = new AllowedToolTree([],this.toolCategories)
 
 	constructor(
 		readonly context: vscode.ExtensionContext,
@@ -360,6 +360,11 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		await this.view?.webview.postMessage(message)
 	}
 
+  private async setUpAllowedTools(){
+    const allowedTools = await this.globalState.get<string[]>("allowedCommands")
+    this.allowedToolTree.setAllowedTools(allowedTools?? [])
+  }
+
 
 	/**
 	 * Sets up an event listener to listen for messages passed from the webview context and
@@ -374,8 +379,11 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 					case "webviewDidLaunch":
 						// Load custom modes first
 						const customModes = await this.customModesManager.getCustomModes()
-						await this.updateGlobalState("customModes", customModes)
+            await this.updateGlobalState("customModes", customModes)
+
+            await this.setUpAllowedTools();
 						await this.postMessageToWebview({ type: "toolCategories", toolCategories: this.toolCategories })
+            await this.postMessageToWebview({ type: "allowedTools", allowedTools:this.allowedToolTree.getAllowedTools() })
 
 						this.postStateToWebview()
 						this.workspaceTracker?.initializeFilePaths() // don't await
@@ -1156,8 +1164,8 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 					case "userApproval":
 						this.cline?.receiveApproval(message.payload)
 						break
-					case "toggleAllowedTool":
-						this.toggleAllowedTool(message.toolId!)
+					case "setAllowedTools":
+						this.setAllowedTools(message.toolId!)
 						break
 				}
 			},
@@ -1165,8 +1173,8 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 			this.disposables,
 		)
 	}
-	private async toggleAllowedTool(toolId: string| string[]) {
-		const newCommands = this.allowedToolTree.toggle(toolId);
+	private async setAllowedTools(toolId: string| string[]) {
+		const newCommands = this.allowedToolTree.setAllowedTools(toolId);
 
 		await this.globalState.set("allowedCommands", newCommands);
 		this.postMessageToWebview({

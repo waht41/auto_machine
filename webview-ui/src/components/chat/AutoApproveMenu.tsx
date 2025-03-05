@@ -42,10 +42,16 @@ const Description = styled.div`
 `;
 
 const StyledHeaderTreeSelect = styled(TreeSelect)`
-  width: auto;
+  width: 400px;
   margin-right: 8px;
   flex: 1;
-  min-width: 300px;
+  && .ant-select-selection-overflow {
+    width: 100%;
+    flex-wrap: nowrap;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 `;
 
 const tools: IToolCategory[] = [
@@ -127,22 +133,15 @@ const tools: IToolCategory[] = [
 interface IProp{
   toolCategories: IToolCategory[]
   allowedTools: string[]
-  onToggleTool: (toolId: string[]) => void
+  setAllowedTools: (toolId: string[]) => void
 }
 
-const AutoApproveMenu = ({toolCategories, allowedTools, onToggleTool}:IProp) => {
-  const [isExpanded, setIsExpanded] = useState(false)
+const AutoApproveMenu = ({toolCategories, allowedTools, setAllowedTools}:IProp) => {
 
-  const toggleExpanded = useCallback(() => {
-    setIsExpanded((prev) => !prev)
-  }, [])
-
-  const showedAllowedTools = allowedTools.filter((toolId) => !['external','base','ask','askApproval','approval'].includes(toolId))
-  console.log('[waht]','showedAllowedTools',showedAllowedTools, allowedTools)
   return (
     <Container>
       <MenuContainer>
-        <MenuHeader isExpanded={isExpanded} onClick={toggleExpanded} allowedTools={showedAllowedTools} tools={toolCategories || tools} onToggleTool={onToggleTool} />
+        <MenuHeader allowedTools={allowedTools} tools={toolCategories || tools} setAllowedTools={setAllowedTools} />
         <MenuBody/>
       </MenuContainer>
     </Container>
@@ -150,47 +149,24 @@ const AutoApproveMenu = ({toolCategories, allowedTools, onToggleTool}:IProp) => 
 }
 
 interface MenuHeaderProps {
-  isExpanded: boolean
-  onClick: () => void
   allowedTools: string[]
   tools: IToolCategory[]
-  onToggleTool: (toolId: string[]) => void
+  setAllowedTools: (toolId: string[]) => void
 }
 
-const MenuHeader = ({ isExpanded, onClick, allowedTools, tools, onToggleTool }: MenuHeaderProps) => {
+const MenuHeader = ({ allowedTools, tools, setAllowedTools }: MenuHeaderProps) => {
   // 阻止事件冒泡，防止点击 TreeSelect 时触发 HeaderContainer 的点击事件
-  const handleTreeSelectClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-  };
   const convertedTools = useMemo(() => convertToNodes(tools), [tools]);
 
   return (
-    <HeaderContainer onClick={onClick}>
+    <HeaderContainer>
       <HeaderContent>
         <HeaderTitle>Auto-approve:</HeaderTitle>
-        <div onClick={handleTreeSelectClick}>
           <StyledHeaderTreeSelect
             treeData={convertedTools}
             value={allowedTools}
             onChange={(checked) => {
-              // 找出所有不同的元素
-              let diffs: string[] = [];
-
-              if (Array.isArray(checked) && checked.length > allowedTools.length) {
-                // 新增的元素：在 checked 中但不在 allowedTools 中
-                diffs = checked.filter(id => !allowedTools.includes(id));
-              } else {
-                // 移除的元素：在 allowedTools 中但不在 checked 中
-                diffs = allowedTools.filter(id => !checked.includes(id));
-              }
-
-              console.log('[waht]','diffs',diffs);
-              console.log('[waht]','checked',checked);
-
-              if (diffs.length > 0) {
-                // 将所有差异元素传递给 onToggleTool
-                onToggleTool(diffs);
-              }
+              setAllowedTools(checked);
             }}
             treeCheckable={true}
             showCheckedStrategy={TreeSelect.SHOW_CHILD}
@@ -199,7 +175,6 @@ const MenuHeader = ({ isExpanded, onClick, allowedTools, tools, onToggleTool }: 
             treeDefaultExpandAll
             treeNodeLabelProp="title"
           />
-        </div>
       </HeaderContent>
     </HeaderContainer>
   );

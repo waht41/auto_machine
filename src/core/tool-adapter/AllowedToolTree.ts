@@ -13,6 +13,14 @@ export class AllowedToolTree {
     this.buildNodesMap(categories);
   }
 
+  setAllowedTools(toolIds: string[]): string[] {
+    this.commands.clear();
+    toolIds.forEach(toolId => {
+      this.addTool(toolId);
+    });
+    return Array.from(this.commands);
+  }
+
   toggle(toolIds: string | string[]): string[] {
     const ids = Array.isArray(toolIds) ? toolIds : [toolIds];
     ids.forEach(toolId => {

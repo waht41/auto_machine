@@ -3,7 +3,7 @@ import { IInternalContext } from "@core/internal-implementation/type";
 
 export const ApprovalMiddleWrapper = (allowedCommandJudge: { isAllowed: (commandStr:string)=>boolean }) => {
     const ApprovalMiddleware: Middleware = async (command, context: IInternalContext, next) => {
-        if (!allowedCommandJudge.isAllowed(getCommandStr(command))&& !context.approval) {
+        if (!allowedCommandJudge.isAllowed(getCommandStr(command))&& !context.approval && !['base','approval','askApproval','ask','external'].includes(command.type)) {
             return await next({type:'ask',askType:'askApproval',content:command}, context);
         }
         return await next(command, context);

@@ -1030,8 +1030,8 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 					)}
 				</>
 			)}
-      <AutoApproveMenu toolCategories={toolCategories} allowedTools={allowedTools} onToggleTool={(toolId)=>{
-        vscode.postMessage({type: "toggleAllowedTool", toolId: toolId})
+      <AutoApproveMenu toolCategories={toolCategories} allowedTools={allowedTools} setAllowedTools={(toolId)=>{
+        vscode.postMessage({type: "setAllowedTools", toolId: toolId})
       }}></AutoApproveMenu>
 			<ChatTextArea
 				ref={textAreaRef}
