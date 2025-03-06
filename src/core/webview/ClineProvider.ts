@@ -149,7 +149,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		this.outputChannel.appendLine("ClineProvider instantiated")
 		ClineProvider.activeInstances.add(this)
 		this.workspaceTracker = new WorkspaceTracker(this)
-		this.mcpHub = new McpHub(this)
+		this.mcpHub = new McpHub('.',this.postMessageToWebview.bind(this))
 		this.configManager = new ConfigManager(this.context)
 		this.customModesManager = new CustomModesManager(this.context, async () => {
 			await this.postStateToWebview()

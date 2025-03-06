@@ -49,15 +49,17 @@ const McpSettingsSchema = z.object({
 })
 
 export class McpHub {
-	private providerRef: WeakRef<ClineProvider>
+	// private providerRef: WeakRef<ClineProvider>
 	private disposables: vscode.Disposable[] = []
 	private settingsWatcher?: vscode.FileSystemWatcher
 	private fileWatchers: Map<string, FSWatcher> = new Map()
+
+  // private postMessageToWebview: (message: any) => Promise<void> = async () => {}
 	connections: McpConnection[] = []
 	isConnecting: boolean = false
 
-	constructor(provider: ClineProvider) {
-		this.providerRef = new WeakRef(provider)
+	constructor(private mcpServerPath: string, private postMessage: (message: any) => Promise<void>) {
+		// this.providerRef = new WeakRef(provider)
 		this.watchMcpSettingsFile()
 		this.initializeMcpServers()
 	}
@@ -68,23 +70,25 @@ export class McpHub {
 	}
 
 	async getMcpServersPath(): Promise<string> {
-		const provider = this.providerRef.deref()
-		if (!provider) {
-			throw new Error("Provider not available")
-		}
-		const mcpServersPath = await provider.ensureMcpServersDirectoryExists()
-		return mcpServersPath
+    return this.mcpServerPath
+		// const provider = this.providerRef.deref()
+		// if (!provider) {
+		// 	throw new Error("Provider not available")
+		// }
+		// const mcpServersPath = await provider.ensureMcpServersDirectoryExists()
+		// return mcpServersPath
 	}
 
 	async getMcpSettingsFilePath(): Promise<string> {
-		const provider = this.providerRef.deref()
-		if (!provider) {
-			throw new Error("Provider not available")
-		}
-		const mcpSettingsFilePath = path.join(
-			await provider.ensureSettingsDirectoryExists(),
-			GlobalFileNames.mcpSettings,
-		)
+		// const provider = this.providerRef.deref()
+		// if (!provider) {
+		// 	throw new Error("Provider not available")
+		// }
+		// const mcpSettingsFilePath = path.join(
+		// 	await provider.ensureSettingsDirectoryExists(),
+		// 	GlobalFileNames.mcpSettings,
+		// )
+    const mcpSettingsFilePath = path.join(this.mcpServerPath, GlobalFileNames.mcpSettings)
 		const fileExists = await fileExistsAtPath(mcpSettingsFilePath)
 		if (!fileExists) {
 			await fs.writeFile(
@@ -149,7 +153,8 @@ export class McpHub {
 			const client = new Client(
 				{
 					name: "Roo Code",
-					version: this.providerRef.deref()?.context.extension?.packageJSON?.version ?? "1.0.0",
+					// version: this.providerRef.deref()?.context.extension?.packageJSON?.version ?? "1.0.0",
+          version: '1.0.0'
 				},
 				{
 					capabilities: {},
@@ -396,10 +401,10 @@ export class McpHub {
 
 	async restartConnection(serverName: string): Promise<void> {
 		this.isConnecting = true
-		const provider = this.providerRef.deref()
-		if (!provider) {
-			return
-		}
+		// const provider = this.providerRef.deref()
+		// if (!provider) {
+		// 	return
+		// }
 
 		// Get existing connection and update its status
 		const connection = this.connections.find((conn) => conn.server.name === serverName)
@@ -431,7 +436,7 @@ export class McpHub {
 		const content = await fs.readFile(settingsPath, "utf-8")
 		const config = JSON.parse(content)
 		const serverOrder = Object.keys(config.mcpServers || {})
-		await this.providerRef.deref()?.postMessageToWebview({
+		await this.postMessage({
 			type: "mcpServers",
 			mcpServers: [...this.connections]
 				.sort((a, b) => {
