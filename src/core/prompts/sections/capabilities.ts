@@ -1,5 +1,5 @@
 import { DiffStrategy } from "../../diff/DiffStrategy"
-import { McpHub } from "@operation/mcp"
+import { McpHub } from "@operation/MCP"
 
 export function getCapabilitiesSection(
 	cwd: string,

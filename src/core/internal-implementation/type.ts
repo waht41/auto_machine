@@ -1,5 +1,5 @@
 import { type Cline } from "@core/Cline";
-import { McpHub } from "@operation/mcp";
+import { McpHub } from "@operation/MCP";
 
 export interface IInternalContext{
     cline: Cline;

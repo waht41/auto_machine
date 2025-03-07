@@ -39,7 +39,7 @@ import { defaultModeSlug } from "@/shared/modes"
 import { truncateHalfConversation } from "./sliding-window"
 import { ClineProvider, GlobalFileNames } from "./webview/ClineProvider"
 import { BrowserSession } from "@/services/browser/BrowserSession"
-import { McpHub } from "@operation/mcp"
+import { McpHub } from "@operation/MCP"
 import crypto from "crypto"
 import { CommandRunner } from "@executors/runner";
 import { parseBlocks } from "@core/assistant-message/parse-assistant-message";

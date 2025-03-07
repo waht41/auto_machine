@@ -1,5 +1,5 @@
 import { SYSTEM_PROMPT } from "../system"
-import { McpHub } from "@operation/mcp"
+import { McpHub } from "@operation/MCP"
 import { McpServer } from "../../../shared/mcp"
 import { ClineProvider } from "../../../core/webview/ClineProvider"
 import { SearchReplaceDiffStrategy } from "../../../core/diff/strategies/search-replace"
