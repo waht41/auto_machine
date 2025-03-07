@@ -44,6 +44,7 @@ export interface ExtensionMessage {
 		| "deleteCustomMode"
 		| "toolCategories"
 		| "allowedTools"
+    | "electron"
 	text?: string
 	action?:
 		| "chatButtonClicked"
@@ -71,6 +72,7 @@ export interface ExtensionMessage {
 	slug?: string
 	toolCategories?: IToolCategory[]
 	allowedTools?: string[]
+  payload?: any
 }
 
 export interface ApiConfigMeta {
