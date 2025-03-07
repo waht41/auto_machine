@@ -302,7 +302,6 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 			mode,
 			customInstructions: globalInstructions,
 			experimentalDiffStrategy,
-			allowedCommands
 		} = await this.getState()
 
 		const modePrompt = customModePrompts?.[mode] as PromptComponent

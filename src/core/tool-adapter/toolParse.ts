@@ -4,7 +4,6 @@ import * as path from 'path';
 import { IToolCategory, IToolItem } from './type';
 
 
-
 /**
  * 解析YAML文件并转换为IToolCategory格式
  * @param filePath YAML文件路径
@@ -156,12 +155,10 @@ export function parseToolsFromFiles(filePaths: string[]): IToolCategory[] {
             const fileName = path.basename(filePath, path.extname(filePath));
 
             // 将文件名首字母大写作为类别标签
-            const categoryLabel = fileName.charAt(0).toUpperCase() + fileName.slice(1);
-
-            const toolCategory = parseYamlToToolCategory(
+          const toolCategory = parseYamlToToolCategory(
                 filePath,
-                fileName.toLowerCase(),
-                categoryLabel
+                fileName,
+                fileName
             );
 
             toolCategories.push(toolCategory);
