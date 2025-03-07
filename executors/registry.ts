@@ -1,4 +1,3 @@
-import {  SafeCommandExecutor } from './command-executor';
 import { CommandExecutor } from "@executors/types";
 
 export class ExecutorRegistry {

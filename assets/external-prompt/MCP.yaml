@@ -1,0 +1,30 @@
+# model content protocol，模型上下文协议，可以使用用户自定义的功能
+list:
+    description: 列出当前可用的server
+    example:
+      - tool: MCP
+        cmd: list
+
+list_tool:
+    description: 列出指定server的工具
+    params:
+      server: 服务器名称
+    example:
+      - tool: MCP
+        cmd: list_tool
+        server: "weather-server"
+
+call_tool:
+    description: 调用指定server的工具
+    params:
+      server: 服务器名称
+      mcp_tool: server对应的工具名称
+      arguments: 工具参数，不同mcp_tool对应的参数不同
+    example:
+      - tool: MCP
+        cmd: call_tool
+        server: "weather-server"
+        mcp_tool: "weather"
+        arguments:
+          city: "北京"
+          date: "2021-08-01"
