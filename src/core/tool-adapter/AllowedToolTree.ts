@@ -13,7 +13,8 @@ export class AllowedToolTree {
     this.buildNodesMap(categories);
   }
 
-  setAllowedTools(toolIds: string[]): string[] {
+  setAllowedTools(ids: string[] | string): string[] {
+    const toolIds = Array.isArray(ids) ? ids : [ids];
     this.commands.clear();
     toolIds.forEach(toolId => {
       this.addTool(toolId);
