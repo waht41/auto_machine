@@ -1,9 +1,10 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow } from 'electron';
 import { ChildProcess, fork } from 'child_process';
-import { join } from 'path';
 import * as path from 'path';
+import { join } from 'path';
 import chokidar from 'chokidar';
-import fs, { Stats } from "fs";
+import { Stats } from "fs";
+import { IpcHandler } from './ipc-handler';
 
 // const logStream = fs.createWriteStream( 'work_manager.log', { flags: 'a' });
 // const writeLog = (...message   : any[]) => {
@@ -21,8 +22,17 @@ export class WorkerManager {
     private readonly maxRestartAttempts = 5;
     private readonly restartDelay = 1000; // 1秒延迟重启
     private readonly isDev = process.env.NODE_ENV === 'development';
+    private ipcHandler: IpcHandler | null = null;
 
     constructor(private win?: BrowserWindow) {}
+
+    /**
+     * 设置 IPC 处理器
+     * @param handler IPC 处理器实例
+     */
+    public setIpcHandler(handler: IpcHandler): void {
+        this.ipcHandler = handler;
+    }
 
     send = (message: any) => {
         if (this.worker && !this.worker.killed) {
@@ -41,42 +51,7 @@ export class WorkerManager {
     }
 
     private setupWorkerMessageHandlers(worker: ChildProcess) {
-        if (this.win) {
-            // 接收来自渲染进程的消息，并转发给 worker
-            ipcMain.removeAllListeners('message');  // 清理旧的监听器
-            ipcMain.on('message', async (event, data) => {
-                try {
-                    if (worker && !worker.killed && event.sender && !event.sender.isDestroyed()) {
-                        worker.send(data);
-                    }
-                } catch (error) {
-                    if (error.code !== 'ERR_IPC_CHANNEL_CLOSED') {
-                        console.error('Error sending message to worker:', error);
-                    }
-                }
-            });
-
-            // 接收来自 worker 的消息，并转发给渲染进程
-            worker.on('message', (message) => {
-                try {
-                    if (this.win && !this.win.isDestroyed() && this.win.webContents && !this.win.webContents.isDestroyed()) {
-                        this.win.webContents.send('message', message);
-                    }
-                } catch (error) {
-                    if (error.code !== 'ERR_IPC_CHANNEL_CLOSED') {
-                        console.error('Error sending message to renderer:', error);
-                    }
-                }
-            });
-
-            // 监听窗口关闭事件
-            this.win.on('closed', () => {
-                if (this.worker && !this.worker.killed) {
-                    this.worker.removeAllListeners('message');
-                    this.worker.kill();
-                }
-            });
-        }
+        // 不再需要在这里处理消息，由 IpcHandler 负责
     }
 
     private startWorker() {
@@ -113,6 +88,10 @@ export class WorkerManager {
                     setTimeout(() => {
                         if (this.win && !this.win.isDestroyed()) {
                             this.startWorker();
+                            // 更新 IpcHandler 中的 worker 引用
+                            if (this.ipcHandler && this.worker) {
+                                this.ipcHandler.updateWorker(this.worker);
+                            }
                         }
                     }, this.restartDelay);
                 } else {

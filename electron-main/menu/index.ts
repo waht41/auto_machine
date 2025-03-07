@@ -1,5 +1,10 @@
 import { Menu, BrowserWindow } from 'electron';
 
+/**
+ * 创建应用程序菜单
+ * @param mainWindow 主窗口实例
+ * @param sendToWorker 发送消息到 worker 的函数
+ */
 export function createMenu(mainWindow: BrowserWindow, sendToWorker?: (message: any) => void) {
     // 获取默认菜单模板
     let template = Menu.getApplicationMenu()?.items.map(item => {
