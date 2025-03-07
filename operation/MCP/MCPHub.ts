@@ -51,6 +51,7 @@ export class McpHub {
   private disposables: vscode.Disposable[] = []
   private settingsWatcher?: vscode.FileSystemWatcher
   private fileWatchers: Map<string, FSWatcher> = new Map()
+  private initialized: boolean = false
 
   // private postMessageToWebview: (message: any) => Promise<void> = async () => {}
   connections: McpConnection[] = []
@@ -63,6 +64,10 @@ export class McpHub {
   }
 
   async initialize(){
+    if (this.initialized) {
+      return
+    }
+    this.initialized = true
     await this.watchMcpSettingsFile()
     await this.initializeMcpServers()
   }

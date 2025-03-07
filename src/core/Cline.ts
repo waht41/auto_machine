@@ -67,6 +67,7 @@ interface IProp {
 	historyItem?: HistoryItem | undefined,
 	experimentalDiffStrategy: boolean,
 	middleWares?: Middleware[],
+  mcpHub?: McpHub
 }
 
 export class Cline {
@@ -110,11 +111,12 @@ export class Cline {
 
 	private executor = new CommandRunner()
 	private asking = false;
+  private mcpHub?: McpHub
 
 	constructor(
 		prop: IProp
 	) {
-		const { provider, apiConfiguration, postMessageToWebview, customInstructions, enableDiff, fuzzyMatchThreshold, historyItem, experimentalDiffStrategy, middleWares = [] } = prop
+		const { provider, apiConfiguration, postMessageToWebview, customInstructions, enableDiff, fuzzyMatchThreshold, historyItem, experimentalDiffStrategy, middleWares = [], mcpHub } = prop
 		this.postMessageToWebview = postMessageToWebview
 		this.taskId = crypto.randomUUID()
 		this.api = buildApiHandler(apiConfiguration)
@@ -126,6 +128,7 @@ export class Cline {
 		this.fuzzyMatchThreshold = fuzzyMatchThreshold ?? 1.0
 		this.providerRef = new WeakRef(provider)
 		this.diffViewProvider = new DiffViewProvider(cwd)
+    this.mcpHub = mcpHub
 		registerInternalImplementation(this.executor)
 		for (const middleware of middleWares) {
 			this.executor.use(middleware)
@@ -556,12 +559,20 @@ export class Cline {
 		this.initiateTaskLoop(userContent)
 	}
 
+  private getInternalContext(replacing: boolean = false) {
+    return {
+      cline: this,
+      mcpHub: this.mcpHub,
+      replacing: replacing
+    }
+  }
+
 	async receiveApproval({tool}:
 						{ tool: any })
 	{
 		//todo waht 还没写完
 		console.log('[waht]','receiveApproval', tool);
-		const result = await this.applyCommand(tool,{'cline':this,replacing:false})
+		const result = await this.applyCommand(tool,this.getInternalContext())
 		this.resume({text: typeof result === 'string'? result: undefined, images: []})
 	}
 
@@ -1167,7 +1178,7 @@ export class Cline {
 				}
 
 				try {
-					const res = await this.applyToolUse(block, {'cline':this,'replacing':replacing})
+					const res = await this.applyToolUse(block, this.getInternalContext())
 					if (typeof res === "string") {
 						console.log('[waht] 执行tool 返回结果: ',res)
 						pushToolResult(res)

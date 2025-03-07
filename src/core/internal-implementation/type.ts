@@ -1,7 +1,9 @@
 import { type Cline } from "@core/Cline";
+import { McpHub } from "@operation/mcp";
 
 export interface IInternalContext{
     cline: Cline;
+    mcpHub: McpHub
     replacing?: boolean;
     approval?: boolean;
 }
