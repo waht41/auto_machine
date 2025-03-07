@@ -44,18 +44,18 @@ export function createMenu(mainWindow: BrowserWindow, sendToWorker?: (message: a
                 type: 'normal',
                 role: undefined
             },
-            {
-                label: 'Prompts',
-                click: () => {
-                    mainWindow.webContents.send('message', {
-                        type: "action",
-                        action: "promptsButtonClicked"
-                    });
-                },
-                accelerator: undefined,
-                type: 'normal',
-                role: undefined
-            },
+            // {
+            //     label: 'Prompts',
+            //     click: () => {
+            //         mainWindow.webContents.send('message', {
+            //             type: "action",
+            //             action: "promptsButtonClicked"
+            //         });
+            //     },
+            //     accelerator: undefined,
+            //     type: 'normal',
+            //     role: undefined
+            // },
             {
                 label: 'Settings',
                 click: () => {

@@ -11,7 +11,7 @@ import { useExtensionState } from "../../context/ExtensionStateContext"
 import { McpServer } from "../../../../src/shared/mcp"
 import McpToolRow from "./McpToolRow"
 import McpResourceRow from "./McpResourceRow"
-import McpEnabledToggle from "./McpEnabledToggle"
+import { Switch } from "antd"
 
 type McpViewProps = {
 	onDone: () => void
@@ -174,22 +174,9 @@ const ServerRow = ({ server, alwaysAllowMcp }: { server: McpServer; alwaysAllowM
 				<div
 					style={{ display: "flex", alignItems: "center", marginRight: "8px" }}
 					onClick={(e) => e.stopPropagation()}>
-					<div
-						role="switch"
-						aria-checked={!server.disabled}
-						tabIndex={0}
-						style={{
-							width: "20px",
-							height: "10px",
-							backgroundColor: server.disabled
-								? "var(--vscode-titleBar-inactiveForeground)"
-								: "var(--vscode-button-background)",
-							borderRadius: "5px",
-							position: "relative",
-							cursor: "pointer",
-							transition: "background-color 0.2s",
-							opacity: server.disabled ? 0.4 : 0.8,
-						}}
+					<Switch
+						checked={!server.disabled}
+						size="small"
 						onClick={() => {
 							vscode.postMessage({
 								type: "toggleMcpServer",
@@ -197,34 +184,12 @@ const ServerRow = ({ server, alwaysAllowMcp }: { server: McpServer; alwaysAllowM
 								disabled: !server.disabled,
 							})
 						}}
-						onKeyDown={(e) => {
-							if (e.key === "Enter" || e.key === " ") {
-								e.preventDefault()
-								vscode.postMessage({
-									type: "toggleMcpServer",
-									serverName: server.name,
-									disabled: !server.disabled,
-								})
-							}
-						}}>
-						<div
-							style={{
-								width: "6px",
-								height: "6px",
-								backgroundColor: "var(--vscode-titleBar-activeForeground)",
-								borderRadius: "50%",
-								position: "absolute",
-								top: "2px",
-								left: server.disabled ? "2px" : "12px",
-								transition: "left 0.2s",
-							}}
-						/>
-					</div>
+					/>
 				</div>
 				<div
 					style={{
-						width: "8px",
-						height: "8px",
+						width: "16px",
+						height: "16px",
 						borderRadius: "50%",
 						background: getStatusColor(),
 						marginLeft: "8px",
@@ -268,8 +233,8 @@ const ServerRow = ({ server, alwaysAllowMcp }: { server: McpServer; alwaysAllowM
 							borderRadius: "0 0 4px 4px",
 						}}>
 						<VSCodePanels style={{ marginBottom: "10px" }}>
-							<VSCodePanelTab id="tools">Tools ({server.tools?.length || 0})</VSCodePanelTab>
-							<VSCodePanelTab id="resources">
+							<VSCodePanelTab id="tools" style={{color:"black"}}>Tools ({server.tools?.length || 0})</VSCodePanelTab>
+							<VSCodePanelTab id="resources" style={{color:"black"}}>
 								Resources (
 								{[...(server.resourceTemplates || []), ...(server.resources || [])].length || 0})
 							</VSCodePanelTab>
