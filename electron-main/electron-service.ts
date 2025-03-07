@@ -35,6 +35,8 @@ export class ElectronService {
         return this.handleSystemInfo();
       case 'themeInfo':
         return this.handleThemeInfo();
+      case 'openFile':
+        return this.handleOpenFile(message);
       default:
         return { success: false, error: `Unknown message type: ${message.type}` };
     }
@@ -233,6 +235,26 @@ export class ElectronService {
       return { 
         success: false, 
         error: error.message || 'Failed to get theme information' 
+      };
+    }
+  }
+
+  /**
+   * 打开文件
+   */
+  private async handleOpenFile(message: any): Promise<any> {
+    try {
+      if (!message.filePath) {
+        return {success: false, error: 'File path is required'};
+      }
+
+      await shell.openPath(message.filePath);
+      return {success: true};
+    } catch (error) {
+      console.error('Open file error:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to open file'
       };
     }
   }
