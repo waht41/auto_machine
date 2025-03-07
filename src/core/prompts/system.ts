@@ -9,7 +9,7 @@ import {
 	getModeBySlug,
 } from "../../shared/modes"
 import { DiffStrategy } from "../diff/DiffStrategy"
-import { McpHub } from "../../services/mcp/McpHub"
+import { McpHub } from "@operation/mcp"
 import { getToolDescriptionsForMode } from "./tools"
 import * as vscode from "vscode"
 import {

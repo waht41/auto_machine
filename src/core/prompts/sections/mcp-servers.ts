@@ -1,5 +1,5 @@
 import { DiffStrategy } from "../../diff/DiffStrategy"
-import { McpHub } from "../../../services/mcp/McpHub"
+import { McpHub } from "@operation/mcp"
 
 export async function getMcpServersSection(mcpHub?: McpHub, diffStrategy?: DiffStrategy): Promise<string> {
 	if (!mcpHub) {
