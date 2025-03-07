@@ -63,7 +63,7 @@ const McpView = ({ onDone }: McpViewProps) => {
 					docs").
 				</div>
 
-				<McpEnabledToggle />
+				{/*<McpEnabledToggle />*/}
 
 				{mcpEnabled && (
 					<>

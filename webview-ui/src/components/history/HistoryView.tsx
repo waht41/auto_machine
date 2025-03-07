@@ -1,4 +1,4 @@
-import { VSCodeButton, VSCodeTextField, VSCodeRadioGroup, VSCodeRadio } from "@vscode/webview-ui-toolkit/react"
+import { VSCodeButton, VSCodeTextField } from "@vscode/webview-ui-toolkit/react"
 import { useExtensionState } from "../../context/ExtensionStateContext"
 import { vscode } from "../../utils/vscode"
 import { Virtuoso } from "react-virtuoso"
@@ -6,6 +6,7 @@ import React, { memo, useMemo, useState, useEffect } from "react"
 import { Fzf } from "fzf"
 import { formatLargeNumber } from "../../utils/format"
 import { highlightFzfMatch } from "../../utils/highlight"
+import { Radio } from "antd"
 
 type HistoryViewProps = {
 	onDone: () => void
@@ -199,21 +200,21 @@ const HistoryView = ({ onDone }: HistoryViewProps) => {
 								/>
 							)}
 						</VSCodeTextField>
-						<VSCodeRadioGroup
+						<Radio.Group
 							style={{ display: "flex", flexWrap: "wrap" }}
 							value={sortOption}
-							onChange={(e) => setSortOption((e.target as HTMLInputElement).value as SortOption)}>
-							<VSCodeRadio value="newest">Newest</VSCodeRadio>
-							<VSCodeRadio value="oldest">Oldest</VSCodeRadio>
-							<VSCodeRadio value="mostExpensive">Most Expensive</VSCodeRadio>
-							<VSCodeRadio value="mostTokens">Most Tokens</VSCodeRadio>
-							<VSCodeRadio
+							onChange={(e) => setSortOption(e.target.value as SortOption)}>
+							<Radio value="newest">Newest</Radio>
+							<Radio value="oldest">Oldest</Radio>
+							<Radio value="mostExpensive">Most Expensive</Radio>
+							<Radio value="mostTokens">Most Tokens</Radio>
+							<Radio
 								value="mostRelevant"
 								disabled={!searchQuery}
 								style={{ opacity: searchQuery ? 1 : 0.5 }}>
 								Most Relevant
-							</VSCodeRadio>
-						</VSCodeRadioGroup>
+							</Radio>
+						</Radio.Group>
 					</div>
 				</div>
 				<div style={{ flexGrow: 1, overflowY: "auto", margin: 0 }}>
