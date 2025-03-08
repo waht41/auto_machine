@@ -38,83 +38,13 @@ import { configPath, createIfNotExists, getAssetPath } from "@core/record/common
 import { ApprovalMiddleWrapper } from "@core/internal-implementation/middleware";
 import { getToolCategory } from "@core/tool-adapter/getToolCategory";
 import { AllowedToolTree } from "@core/tool-adapter/AllowedToolTree";
+import { GlobalStateKey, SecretKey } from "@core/webview/type";
 
 /*
 https://github.com/microsoft/vscode-webview-ui-toolkit-samples/blob/main/default/weather-webview/src/providers/WeatherViewProvider.ts
 
 https://github.com/KumarVariable/vscode-extension-sidebar-html/blob/master/src/customSidebarViewProvider.ts
 */
-
-type SecretKey =
-	| "apiKey"
-	| "glamaApiKey"
-	| "openRouterApiKey"
-	| "awsAccessKey"
-	| "awsSecretKey"
-	| "awsSessionToken"
-	| "openAiApiKey"
-	| "geminiApiKey"
-	| "openAiNativeApiKey"
-	| "deepSeekApiKey"
-	| "mistralApiKey"
-type GlobalStateKey =
-	| "apiProvider"
-	| "apiModelId"
-	| "glamaModelId"
-	| "glamaModelInfo"
-	| "awsRegion"
-	| "awsUseCrossRegionInference"
-	| "awsProfile"
-	| "awsUseProfile"
-	| "vertexProjectId"
-	| "vertexRegion"
-	| "lastShownAnnouncementId"
-	| "customInstructions"
-	| "alwaysAllowReadOnly"
-	| "alwaysAllowWrite"
-	| "alwaysAllowExecute"
-	| "alwaysAllowBrowser"
-	| "taskHistory"
-	| "openAiBaseUrl"
-	| "openAiModelId"
-	| "openAiCustomModelInfo"
-	| "openAiUseAzure"
-	| "ollamaModelId"
-	| "ollamaBaseUrl"
-	| "lmStudioModelId"
-	| "lmStudioBaseUrl"
-	| "anthropicBaseUrl"
-	| "azureApiVersion"
-	| "openAiStreamingEnabled"
-	| "openRouterModelId"
-	| "openRouterModelInfo"
-	| "openRouterBaseUrl"
-	| "openRouterUseMiddleOutTransform"
-	| "allowedCommands"
-	| "soundEnabled"
-	| "soundVolume"
-	| "diffEnabled"
-	| "alwaysAllowMcp"
-	| "browserViewportSize"
-	| "screenshotQuality"
-	| "fuzzyMatchThreshold"
-	| "preferredLanguage" // Language setting for Cline's communication
-	| "writeDelayMs"
-	| "terminalOutputLineLimit"
-	| "mcpEnabled"
-	| "alwaysApproveResubmit"
-	| "requestDelaySeconds"
-	| "currentApiConfigName"
-	| "listApiConfigMeta"
-	| "vsCodeLmModelSelector"
-	| "mode"
-	| "modeApiConfigs"
-	| "customModePrompts"
-	| "customSupportPrompts"
-	| "enhancementApiConfigId"
-	| "experimentalDiffStrategy"
-	| "autoApprovalEnabled"
-	| "customModes" // Array of custom modes
 
 export const GlobalFileNames = {
 	apiConversationHistory: "api_conversation_history.json",

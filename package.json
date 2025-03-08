@@ -90,6 +90,7 @@
     "js-yaml": "^4.1.0",
     "lodash": "^4.17.21",
     "mammoth": "^1.8.0",
+    "mitt": "^3.0.1",
     "monaco-vscode-textmate-theme-converter": "^0.1.7",
     "openai": "^4.78.1",
     "os-name": "^6.0.0",

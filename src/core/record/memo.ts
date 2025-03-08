@@ -58,7 +58,7 @@ export class Memento{
         return this.flushIfNeeded();
     }
 
-    getAll() {
+    getAll(): any {
         return Object.fromEntries(this.cache);
     }
 

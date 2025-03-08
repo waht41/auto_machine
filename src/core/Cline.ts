@@ -311,9 +311,6 @@ export class Cline {
 				lastMessage.ask = askType
 				lastMessage.say = undefined
 				lastMessage.type = "ask"
-				// todo be more efficient about saving and posting only new data or one whole message at a time so ignore partial for saves, and only post parts of partial message instead of whole array in new listener
-				// await this.saveClineMessages()
-				// await this.providerRef.deref()?.postStateToWebview()
 				await this.postMessageToWebview({ type: "partialMessage", partialMessage: lastMessage })
 				throw new Error("Current ask promise was ignored 1")
 			} else {

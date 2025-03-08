@@ -1,5 +1,6 @@
 import { HistoryItem } from "@/shared/HistoryItem";
 import { Memento } from "@core/record/memo";
+import { IGlobalState } from "@core/record/type";
 export class GlobalState {
     private memento: Memento
     constructor(statePath: string) {
@@ -26,8 +27,14 @@ export class GlobalState {
         return this.memento.update(key, value)
     }
 
-    async getAll(): Promise<any> {
+    async getAll(): Promise<IGlobalState> {
         return this.memento.getAll()
+    }
+
+    async setAll(state: IGlobalState): Promise<void> {
+        for (const key of Object.keys(state) as Array<keyof IGlobalState>) {
+            await this.set(key, state[key])
+        }
     }
 
     keys(): readonly string[] {
