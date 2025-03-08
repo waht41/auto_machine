@@ -1,4 +1,6 @@
 Auto Machine是一款借助于大模型，能够完成各类任务的桌面软件。
+![auto-machine-demo](https://github.com/user-attachments/assets/29e6d2b1-4dda-4dde-a24a-f1d80564d960)
+
 
 本项目基于[Roo Code](https://github.com/RooVetGit/Roo-Code/tree/main)开发，在roo code的基础之上主要做了两个重要改动
 
