@@ -101,6 +101,62 @@ export function parseYamlToToolCategory(
 }
 
 /**
+ * 从YAML文件内容中提取工具ID
+ * @param filePath YAML文件路径
+ * @returns 工具ID
+ */
+export function extractToolIdFromYaml(filePath: string): string {
+    try {
+        // 读取YAML文件内容
+        const fileContent = fs.readFileSync(filePath, 'utf8');
+        
+        // 查找example中的tool字段
+        const toolMatch = fileContent.match(/tool:\s*([^\s\n]+)/);
+        if (toolMatch && toolMatch[1]) {
+            // 返回tool字段的值（区分大小写）
+            return toolMatch[1].trim();
+        }
+        
+        // 如果没有找到tool字段，返回文件名
+        return path.basename(filePath, path.extname(filePath));
+    } catch (error) {
+        console.error(`提取工具ID失败: ${filePath}`, error);
+        return path.basename(filePath, path.extname(filePath));
+    }
+}
+
+/**
+ * 解析指定的YAML文件并返回工具类别
+ * @param filePaths YAML文件路径数组
+ * @returns 工具类别数组
+ */
+export function parseToolsFromFiles(filePaths: string[]): IToolCategory[] {
+    try {
+        const toolCategories: IToolCategory[] = [];
+
+        // 解析每个YAML文件
+        for (const filePath of filePaths) {
+            const fileName = path.basename(filePath, path.extname(filePath));
+            // 从YAML文件中提取工具ID
+            const toolId = extractToolIdFromYaml(filePath);
+
+            const toolCategory = parseYamlToToolCategory(
+                filePath,
+                toolId,  // 使用提取的工具ID作为categoryId
+                fileName // 使用文件名作为categoryLabel
+            );
+
+            toolCategories.push(toolCategory);
+        }
+
+        return toolCategories;
+    } catch (error) {
+        console.error('解析工具文件失败', error);
+        return [];
+    }
+}
+
+/**
  * 解析目录下的所有YAML文件并合并为一个工具集合
  * @param directoryPath YAML文件所在目录
  * @returns 工具类别数组
@@ -137,36 +193,6 @@ export function parseToolsFromDirectory(directoryPath: string): IToolCategory[] 
         return toolCategories;
     } catch (error) {
         console.error('解析工具目录失败', error);
-        return [];
-    }
-}
-
-/**
- * 解析指定的YAML文件并返回工具类别
- * @param filePaths YAML文件路径数组
- * @returns 工具类别数组
- */
-export function parseToolsFromFiles(filePaths: string[]): IToolCategory[] {
-    try {
-        const toolCategories: IToolCategory[] = [];
-
-        // 解析每个YAML文件
-        for (const filePath of filePaths) {
-            const fileName = path.basename(filePath, path.extname(filePath));
-
-            // 将文件名首字母大写作为类别标签
-          const toolCategory = parseYamlToToolCategory(
-                filePath,
-                fileName,
-                fileName
-            );
-
-            toolCategories.push(toolCategory);
-        }
-
-        return toolCategories;
-    } catch (error) {
-        console.error('解析工具文件失败', error);
         return [];
     }
 }
