@@ -39,6 +39,7 @@ import { ApprovalMiddleWrapper } from "@core/internal-implementation/middleware"
 import { getToolCategory } from "@core/tool-adapter/getToolCategory";
 import { AllowedToolTree } from "@core/tool-adapter/AllowedToolTree";
 import { GlobalStateKey, SecretKey } from "@core/webview/type";
+import ApiManager from "@core/manager/ApiManager";
 
 /*
 https://github.com/microsoft/vscode-webview-ui-toolkit-samples/blob/main/default/weather-webview/src/providers/WeatherViewProvider.ts
@@ -69,10 +70,13 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 	private globalState: GlobalState
 	private toolCategories = getToolCategory(path.join(getAssetPath(),"external-prompt"))
 	private allowedToolTree = new AllowedToolTree([],this.toolCategories)
+  private apiManager = ApiManager.getInstance('./cache')
+
 
 	constructor(
 		readonly context: vscode.ExtensionContext,
 		private readonly outputChannel: vscode.OutputChannel,
+    private sendToMainProcess: (message: any) => void
 	) {
 		createIfNotExists(configPath)
 		this.globalState = new GlobalState(path.join(configPath, "auto_machine_global_state.json"))
@@ -497,11 +501,11 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 						await this.resetState()
 						break
 					case "requestOllamaModels":
-						const ollamaModels = await this.getOllamaModels(message.text)
+						const ollamaModels = await this.apiManager.getOllamaModels(message.text)
 						this.postMessageToWebview({ type: "ollamaModels", ollamaModels })
 						break
 					case "requestLmStudioModels":
-						const lmStudioModels = await this.getLmStudioModels(message.text)
+						const lmStudioModels = await this.apiManager.getLmStudioModels(message.text)
 						this.postMessageToWebview({ type: "lmStudioModels", lmStudioModels })
 						break
 					case "requestVsCodeLmModels":
@@ -1261,61 +1265,6 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		await this.postStateToWebview()
 	}
 
-	// MCP
-
-	async ensureMcpServersDirectoryExists(): Promise<string> {
-		const mcpServersDir = path.join(os.homedir(), "Documents", "Cline", "MCP")
-		try {
-			await fs.mkdir(mcpServersDir, { recursive: true })
-		} catch (error) {
-			return "~/Documents/Cline/MCP" // in case creating a directory in documents fails for whatever reason (e.g. permissions) - this is fine since this path is only ever used in the system prompt
-		}
-		return mcpServersDir
-	}
-
-	async ensureSettingsDirectoryExists(): Promise<string> {
-		const settingsDir = path.join(this.context.globalStorageUri.fsPath, "settings")
-		await fs.mkdir(settingsDir, { recursive: true })
-		return settingsDir
-	}
-
-	// Ollama
-
-	async getOllamaModels(baseUrl?: string) {
-		try {
-			if (!baseUrl) {
-				baseUrl = "http://localhost:11434"
-			}
-			if (!URL.canParse(baseUrl)) {
-				return []
-			}
-			const response = await axios.get(`${baseUrl}/api/tags`)
-			const modelsArray = response.data?.models?.map((model: any) => model.name) || []
-			const models = [...new Set<string>(modelsArray)]
-			return models
-		} catch (error) {
-			return []
-		}
-	}
-
-	// LM Studio
-
-	async getLmStudioModels(baseUrl?: string) {
-		try {
-			if (!baseUrl) {
-				baseUrl = "http://localhost:1234"
-			}
-			if (!URL.canParse(baseUrl)) {
-				return []
-			}
-			const response = await axios.get(`${baseUrl}/v1/models`)
-			const modelsArray = response.data?.data?.map((model: any) => model.id) || []
-			const models = [...new Set<string>(modelsArray)]
-			return models
-		} catch (error) {
-			return []
-		}
-	}
 
 	// VSCode LM API
 	private async getVsCodeLmModels() {
@@ -1424,72 +1373,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 	}
 
 	async refreshGlamaModels() {
-		const glamaModelsFilePath = path.join(await this.ensureCacheDirectoryExists(), GlobalFileNames.glamaModels)
-
-		let models: Record<string, ModelInfo> = {}
-		try {
-			const response = await axios.get("https://glama.ai/api/gateway/v1/models")
-			/*
-				{
-					"added": "2024-12-24T15:12:49.324Z",
-					"capabilities": [
-						"adjustable_safety_settings",
-						"caching",
-						"code_execution",
-						"function_calling",
-						"json_mode",
-						"json_schema",
-						"system_instructions",
-						"tuning",
-						"input:audio",
-						"input:image",
-						"input:text",
-						"input:video",
-						"output:text"
-					],
-					"id": "google-vertex/gemini-1.5-flash-002",
-					"maxTokensInput": 1048576,
-					"maxTokensOutput": 8192,
-					"pricePerToken": {
-						"cacheRead": null,
-						"cacheWrite": null,
-						"input": "0.000000075",
-						"output": "0.0000003"
-					}
-				}
-			*/
-			if (response.data) {
-				const rawModels = response.data
-				const parsePrice = (price: any) => {
-					if (price) {
-						return parseFloat(price) * 1_000_000
-					}
-					return undefined
-				}
-				for (const rawModel of rawModels) {
-					const modelInfo: ModelInfo = {
-						maxTokens: rawModel.maxTokensOutput,
-						contextWindow: rawModel.maxTokensInput,
-						supportsImages: rawModel.capabilities?.includes("input:image"),
-						supportsComputerUse: rawModel.capabilities?.includes("computer_use"),
-						supportsPromptCache: rawModel.capabilities?.includes("caching"),
-						inputPrice: parsePrice(rawModel.pricePerToken?.input),
-						outputPrice: parsePrice(rawModel.pricePerToken?.output),
-						description: undefined,
-						cacheWritesPrice: parsePrice(rawModel.pricePerToken?.cacheWrite),
-						cacheReadsPrice: parsePrice(rawModel.pricePerToken?.cacheRead),
-					}
-
-					models[rawModel.id] = modelInfo
-				}
-			} else {
-				console.error("Invalid response from Glama API")
-			}
-			await fs.writeFile(glamaModelsFilePath, JSON.stringify(models))
-			// console.log("Glama models fetched and saved", models)
-		} catch (error) {
-			// console.error("Error fetching Glama models:", error) // todo waht
-		}
+		const models = await this.apiManager.refreshGlamaModels();
 
 		await this.postMessageToWebview({ type: "glamaModels", glamaModels: models })
 		return models
@@ -1791,52 +1675,6 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		this.cline?.abortTask()
 		this.cline = undefined // removes reference to it, so once promises end it will be garbage collected
 	}
-
-	// Caching mechanism to keep track of webview messages + API conversation history per provider instance
-
-	/*
-	Now that we use retainContextWhenHidden, we don't have to store a cache of cline messages in the user's state, but we could to reduce memory footprint in long conversations.
-
-	- We have to be careful of what state is shared between ClineProvider instances since there could be multiple instances of the extension running at once. For example when we cached cline messages using the same key, two instances of the extension could end up using the same key and overwriting each other's messages.
-	- Some state does need to be shared between the instances, i.e. the API key--however there doesn't seem to be a good way to notfy the other instances that the API key has changed.
-
-	We need to use a unique identifier for each ClineProvider instance's message cache since we could be running several instances of the extension outside of just the sidebar i.e. in editor panels.
-
-	// conversation history to send in API requests
-
-	/*
-	It seems that some API messages do not comply with vscode state requirements. Either the Anthropic library is manipulating these values somehow in the backend in a way thats creating cyclic references, or the API returns a function or a Symbol as part of the message content.
-	VSCode docs about state: "The value must be JSON-stringifyable ... value — A value. MUST not contain cyclic references."
-	For now we'll store the conversation history in memory, and if we need to store in state directly we'd need to do a manual conversion to ensure proper json stringification.
-	*/
-
-	// getApiConversationHistory(): Anthropic.MessageParam[] {
-	// 	// const history = (await this.getGlobalState(
-	// 	// 	this.getApiConversationHistoryStateKey()
-	// 	// )) as Anthropic.MessageParam[]
-	// 	// return history || []
-	// 	return this.apiConversationHistory
-	// }
-
-	// setApiConversationHistory(history: Anthropic.MessageParam[] | undefined) {
-	// 	// await this.updateGlobalState(this.getApiConversationHistoryStateKey(), history)
-	// 	this.apiConversationHistory = history || []
-	// }
-
-	// addMessageToApiConversationHistory(message: Anthropic.MessageParam): Anthropic.MessageParam[] {
-	// 	// const history = await this.getApiConversationHistory()
-	// 	// history.push(message)
-	// 	// await this.setApiConversationHistory(history)
-	// 	// return history
-	// 	this.apiConversationHistory.push(message)
-	// 	return this.apiConversationHistory
-	// }
-
-	/*
-	Storage
-	https://dev.to/kompotkot/how-to-use-secretstorage-in-your-vscode-extensions-2hco
-	https://www.eliostruyf.com/devhack-code-extension-storage-options/
-	*/
 
 	async getState() {
 		const [globalStates, secrets] = await Promise.all([
