@@ -11,7 +11,7 @@ Auto Machine是一款借助于大模型，能够完成各类任务的桌面软�
 
 
 
-目前来说，auto machine处于早期阶段，各项功能并未进行充分测试，所以还未发布release包，不过有兴趣的可以执行 npm run release 自行获取release包。
+目前来说，auto machine处于早期阶段，各项功能还不稳定，不过有兴趣的可以查看 release 下载windows安装包自行测试效果，并提出意见
 
 但与此同时，本软件仍保留roo的核心功能
 
