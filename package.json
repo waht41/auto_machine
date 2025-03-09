@@ -16,7 +16,22 @@
         "from": "assets/",
         "to": "assets/"
       }
-    ]
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false
+    }
   },
   "scripts": {
     "dev-win": "rimraf build && chcp 65001 && vite",
