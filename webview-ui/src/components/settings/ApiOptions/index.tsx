@@ -1,30 +1,18 @@
 import { Checkbox, Dropdown, Pane } from "@webview-ui/components/ui"
 import type { DropdownOption } from "vscrui"
 import { VSCodeLink, VSCodeRadio, VSCodeRadioGroup, VSCodeTextField } from "@vscode/webview-ui-toolkit/react"
-import { Fragment, memo, useCallback, useEffect, useMemo, useState } from "react"
+import { memo, useCallback, useEffect, useMemo, useState } from "react"
 import { useEvent, useInterval } from "react-use"
 import {
-  ApiConfiguration,
-  ModelInfo,
-  anthropicDefaultModelId,
   anthropicModels,
   azureOpenAiDefaultApiVersion,
-  bedrockDefaultModelId,
   bedrockModels,
-  deepSeekDefaultModelId,
   deepSeekModels,
-  geminiDefaultModelId,
   geminiModels,
-  glamaDefaultModelId,
-  glamaDefaultModelInfo,
-  mistralDefaultModelId,
   mistralModels,
+  ModelInfo,
   openAiModelInfoSaneDefaults,
-  openAiNativeDefaultModelId,
   openAiNativeModels,
-  openRouterDefaultModelId,
-  openRouterDefaultModelInfo,
-  vertexDefaultModelId,
   vertexModels,
 } from "@/shared/api"
 import { ExtensionMessage } from "@/shared/ExtensionMessage"
@@ -32,14 +20,11 @@ import { useExtensionState } from "@webview-ui/context/ExtensionStateContext"
 import { vscode } from "@webview-ui/utils/vscode"
 import * as vscodemodels from "vscode"
 import VSCodeButtonLink from "@webview-ui/components/common/VSCodeButtonLink"
-import OpenRouterModelPicker, {
-  ModelDescriptionMarkdown,
-  OPENROUTER_MODEL_PICKER_Z_INDEX,
-} from "./OpenRouterModelPicker"
+import OpenRouterModelPicker, { OPENROUTER_MODEL_PICKER_Z_INDEX, } from "./OpenRouterModelPicker"
 import OpenAiModelPicker from "./OpenAiModelPicker"
 import GlamaModelPicker from "./GlamaModelPicker"
 import { ModelInfoView } from "./ModelInfoView";
-import { normalizeApiConfiguration } from "@webview-ui/components/settings/ApiOptions/utils";
+import { getGlamaAuthUrl, getOpenRouterAuthUrl, normalizeApiConfiguration } from "@webview-ui/components/settings/ApiOptions/utils";
 
 interface ApiOptionsProps {
   apiErrorMessage?: string
@@ -1340,25 +1325,6 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
       )}
     </div>
   )
-}
-
-export function getGlamaAuthUrl(uriScheme?: string) {
-  const callbackUrl = `${uriScheme || "vscode"}://rooveterinaryinc.roo-cline/glama`
-
-  return `https://glama.ai/oauth/authorize?callback_url=${encodeURIComponent(callbackUrl)}`
-}
-
-export function getOpenRouterAuthUrl(uriScheme?: string) {
-  return `https://openrouter.ai/auth?callback_url=${uriScheme || "vscode"}://rooveterinaryinc.roo-cline/openrouter`
-}
-
-export const formatPrice = (price: number) => {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(price)
 }
 
 export default memo(ApiOptions)

@@ -2,7 +2,7 @@ import { geminiModels, ModelInfo } from "@/shared/api";
 import { ModelDescriptionMarkdown } from "@webview-ui/components/settings/ApiOptions/OpenRouterModelPicker";
 import { VSCodeLink } from "@vscode/webview-ui-toolkit/react";
 import { Fragment } from "react";
-import { formatPrice } from "@webview-ui/components/settings/ApiOptions/index";
+import { formatPrice } from "./utils";
 
 export const ModelInfoView = ({
                                 selectedModelId,
