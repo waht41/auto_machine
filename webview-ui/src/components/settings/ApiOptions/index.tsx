@@ -46,6 +46,156 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
     return normalizeApiConfiguration(apiConfiguration)
   }, [apiConfiguration])
 
+  // 提供商配置表
+  const providerConfig = useMemo(() => ({
+    openrouter: {
+      label: "OpenRouter",
+      component: () => (
+        <OpenRouterOptions 
+          apiConfiguration={apiConfiguration} 
+          uriScheme={uriScheme} 
+          handleInputChange={handleInputChange} 
+        />
+      ),
+      models: null, // 不需要 ModelSelector
+    },
+    anthropic: {
+      label: "Anthropic",
+      component: () => (
+        <AnthropicOptions 
+          apiConfiguration={apiConfiguration} 
+          handleInputChange={handleInputChange} 
+        />
+      ),
+      models: anthropicModels,
+    },
+    gemini: {
+      label: "Google Gemini",
+      component: () => (
+        <GeminiOptions 
+          apiConfiguration={apiConfiguration} 
+          handleInputChange={handleInputChange} 
+        />
+      ),
+      models: geminiModels,
+    },
+    deepseek: {
+      label: "DeepSeek",
+      component: () => (
+        <DeepSeekOptions 
+          apiConfiguration={apiConfiguration} 
+          handleInputChange={handleInputChange} 
+        />
+      ),
+      models: deepSeekModels,
+    },
+    "openai-native": {
+      label: "OpenAI",
+      component: () => (
+        <OpenAiNativeOptions 
+          apiConfiguration={apiConfiguration} 
+          handleInputChange={handleInputChange} 
+        />
+      ),
+      models: openAiNativeModels,
+    },
+    openai: {
+      label: "OpenAI Compatible",
+      component: () => (
+        <OpenAiOptions 
+          apiConfiguration={apiConfiguration} 
+          handleInputChange={handleInputChange} 
+        />
+      ),
+      models: null, // 不需要 ModelSelector
+    },
+    vertex: {
+      label: "GCP Vertex AI",
+      component: () => (
+        <VertexOptions 
+          apiConfiguration={apiConfiguration} 
+          handleInputChange={handleInputChange} 
+        />
+      ),
+      models: vertexModels,
+    },
+    bedrock: {
+      label: "AWS Bedrock",
+      component: () => (
+        <BedrockOptions 
+          apiConfiguration={apiConfiguration} 
+          handleInputChange={handleInputChange} 
+        />
+      ),
+      models: bedrockModels,
+    },
+    glama: {
+      label: "Glama",
+      component: () => (
+        <GlamaOptions 
+          apiConfiguration={apiConfiguration} 
+          uriScheme={uriScheme} 
+          handleInputChange={handleInputChange} 
+        />
+      ),
+      models: null, // 不需要 ModelSelector
+    },
+    "vscode-lm": {
+      label: "VS Code LM API",
+      component: () => (
+        <VSCodeLmOptions 
+          apiConfiguration={apiConfiguration} 
+          vsCodeLmModels={vsCodeLmModels} 
+          handleInputChange={handleInputChange} 
+        />
+      ),
+      models: null, // 使用特殊的 vsCodeLmModels
+    },
+    mistral: {
+      label: "Mistral",
+      component: () => (
+        <MistralOptions 
+          apiConfiguration={apiConfiguration} 
+          handleInputChange={handleInputChange} 
+        />
+      ),
+      models: mistralModels,
+    },
+    lmstudio: {
+      label: "LM Studio",
+      component: () => (
+        <LmStudioOptions 
+          apiConfiguration={apiConfiguration} 
+          lmStudioModels={lmStudioModels} 
+          handleInputChange={handleInputChange} 
+        />
+      ),
+      models: null, // 使用特殊的 lmStudioModels
+    },
+    ollama: {
+      label: "Ollama",
+      component: () => (
+        <OllamaOptions 
+          apiConfiguration={apiConfiguration} 
+          ollamaModels={ollamaModels} 
+          handleInputChange={handleInputChange} 
+        />
+      ),
+      models: null, // 使用特殊的 ollamaModels
+    },
+  }), [apiConfiguration, uriScheme, handleInputChange, ollamaModels, lmStudioModels, vsCodeLmModels]);
+
+  // 生成下拉选项
+  const providerOptions = useMemo(() => 
+    Object.entries(providerConfig).map(([value, { label }]) => ({
+      value,
+      label,
+    }))
+  , [providerConfig]);
+
+  // 不需要 ModelSelector 的提供商列表
+  const noModelSelectorProviders = ["glama", "openrouter", "openai", "ollama", "lmstudio", "vscode-lm"];
+
   // Poll ollama/lmstudio models
   const requestLocalModels = useCallback(() => {
     if (selectedProvider === "ollama") {
@@ -56,20 +206,20 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
       vscode.postMessage({ type: "requestVsCodeLmModels" })
     }
   }, [selectedProvider, apiConfiguration?.ollamaBaseUrl, apiConfiguration?.lmStudioBaseUrl])
-  
+
   useEffect(() => {
     if (selectedProvider === "ollama" || selectedProvider === "lmstudio" || selectedProvider === "vscode-lm") {
       requestLocalModels()
     }
   }, [selectedProvider, requestLocalModels])
-  
+
   useInterval(
     requestLocalModels,
     selectedProvider === "ollama" || selectedProvider === "lmstudio" || selectedProvider === "vscode-lm"
       ? 2000
       : null,
   )
-  
+
   const handleMessage = useCallback((event: MessageEvent) => {
     const message: ExtensionMessage = event.data
     if (message.type === "ollamaModels" && message.ollamaModels) {
@@ -80,8 +230,15 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
       setVsCodeLmModels(message.vsCodeLmModels)
     }
   }, [])
-  
+
   useEvent("message", handleMessage)
+
+  // 渲染当前选中的提供商组件
+  const renderProviderComponent = useMemo(() => {
+    const config = providerConfig[selectedProvider];
+    if (!config) return null;
+    return config.component();
+  }, [providerConfig, selectedProvider]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
@@ -100,119 +257,11 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
             })
           }}
           style={{ minWidth: 130, position: "relative", zIndex: 1001 }}
-          options={[
-            { value: "openrouter", label: "OpenRouter" },
-            { value: "anthropic", label: "Anthropic" },
-            { value: "gemini", label: "Google Gemini" },
-            { value: "deepseek", label: "DeepSeek" },
-            { value: "openai-native", label: "OpenAI" },
-            { value: "openai", label: "OpenAI Compatible" },
-            { value: "vertex", label: "GCP Vertex AI" },
-            { value: "bedrock", label: "AWS Bedrock" },
-            { value: "glama", label: "Glama" },
-            { value: "vscode-lm", label: "VS Code LM API" },
-            { value: "mistral", label: "Mistral" },
-            { value: "lmstudio", label: "LM Studio" },
-            { value: "ollama", label: "Ollama" },
-          ]}
+          options={providerOptions}
         />
       </div>
 
-      {selectedProvider === "anthropic" && (
-        <AnthropicOptions 
-          apiConfiguration={apiConfiguration} 
-          handleInputChange={handleInputChange} 
-        />
-      )}
-
-      {selectedProvider === "glama" && (
-        <GlamaOptions 
-          apiConfiguration={apiConfiguration} 
-          uriScheme={uriScheme} 
-          handleInputChange={handleInputChange} 
-        />
-      )}
-
-      {selectedProvider === "openai-native" && (
-        <OpenAiNativeOptions 
-          apiConfiguration={apiConfiguration} 
-          handleInputChange={handleInputChange} 
-        />
-      )}
-
-      {selectedProvider === "mistral" && (
-        <MistralOptions 
-          apiConfiguration={apiConfiguration} 
-          handleInputChange={handleInputChange} 
-        />
-      )}
-
-      {selectedProvider === "openrouter" && (
-        <OpenRouterOptions 
-          apiConfiguration={apiConfiguration} 
-          uriScheme={uriScheme} 
-          handleInputChange={handleInputChange} 
-        />
-      )}
-
-      {selectedProvider === "bedrock" && (
-        <BedrockOptions 
-          apiConfiguration={apiConfiguration} 
-          handleInputChange={handleInputChange} 
-        />
-      )}
-
-      {selectedProvider === "vertex" && (
-        <VertexOptions 
-          apiConfiguration={apiConfiguration} 
-          handleInputChange={handleInputChange} 
-        />
-      )}
-
-      {selectedProvider === "gemini" && (
-        <GeminiOptions 
-          apiConfiguration={apiConfiguration} 
-          handleInputChange={handleInputChange} 
-        />
-      )}
-
-      {selectedProvider === "openai" && (
-        <OpenAiOptions 
-          apiConfiguration={apiConfiguration} 
-          handleInputChange={handleInputChange} 
-        />
-      )}
-
-      {selectedProvider === "deepseek" && (
-        <DeepSeekOptions 
-          apiConfiguration={apiConfiguration} 
-          handleInputChange={handleInputChange} 
-        />
-      )}
-
-      {selectedProvider === "vscode-lm" && (
-        <VSCodeLmOptions 
-          apiConfiguration={apiConfiguration} 
-          vsCodeLmModels={vsCodeLmModels} 
-          handleInputChange={handleInputChange} 
-        />
-      )}
-
-      {selectedProvider === "lmstudio" && (
-        <LmStudioOptions 
-          apiConfiguration={apiConfiguration} 
-          lmStudioModels={lmStudioModels} 
-          handleInputChange={handleInputChange} 
-        />
-      )}
-
-      {selectedProvider === "ollama" && (
-        <OllamaOptions 
-          apiConfiguration={apiConfiguration} 
-          ollamaModels={ollamaModels} 
-          handleInputChange={handleInputChange} 
-        />
-      )}
+      {renderProviderComponent}
 
       {apiErrorMessage && (
         <div
@@ -225,28 +274,15 @@ const ApiOptions = ({ apiErrorMessage, modelIdErrorMessage }: ApiOptionsProps) =
         </div>
       )}
 
-      {selectedProvider !== "glama" &&
-        selectedProvider !== "openrouter" &&
-        selectedProvider !== "openai" &&
-        selectedProvider !== "ollama" &&
-        selectedProvider !== "lmstudio" &&
-        selectedProvider !== "vscode-lm" && (
-          <ModelSelector
-            selectedProvider={selectedProvider}
-            selectedModelId={selectedModelId}
-            selectedModelInfo={selectedModelInfo}
-            models={
-              selectedProvider === "anthropic" ? anthropicModels :
-              selectedProvider === "bedrock" ? bedrockModels :
-              selectedProvider === "vertex" ? vertexModels :
-              selectedProvider === "gemini" ? geminiModels :
-              selectedProvider === "openai-native" ? openAiNativeModels :
-              selectedProvider === "deepseek" ? deepSeekModels :
-              selectedProvider === "mistral" ? mistralModels : {}
-            }
-            handleInputChange={handleInputChange}
-          />
-        )}
+      {!noModelSelectorProviders.includes(selectedProvider) && (
+        <ModelSelector
+          selectedProvider={selectedProvider}
+          selectedModelId={selectedModelId}
+          selectedModelInfo={selectedModelInfo}
+          models={providerConfig[selectedProvider]?.models || {}}
+          handleInputChange={handleInputChange}
+        />
+      )}
 
       {modelIdErrorMessage && (
         <div
