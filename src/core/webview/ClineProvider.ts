@@ -40,6 +40,7 @@ import { getToolCategory } from "@core/tool-adapter/getToolCategory";
 import { AllowedToolTree } from "@core/tool-adapter/AllowedToolTree";
 import { GlobalStateKey, SecretKey } from "@core/webview/type";
 import ApiManager from "@core/manager/ApiManager";
+import { MessageService } from "@core/services/MessageService";
 
 /*
 https://github.com/microsoft/vscode-webview-ui-toolkit-samples/blob/main/default/weather-webview/src/providers/WeatherViewProvider.ts
@@ -70,7 +71,8 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 	private globalState: GlobalState
 	private toolCategories = getToolCategory(path.join(getAssetPath(),"external-prompt"))
 	private allowedToolTree = new AllowedToolTree([],this.toolCategories)
-  private apiManager = ApiManager.getInstance('./cache')
+  private apiManager : ApiManager;
+  private messageService : MessageService;
 
 
 	constructor(
@@ -79,6 +81,8 @@ export class ClineProvider implements vscode.WebviewViewProvider {
     private sendToMainProcess: (message: any) => void
 	) {
 		createIfNotExists(configPath)
+    this.messageService = MessageService.getInstance(sendToMainProcess)
+    this.apiManager = ApiManager.getInstance(configPath, this.messageService)
 		this.globalState = new GlobalState(path.join(configPath, "auto_machine_global_state.json"))
 		this.outputChannel.appendLine("ClineProvider instantiated")
 		ClineProvider.activeInstances.add(this)
@@ -327,7 +331,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 							this.postMessageToWebview({ type: "theme", text: JSON.stringify(theme) }),
 						)
 						// post last cached models in case the call to endpoint fails
-						this.readOpenRouterModels().then((openRouterModels) => {
+						this.apiManager.readOpenRouterModels().then((openRouterModels) => {
 							if (openRouterModels) {
 								this.postMessageToWebview({ type: "openRouterModels", openRouterModels })
 							}
@@ -335,7 +339,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 						// gui relies on model info to be up-to-date to provide the most accurate pricing, so we need to fetch the latest details on launch.
 						// we do this for all users since many users switch between api providers and if they were to switch back to openrouter it would be showing outdated model info if we hadn't retrieved the latest at this point
 						// (see normalizeApiConfiguration > openrouter)
-						this.refreshOpenRouterModels().then(async (openRouterModels) => {
+						this.apiManager.refreshOpenRouterModels().then(async (openRouterModels) => {
 							if (openRouterModels) {
 								// update model info in state (this needs to be done here since we don't want to update state while settings is open, and we may refresh models there)
 								const { apiConfiguration } = await this.getState()
@@ -348,12 +352,12 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 								}
 							}
 						})
-						this.readGlamaModels().then((glamaModels) => {
+						this.apiManager.readGlamaModels().then((glamaModels) => {
 							if (glamaModels) {
 								this.postMessageToWebview({ type: "glamaModels", glamaModels })
 							}
 						})
-						this.refreshGlamaModels().then(async (glamaModels) => {
+						this.apiManager.refreshGlamaModels().then(async (glamaModels) => {
 							if (glamaModels) {
 								// update model info in state (this needs to be done here since we don't want to update state while settings is open, and we may refresh models there)
 								const { apiConfiguration } = await this.getState()
@@ -513,14 +517,14 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 						this.postMessageToWebview({ type: "vsCodeLmModels", vsCodeLmModels })
 						break
 					case "refreshGlamaModels":
-						await this.refreshGlamaModels()
+						await this.apiManager.refreshGlamaModels()
 						break
 					case "refreshOpenRouterModels":
-						await this.refreshOpenRouterModels()
+						await this.apiManager.refreshOpenRouterModels()
 						break
 					case "refreshOpenAiModels":
 						if (message?.values?.baseUrl && message?.values?.apiKey) {
-							const openAiModels = await this.getOpenAiModels(
+							const openAiModels = await this.apiManager.getOpenAiModels(
 								message?.values?.baseUrl,
 								message?.values?.apiKey,
 							)
@@ -950,6 +954,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 					case "upsertApiConfiguration":
 						if (message.text && message.apiConfiguration) {
 							try {
+                console.log('[waht]','upsertApiConfiguration',message.text,message.apiConfiguration)
 								await this.configManager.saveConfig(message.text, message.apiConfiguration)
 								let listApiConfig = await this.configManager.listConfig()
 
@@ -1303,205 +1308,6 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		}
 	}
 
-	// OpenRouter
-
-	async handleOpenRouterCallback(code: string) {
-		let apiKey: string
-		try {
-			const response = await axios.post("https://openrouter.ai/api/v1/auth/keys", { code })
-			if (response.data && response.data.key) {
-				apiKey = response.data.key
-			} else {
-				throw new Error("Invalid response from OpenRouter API")
-			}
-		} catch (error) {
-			console.error("Error exchanging code for API key:", error)
-			throw error
-		}
-
-		const openrouter: ApiProvider = "openrouter"
-		await this.updateGlobalState("apiProvider", openrouter)
-		await this.storeSecret("openRouterApiKey", apiKey)
-		await this.postStateToWebview()
-		if (this.cline) {
-			this.cline.api = buildApiHandler({ apiProvider: openrouter, openRouterApiKey: apiKey })
-		}
-		// await this.postMessageToWebview({ type: "action", action: "settingsButtonClicked" }) // bad ux if user is on welcome
-	}
-
-	private async ensureCacheDirectoryExists(): Promise<string> {
-		const cacheDir = path.join(this.context.globalStorageUri.fsPath, "cache")
-		await fs.mkdir(cacheDir, { recursive: true })
-		return cacheDir
-	}
-
-	async handleGlamaCallback(code: string) {
-		let apiKey: string
-		try {
-			const response = await axios.post("https://glama.ai/api/gateway/v1/auth/exchange-code", { code })
-			if (response.data && response.data.apiKey) {
-				apiKey = response.data.apiKey
-			} else {
-				throw new Error("Invalid response from Glama API")
-			}
-		} catch (error) {
-			console.error("Error exchanging code for API key:", error)
-			throw error
-		}
-
-		const glama: ApiProvider = "glama"
-		await this.updateGlobalState("apiProvider", glama)
-		await this.storeSecret("glamaApiKey", apiKey)
-		await this.postStateToWebview()
-		if (this.cline) {
-			this.cline.api = buildApiHandler({
-				apiProvider: glama,
-				glamaApiKey: apiKey,
-			})
-		}
-		// await this.postMessageToWebview({ type: "action", action: "settingsButtonClicked" }) // bad ux if user is on welcome
-	}
-
-	async readGlamaModels(): Promise<Record<string, ModelInfo> | undefined> {
-		const glamaModelsFilePath = path.join(await this.ensureCacheDirectoryExists(), GlobalFileNames.glamaModels)
-		const fileExists = await fileExistsAtPath(glamaModelsFilePath)
-		if (fileExists) {
-			const fileContents = await fs.readFile(glamaModelsFilePath, "utf8")
-			return JSON.parse(fileContents)
-		}
-		return undefined
-	}
-
-	async refreshGlamaModels() {
-		const models = await this.apiManager.refreshGlamaModels();
-
-		await this.postMessageToWebview({ type: "glamaModels", glamaModels: models })
-		return models
-	}
-
-	async readOpenRouterModels(): Promise<Record<string, ModelInfo> | undefined> {
-		const openRouterModelsFilePath = path.join(
-			await this.ensureCacheDirectoryExists(),
-			GlobalFileNames.openRouterModels,
-		)
-		const fileExists = await fileExistsAtPath(openRouterModelsFilePath)
-		if (fileExists) {
-			const fileContents = await fs.readFile(openRouterModelsFilePath, "utf8")
-			return JSON.parse(fileContents)
-		}
-		return undefined
-	}
-
-	async refreshOpenRouterModels() {
-		const openRouterModelsFilePath = path.join(
-			await this.ensureCacheDirectoryExists(),
-			GlobalFileNames.openRouterModels,
-		)
-
-		let models: Record<string, ModelInfo> = {}
-		try {
-			const response = await axios.get("https://openrouter.ai/api/v1/models")
-			/*
-			{
-				"id": "anthropic/claude-3.5-sonnet",
-				"name": "Anthropic: Claude 3.5 Sonnet",
-				"created": 1718841600,
-				"description": "Claude 3.5 Sonnet delivers better-than-Opus capabilities, faster-than-Sonnet speeds, at the same Sonnet prices. Sonnet is particularly good at:\n\n- Coding: Autonomously writes, edits, and runs code with reasoning and troubleshooting\n- Data science: Augments human data science expertise; navigates unstructured data while using multiple tools for insights\n- Visual processing: excelling at interpreting charts, graphs, and images, accurately transcribing text to derive insights beyond just the text alone\n- Agentic tasks: exceptional tool use, making it great at agentic tasks (i.e. complex, multi-step problem solving tasks that require engaging with other systems)\n\n#multimodal",
-				"context_length": 200000,
-				"architecture": {
-					"modality": "text+image-\u003Etext",
-					"tokenizer": "Claude",
-					"instruct_type": null
-				},
-				"pricing": {
-					"prompt": "0.000003",
-					"completion": "0.000015",
-					"image": "0.0048",
-					"request": "0"
-				},
-				"top_provider": {
-					"context_length": 200000,
-					"max_completion_tokens": 8192,
-					"is_moderated": true
-				},
-				"per_request_limits": null
-			},
-			*/
-			if (response.data?.data) {
-				const rawModels = response.data.data
-				const parsePrice = (price: any) => {
-					if (price) {
-						return parseFloat(price) * 1_000_000
-					}
-					return undefined
-				}
-				for (const rawModel of rawModels) {
-					const modelInfo: ModelInfo = {
-						maxTokens: rawModel.top_provider?.max_completion_tokens,
-						contextWindow: rawModel.context_length,
-						supportsImages: rawModel.architecture?.modality?.includes("image"),
-						supportsPromptCache: false,
-						inputPrice: parsePrice(rawModel.pricing?.prompt),
-						outputPrice: parsePrice(rawModel.pricing?.completion),
-						description: rawModel.description,
-					}
-
-					switch (rawModel.id) {
-						case "anthropic/claude-3.5-sonnet":
-						case "anthropic/claude-3.5-sonnet:beta":
-							// NOTE: this needs to be synced with api.ts/openrouter default model info
-							modelInfo.supportsComputerUse = true
-							modelInfo.supportsPromptCache = true
-							modelInfo.cacheWritesPrice = 3.75
-							modelInfo.cacheReadsPrice = 0.3
-							break
-						case "anthropic/claude-3.5-sonnet-20240620":
-						case "anthropic/claude-3.5-sonnet-20240620:beta":
-							modelInfo.supportsPromptCache = true
-							modelInfo.cacheWritesPrice = 3.75
-							modelInfo.cacheReadsPrice = 0.3
-							break
-						case "anthropic/claude-3-5-haiku":
-						case "anthropic/claude-3-5-haiku:beta":
-						case "anthropic/claude-3-5-haiku-20241022":
-						case "anthropic/claude-3-5-haiku-20241022:beta":
-						case "anthropic/claude-3.5-haiku":
-						case "anthropic/claude-3.5-haiku:beta":
-						case "anthropic/claude-3.5-haiku-20241022":
-						case "anthropic/claude-3.5-haiku-20241022:beta":
-							modelInfo.supportsPromptCache = true
-							modelInfo.cacheWritesPrice = 1.25
-							modelInfo.cacheReadsPrice = 0.1
-							break
-						case "anthropic/claude-3-opus":
-						case "anthropic/claude-3-opus:beta":
-							modelInfo.supportsPromptCache = true
-							modelInfo.cacheWritesPrice = 18.75
-							modelInfo.cacheReadsPrice = 1.5
-							break
-						case "anthropic/claude-3-haiku":
-						case "anthropic/claude-3-haiku:beta":
-							modelInfo.supportsPromptCache = true
-							modelInfo.cacheWritesPrice = 0.3
-							modelInfo.cacheReadsPrice = 0.03
-							break
-					}
-
-					models[rawModel.id] = modelInfo
-				}
-			} else {
-				console.error("Invalid response from OpenRouter API")
-			}
-			await fs.writeFile(openRouterModelsFilePath, JSON.stringify(models))
-			// console.log("OpenRouter models fetched and saved", models)
-		} catch (error) {
-			// console.error("Error fetching OpenRouter models:", error) //todo waht
-		}
-
-		await this.postMessageToWebview({ type: "openRouterModels", openRouterModels: models })
-		return models
-	}
-
 	// Task history
 
 	async getTaskWithId(id: string): Promise<{
@@ -1593,6 +1399,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 
 	async postStateToWebview() {
 		const state = await this.getStateToPostToWebview()
+    console.log('[waht]','state api', state.apiConfiguration)
 		this.postMessageToWebview({ type: "state", state })
 	}
 
@@ -1896,16 +1703,6 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		return this.globalState.getAll()
 	}
 
-	// workspace
-
-	private async updateWorkspaceState(key: string, value: any) {
-		await this.context.workspaceState.update(key, value)
-	}
-
-	private async getWorkspaceState(key: string) {
-		return await this.context.workspaceState.get(key)
-	}
-
 	// secrets
 
 	private async storeSecret(key: SecretKey, value?: string) {
@@ -1914,10 +1711,6 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		} else {
 			await this.context.secrets.delete(key)
 		}
-	}
-
-	private async getSecret(key: SecretKey) {
-		return await this.context.secrets.get(key)
 	}
 
 	private async getSecrets() {
