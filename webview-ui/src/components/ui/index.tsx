@@ -1,8 +1,8 @@
 import React from 'react';
 import { 
-    VSCodeCheckbox, 
-    VSCodePanels
-} from "@vscode/webview-ui-toolkit/react";
+    Checkbox as AntCheckbox,
+    Collapse
+} from "antd";
 
 // 重新封装Checkbox组件，保持与vscrui的API一致
 export const Checkbox = ({ 
@@ -17,13 +17,14 @@ export const Checkbox = ({
     [key: string]: any;
 }) => {
     return (
-        <VSCodeCheckbox
-            checked={checked}
-            onChange={(e) => onChange?.(e.target?.checked)}
-            {...props}
-        >
-            {label}
-        </VSCodeCheckbox>
+        <span style={{ display: 'flex', alignItems: 'center' }}>
+            <AntCheckbox
+                checked={checked}
+                onChange={(e) => onChange?.(e.target.checked)}
+                {...props}
+            />
+            {label && <span style={{ marginLeft: '8px' }}>{label}</span>}
+        </span>
     );
 };
 
@@ -67,8 +68,10 @@ export const Pane = ({
     [key: string]: any;
 }) => {
     return (
-        <VSCodePanels {...props}>
-            {children}
-        </VSCodePanels>
+        <Collapse {...props}>
+            <Collapse.Panel header="" key="1">
+                {children}
+            </Collapse.Panel>
+        </Collapse>
     );
 };

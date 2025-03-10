@@ -171,6 +171,7 @@ const OpenAiModelPicker: React.FC = () => {
 								aria-label="Clear search"
 								onClick={() => {
 									handleModelChange("")
+									setSearchTerm("")
 									setIsDropdownVisible(true)
 								}}
 								slot="end"
