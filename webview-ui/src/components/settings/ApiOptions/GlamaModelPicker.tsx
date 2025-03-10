@@ -1,64 +1,67 @@
 import { VSCodeLink, VSCodeTextField } from "@vscode/webview-ui-toolkit/react"
+import debounce from "debounce"
 import { Fzf } from "fzf"
 import React, { KeyboardEvent, memo, useEffect, useMemo, useRef, useState } from "react"
-import debounce from "debounce"
 import { useRemark } from "react-remark"
+import { useMount } from "react-use"
 import styled from "styled-components"
-import { useExtensionState } from "../../context/ExtensionStateContext"
-import { vscode } from "../../utils/vscode"
-import { highlightFzfMatch } from "../../utils/highlight"
+import { glamaDefaultModelId } from "@/shared/api"
+import { useExtensionState } from "@webview-ui/context/ExtensionStateContext"
+import { vscode } from "@webview-ui/utils/vscode"
+import { highlightFzfMatch } from "@webview-ui/utils/highlight"
+import { ModelInfoView } from "./ModelInfoView"
+import { normalizeApiConfiguration } from "./utils";
 
-const OpenAiModelPicker: React.FC = () => {
-	const { apiConfiguration, setApiConfiguration, openAiModels, onUpdateApiConfig } = useExtensionState()
-	const [searchTerm, setSearchTerm] = useState(apiConfiguration?.openAiModelId || "")
+
+const GlamaModelPicker: React.FC = () => {
+	const { apiConfiguration, setApiConfiguration, glamaModels, onUpdateApiConfig } = useExtensionState()
+	const [searchTerm, setSearchTerm] = useState(apiConfiguration?.glamaModelId || glamaDefaultModelId)
 	const [isDropdownVisible, setIsDropdownVisible] = useState(false)
 	const [selectedIndex, setSelectedIndex] = useState(-1)
 	const dropdownRef = useRef<HTMLDivElement>(null)
 	const itemRefs = useRef<(HTMLDivElement | null)[]>([])
+	const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false)
 	const dropdownListRef = useRef<HTMLDivElement>(null)
 
 	const handleModelChange = (newModelId: string) => {
 		// could be setting invalid model id/undefined info but validation will catch it
 		const apiConfig = {
 			...apiConfiguration,
-			openAiModelId: newModelId,
+			glamaModelId: newModelId,
+			glamaModelInfo: glamaModels[newModelId],
 		}
 		setApiConfiguration(apiConfig)
 		onUpdateApiConfig(apiConfig)
+
+		setSearchTerm(newModelId)
 	}
 
+	const { selectedModelId, selectedModelInfo } = useMemo(() => {
+		return normalizeApiConfiguration(apiConfiguration)
+	}, [apiConfiguration])
+
 	useEffect(() => {
-		if (apiConfiguration?.openAiModelId && apiConfiguration?.openAiModelId !== searchTerm) {
-			setSearchTerm(apiConfiguration?.openAiModelId)
+		if (apiConfiguration?.glamaModelId && apiConfiguration?.glamaModelId !== searchTerm) {
+			setSearchTerm(apiConfiguration?.glamaModelId)
 		}
 	}, [apiConfiguration, searchTerm])
 
 	const debouncedRefreshModels = useMemo(
 		() =>
-			debounce((baseUrl: string, apiKey: string) => {
-				vscode.postMessage({
-					type: "refreshOpenAiModels",
-					values: {
-						baseUrl,
-						apiKey,
-					},
-				})
+			debounce(() => {
+				vscode.postMessage({ type: "refreshGlamaModels" })
 			}, 50),
 		[],
 	)
 
-	useEffect(() => {
-		if (!apiConfiguration?.openAiBaseUrl || !apiConfiguration?.openAiApiKey) {
-			return
-		}
-
-		debouncedRefreshModels(apiConfiguration.openAiBaseUrl, apiConfiguration.openAiApiKey)
+	useMount(() => {
+		debouncedRefreshModels()
 
 		// Cleanup debounced function
 		return () => {
 			debouncedRefreshModels.clear()
 		}
-	}, [apiConfiguration?.openAiBaseUrl, apiConfiguration?.openAiApiKey, debouncedRefreshModels])
+	})
 
 	useEffect(() => {
 		const handleClickOutside = (event: MouseEvent) => {
@@ -74,8 +77,8 @@ const OpenAiModelPicker: React.FC = () => {
 	}, [])
 
 	const modelIds = useMemo(() => {
-		return openAiModels.sort((a, b) => a.localeCompare(b))
-	}, [openAiModels])
+		return Object.keys(glamaModels).sort((a, b) => a.localeCompare(b))
+	}, [glamaModels])
 
 	const searchableItems = useMemo(() => {
 		return modelIds.map((id) => ({
@@ -126,6 +129,10 @@ const OpenAiModelPicker: React.FC = () => {
 		}
 	}
 
+	const hasInfo = useMemo(() => {
+		return modelIds.some((id) => id.toLowerCase() === searchTerm.toLowerCase())
+	}, [modelIds, searchTerm])
+
 	useEffect(() => {
 		setSelectedIndex(-1)
 		if (dropdownListRef.current) {
@@ -153,25 +160,27 @@ const OpenAiModelPicker: React.FC = () => {
 				`}
 			</style>
 			<div>
+				<label htmlFor="model-search">
+					<span style={{ fontWeight: 500 }}>Model</span>
+				</label>
 				<DropdownWrapper ref={dropdownRef}>
 					<VSCodeTextField
 						id="model-search"
 						placeholder="Search and select a model..."
 						value={searchTerm}
 						onInput={(e) => {
-							handleModelChange((e.target as HTMLInputElement)?.value)
+							handleModelChange((e.target as HTMLInputElement)?.value?.toLowerCase())
 							setIsDropdownVisible(true)
 						}}
 						onFocus={() => setIsDropdownVisible(true)}
 						onKeyDown={handleKeyDown}
-						style={{ width: "100%", zIndex: OPENAI_MODEL_PICKER_Z_INDEX, position: "relative" }}>
+						style={{ width: "100%", zIndex: GLAMA_MODEL_PICKER_Z_INDEX, position: "relative" }}>
 						{searchTerm && (
 							<div
 								className="input-icon-button codicon codicon-close"
 								aria-label="Clear search"
 								onClick={() => {
 									handleModelChange("")
-									setSearchTerm("")
 									setIsDropdownVisible(true)
 								}}
 								slot="end"
@@ -205,11 +214,39 @@ const OpenAiModelPicker: React.FC = () => {
 					)}
 				</DropdownWrapper>
 			</div>
+
+			{hasInfo ? (
+				<ModelInfoView
+					selectedModelId={selectedModelId}
+					modelInfo={selectedModelInfo}
+					isDescriptionExpanded={isDescriptionExpanded}
+					setIsDescriptionExpanded={setIsDescriptionExpanded}
+				/>
+			) : (
+				<p
+					style={{
+						fontSize: "12px",
+						marginTop: 0,
+						color: "var(--vscode-descriptionForeground)",
+					}}>
+					The extension automatically fetches the latest list of models available on{" "}
+					<VSCodeLink style={{ display: "inline", fontSize: "inherit" }} href="https://glama.ai/models">
+						Glama.
+					</VSCodeLink>
+					If you're unsure which model to choose, Roo Code works best with{" "}
+					<VSCodeLink
+						style={{ display: "inline", fontSize: "inherit" }}
+						onClick={() => handleModelChange("anthropic/claude-3.5-sonnet")}>
+						anthropic/claude-3.5-sonnet.
+					</VSCodeLink>
+					You can also try searching "free" for no-cost options currently available.
+				</p>
+			)}
 		</>
 	)
 }
 
-export default OpenAiModelPicker
+export default GlamaModelPicker
 
 // Dropdown
 
@@ -218,7 +255,7 @@ const DropdownWrapper = styled.div`
 	width: 100%;
 `
 
-export const OPENAI_MODEL_PICKER_Z_INDEX = 1_000
+export const GLAMA_MODEL_PICKER_Z_INDEX = 1_000
 
 const DropdownList = styled.div`
 	position: absolute;
@@ -229,7 +266,7 @@ const DropdownList = styled.div`
 	overflow-y: auto;
 	background-color: var(--vscode-dropdown-background);
 	border: 1px solid var(--vscode-list-activeSelectionBackground);
-	z-index: ${OPENAI_MODEL_PICKER_Z_INDEX - 1};
+	z-index: ${GLAMA_MODEL_PICKER_Z_INDEX - 1};
 	border-bottom-left-radius: 3px;
 	border-bottom-right-radius: 3px;
 `
@@ -307,7 +344,6 @@ export const ModelDescriptionMarkdown = memo(
 		setIsExpanded: (isExpanded: boolean) => void
 	}) => {
 		const [reactContent, setMarkdown] = useRemark()
-		// const [isExpanded, setIsExpanded] = useState(false)
 		const [showSeeMore, setShowSeeMore] = useState(false)
 		const textContainerRef = useRef<HTMLDivElement>(null)
 		const textRef = useRef<HTMLDivElement>(null)
@@ -322,9 +358,6 @@ export const ModelDescriptionMarkdown = memo(
 				const { clientHeight } = textContainerRef.current
 				const isOverflowing = scrollHeight > clientHeight
 				setShowSeeMore(isOverflowing)
-				// if (!isOverflowing) {
-				// 	setIsExpanded(false)
-				// }
 			}
 		}, [reactContent, setIsExpanded])
 
@@ -345,9 +378,6 @@ export const ModelDescriptionMarkdown = memo(
 							WebkitLineClamp: isExpanded ? "unset" : 3,
 							WebkitBoxOrient: "vertical",
 							overflow: "hidden",
-							// whiteSpace: "pre-wrap",
-							// wordBreak: "break-word",
-							// overflowWrap: "anywhere",
 						}}>
 						{reactContent}
 					</div>
@@ -370,8 +400,6 @@ export const ModelDescriptionMarkdown = memo(
 							/>
 							<VSCodeLink
 								style={{
-									// cursor: "pointer",
-									// color: "var(--vscode-textLink-foreground)",
 									fontSize: "inherit",
 									paddingRight: 0,
 									paddingLeft: 3,

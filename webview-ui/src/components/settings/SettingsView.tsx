@@ -1,8 +1,8 @@
 import { VSCodeButton, VSCodeCheckbox, VSCodeLink, VSCodeTextField } from "@vscode/webview-ui-toolkit/react"
 import { memo, useEffect, useState } from "react"
-import { useExtensionState } from "../../context/ExtensionStateContext"
-import { validateApiConfiguration, validateModelId } from "../../utils/validate"
-import { vscode } from "../../utils/vscode"
+import { useExtensionState } from "@webview-ui/context/ExtensionStateContext"
+import { validateApiConfiguration, validateModelId } from "@webview-ui/utils/validate"
+import { vscode } from "@webview-ui/utils/vscode"
 import ApiOptions from "./ApiOptions"
 import ApiConfigManager from "./ApiConfigManager"
 

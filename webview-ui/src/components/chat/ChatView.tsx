@@ -1,33 +1,32 @@
-import { VSCodeButton } from "@vscode/webview-ui-toolkit/react"
 import debounce from "debounce"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { useDeepCompareEffect, useEvent, useMount } from "react-use"
+import { useEvent, useMount } from "react-use"
 import { Virtuoso, type VirtuosoHandle } from "react-virtuoso"
 import styled from "styled-components"
 import {
-	ClineAsk,
-	ClineMessage,
-	ClineSayBrowserAction,
-	ClineSayTool,
-	ExtensionMessage,
-} from "../../../../src/shared/ExtensionMessage"
-import { McpServer, McpTool } from "../../../../src/shared/mcp"
-import { findLast } from "../../../../src/shared/array"
-import { combineApiRequests } from "../../../../src/shared/combineApiRequests"
-import { combineCommandSequences } from "../../../../src/shared/combineCommandSequences"
-import { getApiMetrics } from "../../../../src/shared/getApiMetrics"
+  ClineAsk,
+  ClineMessage,
+  ClineSayBrowserAction,
+  ClineSayTool,
+  ExtensionMessage,
+} from "@/shared/ExtensionMessage"
+import { McpServer, McpTool } from "@/shared/mcp"
+import { findLast } from "@/shared/array"
+import { combineApiRequests } from "@/shared/combineApiRequests"
+import { combineCommandSequences } from "@/shared/combineCommandSequences"
+import { getApiMetrics } from "@/shared/getApiMetrics"
 import { useExtensionState } from "../../context/ExtensionStateContext"
 import { vscode } from "../../utils/vscode"
 import HistoryPreview from "../history/HistoryPreview"
-import { normalizeApiConfiguration } from "../settings/ApiOptions"
 import Announcement from "./Announcement"
 import BrowserSessionRow from "./BrowserSessionRow"
 import ChatRow from "./ChatRow"
 import ChatTextArea from "./ChatTextArea"
 import TaskHeader from "./TaskHeader"
 import AutoApproveMenu from "./AutoApproveMenu"
-import { AudioType } from "../../../../src/shared/WebviewMessage"
+import { AudioType } from "@/shared/WebviewMessage"
 import { validateCommand } from "../../utils/command-validation"
+import { normalizeApiConfiguration } from "@webview-ui/components/settings/ApiOptions/utils";
 
 interface ChatViewProps {
 	isHidden: boolean

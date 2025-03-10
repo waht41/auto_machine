@@ -5,11 +5,12 @@ import React, { KeyboardEvent, memo, useEffect, useMemo, useRef, useState } from
 import { useRemark } from "react-remark"
 import { useMount } from "react-use"
 import styled from "styled-components"
-import { openRouterDefaultModelId } from "../../../../src/shared/api"
-import { useExtensionState } from "../../context/ExtensionStateContext"
-import { vscode } from "../../utils/vscode"
-import { highlightFzfMatch } from "../../utils/highlight"
-import { ModelInfoView, normalizeApiConfiguration } from "./ApiOptions"
+import { openRouterDefaultModelId } from "@/shared/api"
+import { useExtensionState } from "@webview-ui/context/ExtensionStateContext"
+import { vscode } from "@webview-ui/utils/vscode"
+import { highlightFzfMatch } from "@webview-ui/utils/highlight"
+import { ModelInfoView } from "./ModelInfoView"
+import { normalizeApiConfiguration } from "@webview-ui/components/settings/ApiOptions/utils";
 
 const OpenRouterModelPicker: React.FC = () => {
 	const { apiConfiguration, setApiConfiguration, openRouterModels, onUpdateApiConfig } = useExtensionState()

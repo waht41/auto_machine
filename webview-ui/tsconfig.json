@@ -25,5 +25,5 @@
 		},
 		"baseUrl": "."
 	},
-	"include": ["src", "../src/shared"]
+	"include": ["src", "../src"]
 }
