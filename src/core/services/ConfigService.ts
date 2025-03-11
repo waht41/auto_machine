@@ -96,6 +96,10 @@ export class ConfigService {
     }
   }
 
+  public async deleteSecret(key: SecretKey) {
+    await this._secrets.remove(key)
+  }
+
   public async updateGlobalState(key: GlobalStateKey, value: any) {
     await this._state.set(key, value)
   }

@@ -1,38 +1,33 @@
 import { Anthropic } from "@anthropic-ai/sdk"
-import delay from "delay"
-import axios from "axios"
 import fs from "fs/promises"
-import os from "os"
 import pWaitFor from "p-wait-for"
 import * as path from "path"
 import * as vscode from "vscode"
-import { buildApiHandler } from "../../api"
-import { generateMarkdown } from "../../integrations/misc/export-markdown"
-import { openFile, openImage } from "../../integrations/misc/open-file"
-import { selectImages } from "../../integrations/misc/process-images"
-import { getTheme } from "../../integrations/theme/getTheme"
+import { buildApiHandler } from "@/api"
+import { generateMarkdown } from "@/integrations/misc/export-markdown"
+import { openFile, openImage } from "@/integrations/misc/open-file"
+import { selectImages } from "@/integrations/misc/process-images"
+import { getTheme } from "@/integrations/theme/getTheme"
 import { getDiffStrategy } from "../diff/DiffStrategy"
 import WorkspaceTracker from "../../integrations/workspace/WorkspaceTracker"
 import { McpHub } from "@operation/MCP"
-import { ApiConfiguration, ApiProvider, ModelInfo } from "../../shared/api"
-import { findLast } from "../../shared/array"
-import { ExtensionMessage } from "../../shared/ExtensionMessage"
-import { HistoryItem } from "../../shared/HistoryItem"
-import { WebviewMessage } from "../../shared/WebviewMessage"
-import { defaultModeSlug, Mode, PromptComponent, } from "../../shared/modes"
+import { ApiConfiguration } from "@/shared/api"
+import { findLast } from "@/shared/array"
+import { ExtensionMessage } from "@/shared/ExtensionMessage"
+import { HistoryItem } from "@/shared/HistoryItem"
+import { WebviewMessage } from "@/shared/WebviewMessage"
+import { defaultModeSlug, Mode, PromptComponent, } from "@/shared/modes"
 import { SYSTEM_PROMPT } from "../prompts/system"
-import { fileExistsAtPath } from "../../utils/fs"
+import { fileExistsAtPath } from "@/utils/fs"
 import { Cline } from "../Cline"
 import { openMention } from "../mentions"
-import { playSound, setSoundEnabled, setSoundVolume } from "../../utils/sound"
-import { checkExistKey } from "../../shared/checkExistApiConfig"
-import { singleCompletionHandler } from "../../utils/single-completion-handler"
-import { searchCommits } from "../../utils/git"
+import { playSound, setSoundEnabled, setSoundVolume } from "@/utils/sound"
+import { checkExistKey } from "@/shared/checkExistApiConfig"
+import { singleCompletionHandler } from "@/utils/single-completion-handler"
+import { searchCommits } from "@/utils/git"
 import { ConfigManager } from "../config/ConfigManager"
 import { CustomModesManager } from "../config/CustomModesManager"
-import { supportPrompt } from "../../shared/support-prompt"
-
-import { ACTION_NAMES } from "../CodeActionProvider"
+import { supportPrompt } from "@/shared/support-prompt"
 import { GlobalState } from "@core/storage/global-state";
 import { configPath, createIfNotExists, getAssetPath } from "@core/storage/common";
 import { ApprovalMiddleWrapper } from "@core/internal-implementation/middleware";
@@ -127,65 +122,6 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 
 	public static getVisibleInstance(): ClineProvider | undefined {
 		return findLast(Array.from(this.activeInstances), (instance) => instance.view?.visible === true)
-	}
-
-	public static async getInstance(): Promise<ClineProvider | undefined> {
-		let visibleProvider = ClineProvider.getVisibleInstance()
-
-		// If no visible provider, try to show the sidebar view
-		if (!visibleProvider) {
-			await vscode.commands.executeCommand("roo-cline.SidebarProvider.focus")
-			// Wait briefly for the view to become visible
-			await delay(100)
-			visibleProvider = ClineProvider.getVisibleInstance()
-		}
-
-		// If still no visible provider, return
-		if (!visibleProvider) {
-			return
-		}
-
-		return visibleProvider
-	}
-
-	public static async isActiveTask(): Promise<boolean> {
-		const visibleProvider = await ClineProvider.getInstance()
-		if (!visibleProvider) {
-			return false
-		}
-
-		if (visibleProvider.cline) {
-			return true
-		}
-
-		return false
-	}
-
-	public static async handleCodeAction(
-		command: string,
-		promptType: keyof typeof ACTION_NAMES,
-		params: Record<string, string | any[]>,
-	): Promise<void> {
-		const visibleProvider = await ClineProvider.getInstance()
-		if (!visibleProvider) {
-			return
-		}
-
-		const { customSupportPrompts } = await visibleProvider.getState()
-
-		const prompt = supportPrompt.create(promptType, params, customSupportPrompts)
-
-		if (visibleProvider.cline && command.endsWith("InCurrentTask")) {
-			await visibleProvider.postMessageToWebview({
-				type: "invoke",
-				invoke: "sendMessage",
-				text: prompt,
-			})
-
-			return
-		}
-
-		await visibleProvider.initClineWithTask(prompt)
 	}
 
 	resolveWebviewView(
@@ -299,7 +235,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 	}
 
 	public async postMessageToWebview(message: ExtensionMessage) {
-		await this.view?.webview.postMessage(message)
+		await this.messageService.postMessageToWebview(message)
 	}
 
   private async setUpAllowedTools(){
@@ -1211,32 +1147,6 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		}
 	}
 
-	// OpenAi
-
-	async getOpenAiModels(baseUrl?: string, apiKey?: string) {
-		try {
-			if (!baseUrl) {
-				return []
-			}
-
-			if (!URL.canParse(baseUrl)) {
-				return []
-			}
-
-			const config: Record<string, any> = {}
-			if (apiKey) {
-				config["headers"] = { Authorization: `Bearer ${apiKey}` }
-			}
-
-			const response = await axios.get(`${baseUrl}/models`, config)
-			const modelsArray = response.data?.data?.map((model: any) => model.id) || []
-			const models = [...new Set<string>(modelsArray)]
-			return models
-		} catch (error) {
-			return []
-		}
-	}
-
 	// Task history
 
 	async getTaskWithId(id: string): Promise<{
@@ -1328,6 +1238,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 
 	async postStateToWebview() {
 		const state = await this.getStateToPostToWebview()
+    // @ts-ignore
 		this.postMessageToWebview({ type: "state", state })
 	}
 
@@ -1370,23 +1281,14 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		return await this.globalState.get(key)
 	}
 
-	async getGlobalStates() {
-		return this.globalState.getAll()
-	}
-
 	// secrets
 
 	private async storeSecret(key: SecretKey, value?: string) {
 		if (value) {
-			await this.context.secrets.store(key, value)
+			await this.configService.storeSecret(key, value)
 		} else {
-			await this.context.secrets.delete(key)
+			await this.configService.deleteSecret(key)
 		}
-	}
-
-	private async getSecrets() {
-		//@ts-ignore
-		return this.context.secrets.getAll()
 	}
 
 	// dev
