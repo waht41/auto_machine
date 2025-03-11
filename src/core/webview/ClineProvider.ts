@@ -1096,7 +1096,6 @@ export class ClineProvider implements vscode.WebviewViewProvider {
     await this.configService.updateApiConfig(apiConfiguration)
 
 		if (this.cline) {
-      this.apiManager.updateApiConfig(apiConfiguration)
 			this.cline.api = buildApiHandler(apiConfiguration)
 		}
 	}

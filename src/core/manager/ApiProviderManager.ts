@@ -1,7 +1,5 @@
-import { ApiConfiguration, ApiProvider, ModelInfo } from "@/shared/api";
-import { ApiHandler, buildApiHandler } from "@/api";
+import { ModelInfo } from "@/shared/api";
 import ApiProviderService from "@core/services/ApiProviderService";
-import { ConfigService } from "@core/services/ConfigService";
 import { MessageService } from "@core/services/MessageService";
 
 /**
@@ -9,14 +7,11 @@ import { MessageService } from "@core/services/MessageService";
  */
 class ApiProviderManager {
   private static _instance: ApiProviderManager;
-  private api: ApiHandler | null = null;
 
   private constructor(
     private readonly cacheDir: string,
     private readonly messageService : MessageService,
     private readonly apiProviderService = ApiProviderService.instance,
-    private readonly configService = ConfigService.instance,
-
   ) {}
 
   public static getInstance(cacheDir: string, messageService : MessageService): ApiProviderManager {
@@ -112,16 +107,6 @@ class ApiProviderManager {
   //   this.api = buildApiHandler(config);
   // }
 
-  public updateApiConfig(apiConfiguration: ApiConfiguration): void {
-    this.api = buildApiHandler(apiConfiguration)
-  }
-
-  /**
-   * 获取 API 处理器
-   */
-  public getApi(): ApiHandler | null {
-    return this.api;
-  }
   //
   // /**
   //  * 设置 API 提供者并更新配置
