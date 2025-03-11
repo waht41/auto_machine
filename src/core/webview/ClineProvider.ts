@@ -74,14 +74,12 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 
 	constructor(
 		readonly context: vscode.ExtensionContext,
-		private readonly outputChannel: vscode.OutputChannel,
     private sendToMainProcess: (message: any) => void
 	) {
 		createIfNotExists(configPath)
-    this.messageService = MessageService.getInstance(sendToMainProcess)
+    this.messageService = MessageService.getInstance(this.sendToMainProcess)
     this.apiManager = ApiManager.getInstance(configPath, this.messageService)
 		this.globalState = new GlobalState(path.join(configPath, "auto_machine_global_state.json"))
-		this.outputChannel.appendLine("ClineProvider instantiated")
 		ClineProvider.activeInstances.add(this)
 		this.workspaceTracker = new WorkspaceTracker(this)
 		this.mcpHub = new McpHub('.',this.postMessageToWebview.bind(this))
@@ -98,12 +96,9 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 	- https://github.com/microsoft/vscode-extension-samples/blob/main/webview-sample/src/extension.ts
 	*/
 	async dispose() {
-		this.outputChannel.appendLine("Disposing ClineProvider...")
 		await this.clearTask()
-		this.outputChannel.appendLine("Cleared task")
 		if (this.view && "dispose" in this.view) {
 			this.view.dispose()
-			this.outputChannel.appendLine("Disposed webview")
 		}
 		while (this.disposables.length) {
 			const x = this.disposables.pop()
@@ -116,7 +111,6 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		this.mcpHub?.dispose()
 		this.mcpHub = undefined
 		this.customModesManager?.dispose()
-		this.outputChannel.appendLine("Disposed all disposables")
 		ClineProvider.activeInstances.delete(this)
 	}
 
@@ -129,7 +123,6 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		//context: vscode.WebviewViewResolveContext<unknown>, used to recreate a deallocated webview, but we don't need this since we use retainContextWhenHidden
 		//token: vscode.CancellationToken
 	): void | Thenable<void> {
-		this.outputChannel.appendLine("Resolving webview view")
 		this.view = webviewView
 
 		// Initialize sound enabled state
@@ -165,8 +158,6 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 
 		// if the extension is starting a new session, clear previous task state
 		this.clearTask()
-
-		this.outputChannel.appendLine("Webview view resolved")
 	}
 
 	public async initClineWithTask(task?: string, images?: string[]) {

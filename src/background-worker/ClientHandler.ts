@@ -7,15 +7,13 @@ import { MockExtensionContext, MockWebviewView, window } from '../../vscode';
 export class ClientHandler {
     private cp: ClineProvider;
     private webview: MockWebviewView;
-    private outputChannel: any;
     private context: MockExtensionContext;
 
     constructor(sendToMainProcess: (message: any) => void) {
         this.webview = new MockWebviewView('mock', sendToMainProcess);
-        this.outputChannel = window.createOutputChannel('Roo-Code');
         this.context = new MockExtensionContext();
         //@ts-ignore
-        this.cp = new ClineProvider(this.context, this.outputChannel, sendToMainProcess);
+        this.cp = new ClineProvider(this.context, sendToMainProcess);
         //@ts-ignore
         this.cp.resolveWebviewView(this.webview);
     }
