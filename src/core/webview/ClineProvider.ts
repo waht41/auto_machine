@@ -41,6 +41,7 @@ import { AllowedToolTree } from "@core/tool-adapter/AllowedToolTree";
 import { GlobalStateKey, SecretKey } from "@core/webview/type";
 import ApiManager from "@core/manager/ApiManager";
 import { MessageService } from "@core/services/MessageService";
+import { ConfigService } from "@core/services/ConfigService";
 
 /*
 https://github.com/microsoft/vscode-webview-ui-toolkit-samples/blob/main/default/weather-webview/src/providers/WeatherViewProvider.ts
@@ -72,7 +73,8 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 	private toolCategories = getToolCategory(path.join(getAssetPath(),"external-prompt"))
 	private allowedToolTree = new AllowedToolTree([],this.toolCategories)
   private apiManager : ApiManager;
-  private messageService : MessageService;
+  private readonly messageService : MessageService;
+  private configService = ConfigService.instance;
 
 
 	constructor(
@@ -1180,21 +1182,10 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 			}
 		}
 
-		const secretKeys: SecretKey[] = [
-			"apiKey", "glamaApiKey", "openRouterApiKey", "awsAccessKey", 
-			"awsSecretKey", "awsSessionToken", "openAiApiKey", "geminiApiKey", 
-			"openAiNativeApiKey", "deepSeekApiKey", "mistralApiKey"
-		];
-
-		for (const [key, value] of Object.entries(apiConfiguration)) {
-			if (secretKeys.includes(key as SecretKey)) {
-				await this.storeSecret(key as SecretKey, value as string | undefined);
-			} else if (key in apiConfiguration) {
-				await this.updateGlobalState(key as GlobalStateKey, value);
-			}
-		}
+    await this.configService.updateApiConfig(apiConfiguration)
 
 		if (this.cline) {
+      this.apiManager.updateApiConfig(apiConfiguration)
 			this.cline.api = buildApiHandler(apiConfiguration)
 		}
 	}
@@ -1341,76 +1332,18 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 	}
 
 	async getStateToPostToWebview() {
-		const {
-			apiConfiguration,
-			lastShownAnnouncementId,
-			customInstructions,
-			alwaysAllowReadOnly,
-			alwaysAllowWrite,
-			alwaysAllowExecute,
-			alwaysAllowBrowser,
-			alwaysAllowMcp,
-			soundEnabled,
-			diffEnabled,
-			taskHistory,
-			soundVolume,
-			browserViewportSize,
-			screenshotQuality,
-			preferredLanguage,
-			writeDelayMs,
-			terminalOutputLineLimit,
-			fuzzyMatchThreshold,
-			mcpEnabled,
-			alwaysApproveResubmit,
-			requestDelaySeconds,
-			currentApiConfigName,
-			listApiConfigMeta,
-			mode,
-			customModePrompts,
-			customSupportPrompts,
-			enhancementApiConfigId,
-			experimentalDiffStrategy,
-			autoApprovalEnabled,
-		} = await this.getState()
-
-		const allowedCommands = await this.globalState.get("allowedCommands") || []
+    const state = await this.getState();
+    const { taskHistory, lastShownAnnouncementId, ...restState } = state;
 		return {
 			version: this.context.extension?.packageJSON?.version ?? "",
-			apiConfiguration,
-			customInstructions,
-			alwaysAllowReadOnly: alwaysAllowReadOnly ?? false,
-			alwaysAllowWrite: alwaysAllowWrite ?? false,
-			alwaysAllowExecute: alwaysAllowExecute ?? false,
-			alwaysAllowBrowser: alwaysAllowBrowser ?? false,
-			alwaysAllowMcp: alwaysAllowMcp ?? false,
 			uriScheme: vscode.env.uriScheme,
 			clineMessages: this.cline?.clineMessages || [],
 			taskHistory: (taskHistory || [])
 				.filter((item: HistoryItem) => item.ts && item.task)
 				.sort((a: HistoryItem, b: HistoryItem) => b.ts - a.ts),
-			soundEnabled: soundEnabled ?? false,
-			diffEnabled: diffEnabled ?? true,
 			shouldShowAnnouncement: lastShownAnnouncementId !== this.latestAnnouncementId,
-			allowedCommands,
-			soundVolume: soundVolume ?? 0.5,
-			browserViewportSize: browserViewportSize ?? "900x600",
-			screenshotQuality: screenshotQuality ?? 75,
-			preferredLanguage: preferredLanguage ?? "English",
-			writeDelayMs: writeDelayMs ?? 1000,
-			terminalOutputLineLimit: terminalOutputLineLimit ?? 500,
-			fuzzyMatchThreshold: fuzzyMatchThreshold ?? 1.0,
-			mcpEnabled: mcpEnabled ?? true,
-			alwaysApproveResubmit: alwaysApproveResubmit ?? false,
-			requestDelaySeconds: requestDelaySeconds ?? 10,
-			currentApiConfigName: currentApiConfigName ?? "default",
-			listApiConfigMeta: listApiConfigMeta ?? [],
-			mode: mode ?? defaultModeSlug,
-			customModePrompts: customModePrompts ?? {},
-			customSupportPrompts: customSupportPrompts ?? {},
-			enhancementApiConfigId,
-			experimentalDiffStrategy: experimentalDiffStrategy ?? false,
-			autoApprovalEnabled: autoApprovalEnabled ?? false,
 			customModes: await this.customModesManager.getCustomModes(),
+			...restState
 		}
 	}
 
@@ -1420,205 +1353,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
   }
 
 	async getState() {
-		const [globalStates, secrets] = await Promise.all([
-			this.getGlobalStates(),
-			this.getSecrets()
-		]);
-
-		// 合并配置对象（secrets 会覆盖同名的 globalStates）
-		const config = { ...globalStates, ...secrets };
-
-		// 使用对象解构提取所有配置项
-		const {
-			// Global states
-			apiProvider: storedApiProvider,
-			apiModelId,
-			glamaModelId,
-			glamaModelInfo,
-			awsRegion,
-			awsUseCrossRegionInference,
-			awsProfile,
-			awsUseProfile,
-			vertexProjectId,
-			vertexRegion,
-			openAiBaseUrl,
-			openAiModelId,
-			openAiCustomModelInfo,
-			openAiUseAzure,
-			ollamaModelId,
-			ollamaBaseUrl,
-			lmStudioModelId,
-			lmStudioBaseUrl,
-			anthropicBaseUrl,
-			azureApiVersion,
-			openAiStreamingEnabled,
-			openRouterModelId,
-			openRouterModelInfo,
-			openRouterBaseUrl,
-			openRouterUseMiddleOutTransform,
-			lastShownAnnouncementId,
-			customInstructions,
-			alwaysAllowReadOnly,
-			alwaysAllowWrite,
-			alwaysAllowExecute,
-			alwaysAllowBrowser,
-			alwaysAllowMcp,
-			taskHistory,
-			allowedCommands,
-			soundEnabled,
-			diffEnabled,
-			soundVolume,
-			browserViewportSize,
-			fuzzyMatchThreshold,
-			preferredLanguage,
-			writeDelayMs,
-			screenshotQuality,
-			terminalOutputLineLimit,
-			mcpEnabled,
-			alwaysApproveResubmit,
-			requestDelaySeconds,
-			currentApiConfigName,
-			listApiConfigMeta,
-			vsCodeLmModelSelector,
-			mode,
-			modeApiConfigs,
-			customModePrompts,
-			customSupportPrompts,
-			enhancementApiConfigId,
-			experimentalDiffStrategy,
-			autoApprovalEnabled,
-			deepSeekBaseUrl,
-
-			// Secrets
-			apiKey,
-			glamaApiKey,
-			openRouterApiKey,
-			awsAccessKey,
-			awsSecretKey,
-			awsSessionToken,
-			openAiApiKey,
-			geminiApiKey,
-			openAiNativeApiKey,
-			deepSeekApiKey,
-			mistralApiKey,
-		} = config;
-
-		const customModes = await this.customModesManager.getCustomModes();
-		let apiProvider: ApiProvider
-		if (storedApiProvider) {
-			apiProvider = storedApiProvider
-		} else {
-			// Either new user or legacy user that doesn't have the apiProvider stored in state
-			// (If they're using OpenRouter or Bedrock, then apiProvider state will exist)
-			if (apiKey) {
-				apiProvider = "anthropic"
-			} else {
-				// New users should default to openrouter
-				apiProvider = "openrouter"
-			}
-		}
-
-		return {
-			apiConfiguration: {
-				apiProvider,
-				apiModelId,
-				apiKey,
-				glamaApiKey,
-				glamaModelId,
-				glamaModelInfo,
-				openRouterApiKey,
-				awsAccessKey,
-				awsSecretKey,
-				awsSessionToken,
-				awsRegion,
-				awsUseCrossRegionInference,
-				awsProfile,
-				awsUseProfile,
-				vertexProjectId,
-				vertexRegion,
-				openAiBaseUrl,
-				openAiApiKey,
-				openAiModelId,
-				openAiCustomModelInfo,
-				openAiUseAzure,
-				ollamaModelId,
-				ollamaBaseUrl,
-				lmStudioModelId,
-				lmStudioBaseUrl,
-				anthropicBaseUrl,
-				geminiApiKey,
-				openAiNativeApiKey,
-				deepSeekApiKey,
-				deepSeekBaseUrl,
-				mistralApiKey,
-				azureApiVersion,
-				openAiStreamingEnabled,
-				openRouterModelId,
-				openRouterModelInfo,
-				openRouterBaseUrl,
-				openRouterUseMiddleOutTransform,
-				vsCodeLmModelSelector,
-			},
-			lastShownAnnouncementId,
-			customInstructions,
-			alwaysAllowReadOnly: alwaysAllowReadOnly ?? false,
-			alwaysAllowWrite: alwaysAllowWrite ?? false,
-			alwaysAllowExecute: alwaysAllowExecute ?? false,
-			alwaysAllowBrowser: alwaysAllowBrowser ?? false,
-			alwaysAllowMcp: alwaysAllowMcp ?? false,
-			taskHistory,
-			allowedCommands,
-			soundEnabled: soundEnabled ?? false,
-			diffEnabled: diffEnabled ?? true,
-			soundVolume,
-			browserViewportSize: browserViewportSize ?? "900x600",
-			screenshotQuality: screenshotQuality ?? 75,
-			fuzzyMatchThreshold: fuzzyMatchThreshold ?? 1.0,
-			writeDelayMs: writeDelayMs ?? 1000,
-			terminalOutputLineLimit: terminalOutputLineLimit ?? 500,
-			mode: mode ?? defaultModeSlug,
-			preferredLanguage:
-				preferredLanguage ??
-				(() => {
-					// Get VSCode's locale setting
-					const vscodeLang = vscode.env.language
-					// Map VSCode locale to our supported languages
-					const langMap: { [key: string]: string } = {
-						en: "English",
-						ar: "Arabic",
-						"pt-br": "Brazilian Portuguese",
-						cs: "Czech",
-						fr: "French",
-						de: "German",
-						hi: "Hindi",
-						hu: "Hungarian",
-						it: "Italian",
-						ja: "Japanese",
-						ko: "Korean",
-						pl: "Polish",
-						pt: "Portuguese",
-						ru: "Russian",
-						"zh-cn": "Simplified Chinese",
-						es: "Spanish",
-						"zh-tw": "Traditional Chinese",
-						tr: "Turkish",
-					}
-					// Return mapped language or default to English
-					return langMap[vscodeLang.split("-")[0]] ?? "English"
-				})(),
-			mcpEnabled: mcpEnabled ?? true,
-			alwaysApproveResubmit: alwaysApproveResubmit ?? false,
-			requestDelaySeconds: Math.max(5, requestDelaySeconds ?? 10),
-			currentApiConfigName: currentApiConfigName ?? "default",
-			listApiConfigMeta: listApiConfigMeta ?? [],
-			modeApiConfigs: modeApiConfigs ?? ({} as Record<Mode, string>),
-			customModePrompts: customModePrompts ?? {},
-			customSupportPrompts: customSupportPrompts ?? {},
-			enhancementApiConfigId,
-			experimentalDiffStrategy: experimentalDiffStrategy ?? false,
-			autoApprovalEnabled: autoApprovalEnabled ?? false,
-			customModes,
-		}
+    return await this.configService.getConfig()
 	}
 
 	async updateTaskHistory(item: HistoryItem): Promise<HistoryItem[]> {

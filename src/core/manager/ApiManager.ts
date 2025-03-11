@@ -112,6 +112,10 @@ class ApiManager {
   //   this.api = buildApiHandler(config);
   // }
 
+  public updateApiConfig(apiConfiguration: ApiConfiguration): void {
+    this.api = buildApiHandler(apiConfiguration)
+  }
+
   /**
    * 获取 API 处理器
    */
