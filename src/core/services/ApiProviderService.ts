@@ -7,15 +7,15 @@ import { GlobalFileNames } from "@core/webview/ClineProvider";
 import { fileExistsAtPath } from "@/utils/fs";
 import { URL } from "url";
 
-class ApiService {
-  private static _instance: ApiService;
+class ApiProviderService {
+  private static _instance: ApiProviderService;
   private constructor() {}
 
-  public static get instance(): ApiService {
-    if (!ApiService._instance) {
-      ApiService._instance = new ApiService();
+  public static get instance(): ApiProviderService {
+    if (!ApiProviderService._instance) {
+      ApiProviderService._instance = new ApiProviderService();
     }
-    return ApiService._instance;
+    return ApiProviderService._instance;
   }
 
   // Ollama
@@ -334,4 +334,4 @@ class ApiService {
   }
 }
 
-export default ApiService;
+export default ApiProviderService;

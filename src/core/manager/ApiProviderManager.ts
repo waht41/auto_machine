@@ -1,29 +1,29 @@
 import { ApiConfiguration, ApiProvider, ModelInfo } from "@/shared/api";
 import { ApiHandler, buildApiHandler } from "@/api";
-import ApiService from "@core/services/ApiService";
+import ApiProviderService from "@core/services/ApiProviderService";
 import { ConfigService } from "@core/services/ConfigService";
 import { MessageService } from "@core/services/MessageService";
 
 /**
  * ApiManager 负责管理 API 服务，包括配置、模型获取和缓存管理
  */
-class ApiManager {
-  private static _instance: ApiManager;
+class ApiProviderManager {
+  private static _instance: ApiProviderManager;
   private api: ApiHandler | null = null;
 
   private constructor(
     private readonly cacheDir: string,
     private readonly messageService : MessageService,
-    private readonly apiService = ApiService.instance,
+    private readonly apiProviderService = ApiProviderService.instance,
     private readonly configService = ConfigService.instance,
 
   ) {}
 
-  public static getInstance(cacheDir: string, messageService : MessageService): ApiManager {
-    if (!ApiManager._instance) {
-      ApiManager._instance = new ApiManager(cacheDir,messageService);
+  public static getInstance(cacheDir: string, messageService : MessageService): ApiProviderManager {
+    if (!ApiProviderManager._instance) {
+      ApiProviderManager._instance = new ApiProviderManager(cacheDir,messageService);
     }
-    return ApiManager._instance;
+    return ApiProviderManager._instance;
   }
 
   /**
@@ -161,28 +161,28 @@ class ApiManager {
    * 获取 Ollama 模型列表
    */
   public async getOllamaModels(baseUrl?: string): Promise<string[]> {
-    return this.apiService.getOllamaModels(baseUrl);
+    return this.apiProviderService.getOllamaModels(baseUrl);
   }
 
   /**
    * 获取 LM Studio 模型列表
    */
   public async getLmStudioModels(baseUrl?: string): Promise<string[]> {
-    return this.apiService.getLmStudioModels(baseUrl);
+    return this.apiProviderService.getLmStudioModels(baseUrl);
   }
 
   /**
    * 获取 OpenAI 模型列表
    */
   public async getOpenAiModels(baseUrl?: string, apiKey?: string): Promise<string[]> {
-    return this.apiService.getOpenAiModels(baseUrl, apiKey);
+    return this.apiProviderService.getOpenAiModels(baseUrl, apiKey);
   }
 
   /**
    * 刷新 Glama 模型
    */
   public async refreshGlamaModels(): Promise<Record<string, ModelInfo>> {
-    const models =  await this.apiService.getGlamaModels(this.cacheDir);
+    const models =  await this.apiProviderService.getGlamaModels(this.cacheDir);
     await this.messageService.postMessageToWebview({ type: "glamaModels", glamaModels: models })
     return models;
   }
@@ -191,18 +191,18 @@ class ApiManager {
    * 刷新 OpenRouter 模型
    */
   public async refreshOpenRouterModels(): Promise<Record<string, ModelInfo>> {
-    const models = await this.apiService.getOpenRouterModels(this.cacheDir);
+    const models = await this.apiProviderService.getOpenRouterModels(this.cacheDir);
     await this.messageService.postMessageToWebview({ type: "openRouterModels", openRouterModels: models });
     return models;
   }
 
   public async readGlamaModels(): Promise<Record<string, ModelInfo> | undefined> {
-    return this.apiService.readGlamaModels(this.cacheDir);
+    return this.apiProviderService.readGlamaModels(this.cacheDir);
   }
 
   public async readOpenRouterModels(): Promise<Record<string, ModelInfo> | undefined>{
-    return this.apiService.readOpenRouterModels(this.cacheDir);
+    return this.apiProviderService.readOpenRouterModels(this.cacheDir);
   }
 }
 
-export default ApiManager;
+export default ApiProviderManager;

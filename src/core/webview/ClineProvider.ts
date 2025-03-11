@@ -34,7 +34,7 @@ import { ApprovalMiddleWrapper } from "@core/internal-implementation/middleware"
 import { getToolCategory } from "@core/tool-adapter/getToolCategory";
 import { AllowedToolTree } from "@core/tool-adapter/AllowedToolTree";
 import { GlobalStateKey, SecretKey } from "@core/webview/type";
-import ApiManager from "@core/manager/ApiManager";
+import ApiProviderManager from "@core/manager/ApiProviderManager";
 import { MessageService } from "@core/services/MessageService";
 import { ConfigService } from "@core/services/ConfigService";
 
@@ -67,7 +67,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 	private globalState: GlobalState
 	private toolCategories = getToolCategory(path.join(getAssetPath(),"external-prompt"))
 	private allowedToolTree = new AllowedToolTree([],this.toolCategories)
-  private apiManager : ApiManager;
+  private apiManager : ApiProviderManager;
   private readonly messageService : MessageService;
   private configService = ConfigService.instance;
 
@@ -78,7 +78,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 	) {
 		createIfNotExists(configPath)
     this.messageService = MessageService.getInstance(this.sendToMainProcess)
-    this.apiManager = ApiManager.getInstance(configPath, this.messageService)
+    this.apiManager = ApiProviderManager.getInstance(configPath, this.messageService)
 		this.globalState = new GlobalState(path.join(configPath, "auto_machine_global_state.json"))
 		ClineProvider.activeInstances.add(this)
 		this.workspaceTracker = new WorkspaceTracker(this)
