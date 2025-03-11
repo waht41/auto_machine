@@ -14,14 +14,6 @@ const SettingsView = ({ onDone }: SettingsViewProps) => {
 	const {
 		apiConfiguration,
 		version,
-		alwaysAllowReadOnly,
-		setAlwaysAllowReadOnly,
-		alwaysAllowWrite,
-		setAlwaysAllowWrite,
-		alwaysAllowExecute,
-		setAlwaysAllowExecute,
-		alwaysAllowBrowser,
-		setAlwaysAllowBrowser,
 		alwaysAllowMcp,
 		setAlwaysAllowMcp,
 		soundEnabled,
@@ -69,10 +61,6 @@ const SettingsView = ({ onDone }: SettingsViewProps) => {
 				type: "apiConfiguration",
 				apiConfiguration,
 			})
-			vscode.postMessage({ type: "alwaysAllowReadOnly", bool: alwaysAllowReadOnly })
-			vscode.postMessage({ type: "alwaysAllowWrite", bool: alwaysAllowWrite })
-			vscode.postMessage({ type: "alwaysAllowExecute", bool: alwaysAllowExecute })
-			vscode.postMessage({ type: "alwaysAllowBrowser", bool: alwaysAllowBrowser })
 			vscode.postMessage({ type: "alwaysAllowMcp", bool: alwaysAllowMcp })
 			vscode.postMessage({ type: "allowedCommands", commands: allowedCommands ?? [] })
 			vscode.postMessage({ type: "soundEnabled", bool: soundEnabled })

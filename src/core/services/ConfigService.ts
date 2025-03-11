@@ -11,10 +11,6 @@ const defaultApiConfig = {
   apiConfiguration: {
     apiProvider: "openrouter",
   },
-  alwaysAllowReadOnly: false,
-  alwaysAllowWrite: false,
-  alwaysAllowExecute: false,
-  alwaysAllowBrowser: false,
   alwaysAllowMcp: false,
   soundEnabled: false,
   diffEnabled: true,
@@ -26,7 +22,6 @@ const defaultApiConfig = {
   mode: defaultModeSlug,
   preferredLanguage: "en",
   mcpEnabled: true,
-  alwaysApproveResubmit: false,
   requestDelaySeconds: 10,
   currentApiConfigName: "default",
   listApiConfigMeta: [],
@@ -58,7 +53,6 @@ export class ConfigService {
       this.getGlobalStates(),
       this.getSecrets()
     ]);
-    console.log('[waht]','secretKeys',await this.getSecrets())
     globalStates.apiConfiguration = {...globalStates.apiConfiguration, ...secrets};
     return {...defaultApiConfig, ...globalStates};
   }

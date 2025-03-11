@@ -92,10 +92,6 @@ export interface ExtensionState {
 	customInstructions?: string
 	customModePrompts?: CustomModePrompts
 	customSupportPrompts?: CustomSupportPrompts
-	alwaysAllowReadOnly?: boolean
-	alwaysAllowWrite?: boolean
-	alwaysAllowExecute?: boolean
-	alwaysAllowBrowser?: boolean
 	alwaysAllowMcp?: boolean
 	alwaysApproveResubmit?: boolean
 	requestDelaySeconds: number

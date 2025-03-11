@@ -5,7 +5,6 @@ import { SecretKey } from "@core/webview/type";
 export class SecretStorage {
   private memento: Memento
   constructor(secretPath: string) {
-    console.log('[waht]','secretPath',secretPath)
     this.memento = new Memento(secretPath)
   }
 

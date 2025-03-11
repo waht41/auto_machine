@@ -379,22 +379,6 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 					case "customInstructions":
 						await this.updateCustomInstructions(message.text)
 						break
-					case "alwaysAllowReadOnly":
-						await this.updateGlobalState("alwaysAllowReadOnly", message.bool ?? undefined)
-						await this.postStateToWebview()
-						break
-					case "alwaysAllowWrite":
-						await this.updateGlobalState("alwaysAllowWrite", message.bool ?? undefined)
-						await this.postStateToWebview()
-						break
-					case "alwaysAllowExecute":
-						await this.updateGlobalState("alwaysAllowExecute", message.bool ?? undefined)
-						await this.postStateToWebview()
-						break
-					case "alwaysAllowBrowser":
-						await this.updateGlobalState("alwaysAllowBrowser", message.bool ?? undefined)
-						await this.postStateToWebview()
-						break
 					case "alwaysAllowMcp":
 						await this.updateGlobalState("alwaysAllowMcp", message.bool)
 						await this.postStateToWebview()

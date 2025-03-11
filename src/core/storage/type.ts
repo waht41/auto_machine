@@ -25,10 +25,6 @@ export type IGlobalState = {
   apiConfiguration: ApiConfiguration;
   lastShownAnnouncementId?: string;
   customInstructions?: string;
-  alwaysAllowReadOnly?: boolean;
-  alwaysAllowWrite?: boolean;
-  alwaysAllowExecute?: boolean;
-  alwaysAllowBrowser?: boolean;
   taskHistory?: any[];
   allowedCommands?: string[];
   soundEnabled?: boolean;

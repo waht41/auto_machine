@@ -44,10 +44,6 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 		taskHistory,
 		apiConfiguration,
 		mcpServers,
-		alwaysAllowBrowser,
-		alwaysAllowReadOnly,
-		alwaysAllowWrite,
-		alwaysAllowExecute,
 		alwaysAllowMcp,
 		allowedCommands,
 		writeDelayMs,
@@ -559,31 +555,7 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 		[allowedCommands],
 	)
 
-	const isAutoApproved = useCallback(
-		(message: ClineMessage | undefined) => {
-			if (!autoApprovalEnabled || !message || message.type !== "ask") return false
-
-			return (
-				(alwaysAllowBrowser && message.ask === "browser_action_launch") ||
-				(alwaysAllowReadOnly && message.ask === "tool" && isReadOnlyToolAction(message)) ||
-				(alwaysAllowWrite && message.ask === "tool" && isWriteToolAction(message)) ||
-				(alwaysAllowExecute && message.ask === "command" && isAllowedCommand(message)) ||
-				(alwaysAllowMcp && message.ask === "use_mcp_server" && isMcpToolAlwaysAllowed(message))
-			)
-		},
-		[
-			autoApprovalEnabled,
-			alwaysAllowBrowser,
-			alwaysAllowReadOnly,
-			isReadOnlyToolAction,
-			alwaysAllowWrite,
-			isWriteToolAction,
-			alwaysAllowExecute,
-			isAllowedCommand,
-			alwaysAllowMcp,
-			isMcpToolAlwaysAllowed,
-		],
-	)
+	const isAutoApproved = (prop:any)=> true  // todo waht 工具基本都删了，留下的都是基本工具,不过还需要进一步整理
 
 	useEffect(() => {
 		// Only execute when isStreaming changes from true to false
@@ -883,10 +855,6 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 		clineAsk,
 		enableButtons,
 		handlePrimaryButtonClick,
-		alwaysAllowBrowser,
-		alwaysAllowReadOnly,
-		alwaysAllowWrite,
-		alwaysAllowExecute,
 		alwaysAllowMcp,
 		messages,
 		allowedCommands,
