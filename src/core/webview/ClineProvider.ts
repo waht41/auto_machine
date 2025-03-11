@@ -33,8 +33,8 @@ import { CustomModesManager } from "../config/CustomModesManager"
 import { supportPrompt } from "../../shared/support-prompt"
 
 import { ACTION_NAMES } from "../CodeActionProvider"
-import { GlobalState } from "@/core/record/global-state";
-import { configPath, createIfNotExists, getAssetPath } from "@core/record/common";
+import { GlobalState } from "@core/storage/global-state";
+import { configPath, createIfNotExists, getAssetPath } from "@core/storage/common";
 import { ApprovalMiddleWrapper } from "@core/internal-implementation/middleware";
 import { getToolCategory } from "@core/tool-adapter/getToolCategory";
 import { AllowedToolTree } from "@core/tool-adapter/AllowedToolTree";
@@ -1180,82 +1180,20 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 			}
 		}
 
-		const {
-			apiProvider,
-			apiModelId,
-			apiKey,
-			glamaModelId,
-			glamaModelInfo,
-			glamaApiKey,
-			openRouterApiKey,
-			awsAccessKey,
-			awsSecretKey,
-			awsSessionToken,
-			awsRegion,
-			awsUseCrossRegionInference,
-			awsProfile,
-			awsUseProfile,
-			vertexProjectId,
-			vertexRegion,
-			openAiBaseUrl,
-			openAiApiKey,
-			openAiModelId,
-			openAiCustomModelInfo,
-			openAiUseAzure,
-			ollamaModelId,
-			ollamaBaseUrl,
-			lmStudioModelId,
-			lmStudioBaseUrl,
-			anthropicBaseUrl,
-			geminiApiKey,
-			openAiNativeApiKey,
-			deepSeekApiKey,
-			azureApiVersion,
-			openAiStreamingEnabled,
-			openRouterModelId,
-			openRouterBaseUrl,
-			openRouterModelInfo,
-			openRouterUseMiddleOutTransform,
-			vsCodeLmModelSelector,
-			mistralApiKey,
-		} = apiConfiguration
-		await this.updateGlobalState("apiProvider", apiProvider)
-		await this.updateGlobalState("apiModelId", apiModelId)
-		await this.storeSecret("apiKey", apiKey)
-		await this.updateGlobalState("glamaModelId", glamaModelId)
-		await this.updateGlobalState("glamaModelInfo", glamaModelInfo)
-		await this.storeSecret("glamaApiKey", glamaApiKey)
-		await this.storeSecret("openRouterApiKey", openRouterApiKey)
-		await this.storeSecret("awsAccessKey", awsAccessKey)
-		await this.storeSecret("awsSecretKey", awsSecretKey)
-		await this.storeSecret("awsSessionToken", awsSessionToken)
-		await this.updateGlobalState("awsRegion", awsRegion)
-		await this.updateGlobalState("awsUseCrossRegionInference", awsUseCrossRegionInference)
-		await this.updateGlobalState("awsProfile", awsProfile)
-		await this.updateGlobalState("awsUseProfile", awsUseProfile)
-		await this.updateGlobalState("vertexProjectId", vertexProjectId)
-		await this.updateGlobalState("vertexRegion", vertexRegion)
-		await this.updateGlobalState("openAiBaseUrl", openAiBaseUrl)
-		await this.storeSecret("openAiApiKey", openAiApiKey)
-		await this.updateGlobalState("openAiModelId", openAiModelId)
-		await this.updateGlobalState("openAiCustomModelInfo", openAiCustomModelInfo)
-		await this.updateGlobalState("openAiUseAzure", openAiUseAzure)
-		await this.updateGlobalState("ollamaModelId", ollamaModelId)
-		await this.updateGlobalState("ollamaBaseUrl", ollamaBaseUrl)
-		await this.updateGlobalState("lmStudioModelId", lmStudioModelId)
-		await this.updateGlobalState("lmStudioBaseUrl", lmStudioBaseUrl)
-		await this.updateGlobalState("anthropicBaseUrl", anthropicBaseUrl)
-		await this.storeSecret("geminiApiKey", geminiApiKey)
-		await this.storeSecret("openAiNativeApiKey", openAiNativeApiKey)
-		await this.storeSecret("deepSeekApiKey", deepSeekApiKey)
-		await this.updateGlobalState("azureApiVersion", azureApiVersion)
-		await this.updateGlobalState("openAiStreamingEnabled", openAiStreamingEnabled)
-		await this.updateGlobalState("openRouterModelId", openRouterModelId)
-		await this.updateGlobalState("openRouterModelInfo", openRouterModelInfo)
-		await this.updateGlobalState("openRouterBaseUrl", openRouterBaseUrl)
-		await this.updateGlobalState("openRouterUseMiddleOutTransform", openRouterUseMiddleOutTransform)
-		await this.updateGlobalState("vsCodeLmModelSelector", vsCodeLmModelSelector)
-		await this.storeSecret("mistralApiKey", mistralApiKey)
+		const secretKeys: SecretKey[] = [
+			"apiKey", "glamaApiKey", "openRouterApiKey", "awsAccessKey", 
+			"awsSecretKey", "awsSessionToken", "openAiApiKey", "geminiApiKey", 
+			"openAiNativeApiKey", "deepSeekApiKey", "mistralApiKey"
+		];
+
+		for (const [key, value] of Object.entries(apiConfiguration)) {
+			if (secretKeys.includes(key as SecretKey)) {
+				await this.storeSecret(key as SecretKey, value as string | undefined);
+			} else if (key in apiConfiguration) {
+				await this.updateGlobalState(key as GlobalStateKey, value);
+			}
+		}
+
 		if (this.cline) {
 			this.cline.api = buildApiHandler(apiConfiguration)
 		}
@@ -1399,7 +1337,6 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 
 	async postStateToWebview() {
 		const state = await this.getStateToPostToWebview()
-    console.log('[waht]','state api', state.apiConfiguration)
 		this.postMessageToWebview({ type: "state", state })
 	}
 
@@ -1477,11 +1414,10 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		}
 	}
 
-	async clearTask() {
-		console.log("[Cline provider] Clearing task")
-		this.cline?.abortTask()
-		this.cline = undefined // removes reference to it, so once promises end it will be garbage collected
-	}
+  async clearTask() {
+    this.cline?.abortTask()
+    this.cline = undefined // removes reference to it, so once promises end it will be garbage collected
+  }
 
 	async getState() {
 		const [globalStates, secrets] = await Promise.all([

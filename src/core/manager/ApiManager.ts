@@ -15,7 +15,7 @@ class ApiManager {
     private readonly cacheDir: string,
     private readonly messageService : MessageService,
     private readonly apiService = ApiService.instance,
-    private readonly globalStateService = ConfigService.instance,
+    private readonly configService = ConfigService.instance,
 
   ) {}
 

@@ -1,6 +1,6 @@
-import { GlobalState } from "@core/record/global-state";
+import { GlobalState } from "@core/storage/global-state";
 import path from "path";
-import { configPath } from "@core/record/common";
+import { configPath } from "@core/storage/common";
 
 export class ConfigService {
     private static _instance: ConfigService;

@@ -1,6 +1,6 @@
 import { HistoryItem } from "@/shared/HistoryItem";
-import { Memento } from "@core/record/memo";
-import { IGlobalState } from "@core/record/type";
+import { Memento } from "@core/storage/memo";
+import { IGlobalState } from "@core/storage/type";
 export class GlobalState {
     private memento: Memento
     constructor(statePath: string) {
