@@ -125,6 +125,7 @@
     "turndown": "^7.2.0",
     "utf-8-validate": "^6.0.5",
     "web-tree-sitter": "^0.22.6",
+    "winston": "^3.17.0",
     "ws": "^8.18.0",
     "zod": "^3.23.8"
   }
