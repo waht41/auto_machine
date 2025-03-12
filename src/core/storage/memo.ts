@@ -1,11 +1,12 @@
 import fs from 'fs';
 
-export class Memento{
-	private cache: Map<string, any>;
+export class Memento {
+	private cache: Map<string, unknown>;
 	private dirty: boolean = false;
+	private writePromise: Promise<void> = Promise.resolve(); // 写入锁
 
 	constructor(private storagePath: string) {
-		this.cache = new Map<string, any>();
+		this.cache = new Map<string, unknown>();
 
 		// Initialize cache from file
 		if (fs.existsSync(this.storagePath)) {
@@ -20,19 +21,30 @@ export class Memento{
 
 	private async flushIfNeeded(): Promise<void> {
 		if (this.dirty) {
-			const data = Object.fromEntries(this.cache);
-			await fs.promises.writeFile(this.storagePath, JSON.stringify(data, null, 2), 'utf8');
-			this.dirty = false;
+			// 将当前操作加入写入队列
+			this.writePromise = this.writePromise.then(async () => {
+				try {
+					// 再次检查dirty标志，因为可能在队列中等待时已被其他操作处理
+					if (this.dirty) {
+						this.dirty = false;
+						const data = Object.fromEntries(this.cache);
+						await fs.promises.writeFile(this.storagePath, JSON.stringify(data, null, 2), 'utf8');
+					}
+				} catch (error) {
+					console.error('Failed to write to storage file:', error);
+					// 即使出错也要重置Promise链，避免阻塞后续操作
+				}
+			});
+			return this.writePromise;
 		}
+		return Promise.resolve();
 	}
 
-	get<T>(key: string): T | undefined;
-	get<T>(key: string, defaultValue: T): T;
-	get(key: string, defaultValue?: any) {
+	get(key: string, defaultValue?: unknown) {
 		return this.cache.has(key) ? this.cache.get(key) : defaultValue;
 	}
 
-	update(key: string, value: any): Thenable<void> {
+	update(key: string, value: unknown): Thenable<void> {
 		const currentValue = this.cache.get(key);
 		if (currentValue !== value) {
 			this.cache.set(key, value);
@@ -58,9 +70,7 @@ export class Memento{
 		return this.flushIfNeeded();
 	}
 
-	getAll(): any {
+	getAll(): unknown {
 		return Object.fromEntries(this.cache);
 	}
-
-
 }
