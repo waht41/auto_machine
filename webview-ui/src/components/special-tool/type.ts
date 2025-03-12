@@ -1,5 +1,5 @@
 // 组件类型定义
-import React from "react";
+import React from 'react';
 
 export type ComponentRenderer = (tool: BaseTool) => React.ReactNode;
 

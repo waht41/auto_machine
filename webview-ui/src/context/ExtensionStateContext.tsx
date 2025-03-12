@@ -1,6 +1,6 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from "react"
-import { useEvent } from "react-use"
-import { ApiConfigMeta, ExtensionMessage, ExtensionState } from "../../../src/shared/ExtensionMessage"
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { useEvent } from 'react-use';
+import { ApiConfigMeta, ExtensionMessage, ExtensionState } from '../../../src/shared/ExtensionMessage';
 import {
 	ApiConfiguration,
 	ModelInfo,
@@ -8,15 +8,15 @@ import {
 	glamaDefaultModelInfo,
 	openRouterDefaultModelId,
 	openRouterDefaultModelInfo,
-} from "../../../src/shared/api"
-import { vscode } from "../utils/vscode"
-import { convertTextMateToHljs } from "../utils/textMateToHljs"
-import { findLastIndex } from "../../../src/shared/array"
-import { McpServer } from "../../../src/shared/mcp"
-import { checkExistKey } from "../../../src/shared/checkExistApiConfig"
-import { Mode, CustomModePrompts, defaultModeSlug, defaultPrompts, ModeConfig } from "../../../src/shared/modes"
-import { CustomSupportPrompts } from "../../../src/shared/support-prompt"
-import { IToolCategory } from "@core/tool-adapter/type";
+} from '../../../src/shared/api';
+import { vscode } from '../utils/vscode';
+import { convertTextMateToHljs } from '../utils/textMateToHljs';
+import { findLastIndex } from '../../../src/shared/array';
+import { McpServer } from '../../../src/shared/mcp';
+import { checkExistKey } from '../../../src/shared/checkExistApiConfig';
+import { Mode, CustomModePrompts, defaultModeSlug, defaultPrompts, ModeConfig } from '../../../src/shared/modes';
+import { CustomSupportPrompts } from '../../../src/shared/support-prompt';
+import { IToolCategory } from '@core/tool-adapter/type';
 
 export interface ExtensionStateContextType extends ExtensionState {
 	didHydrateState: boolean
@@ -70,11 +70,11 @@ export interface ExtensionStateContextType extends ExtensionState {
 	allowedTools: string[]
 }
 
-export const ExtensionStateContext = createContext<ExtensionStateContextType | undefined>(undefined)
+export const ExtensionStateContext = createContext<ExtensionStateContextType | undefined>(undefined);
 
 export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 	const [state, setState] = useState<ExtensionState>({
-		version: "",
+		version: '',
 		clineMessages: [],
 		taskHistory: [],
 		shouldShowAnnouncement: false,
@@ -83,161 +83,161 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		soundVolume: 0.5,
 		diffEnabled: false,
 		fuzzyMatchThreshold: 1.0,
-		preferredLanguage: "English",
+		preferredLanguage: 'English',
 		writeDelayMs: 1000,
-		browserViewportSize: "900x600",
+		browserViewportSize: '900x600',
 		screenshotQuality: 75,
 		terminalOutputLineLimit: 500,
 		mcpEnabled: true,
 		alwaysApproveResubmit: false,
 		requestDelaySeconds: 5,
-		currentApiConfigName: "default",
+		currentApiConfigName: 'default',
 		listApiConfigMeta: [],
 		mode: defaultModeSlug,
 		customModePrompts: defaultPrompts,
 		customSupportPrompts: {},
-		enhancementApiConfigId: "",
+		enhancementApiConfigId: '',
 		experimentalDiffStrategy: false,
 		autoApprovalEnabled: false,
 		customModes: [],
 		toolCategories: [],
 		allowedTools: [],
-	})
+	});
 
-	const [didHydrateState, setDidHydrateState] = useState(false)
-	const [showWelcome, setShowWelcome] = useState(false)
-	const [theme, setTheme] = useState<any>(undefined)
-	const [filePaths, setFilePaths] = useState<string[]>([])
+	const [didHydrateState, setDidHydrateState] = useState(false);
+	const [showWelcome, setShowWelcome] = useState(false);
+	const [theme, setTheme] = useState<any>(undefined);
+	const [filePaths, setFilePaths] = useState<string[]>([]);
 	const [glamaModels, setGlamaModels] = useState<Record<string, ModelInfo>>({
 		[glamaDefaultModelId]: glamaDefaultModelInfo,
-	})
+	});
 	const [openRouterModels, setOpenRouterModels] = useState<Record<string, ModelInfo>>({
 		[openRouterDefaultModelId]: openRouterDefaultModelInfo,
-	})
-	const [toolCategories, setToolCategories] = useState<IToolCategory[]>([])
-	const [allowedTools, setAllowedTools] = useState<string[]>([])
+	});
+	const [toolCategories, setToolCategories] = useState<IToolCategory[]>([]);
+	const [allowedTools, setAllowedTools] = useState<string[]>([]);
 
-	const [openAiModels, setOpenAiModels] = useState<string[]>([])
-	const [mcpServers, setMcpServers] = useState<McpServer[]>([])
+	const [openAiModels, setOpenAiModels] = useState<string[]>([]);
+	const [mcpServers, setMcpServers] = useState<McpServer[]>([]);
 
 	const setListApiConfigMeta = useCallback(
 		(value: ApiConfigMeta[]) => setState((prevState) => ({ ...prevState, listApiConfigMeta: value })),
 		[],
-	)
+	);
 
 	const onUpdateApiConfig = useCallback((apiConfig: ApiConfiguration) => {
 		setState((currentState) => {
 			vscode.postMessage({
-				type: "upsertApiConfiguration",
+				type: 'upsertApiConfiguration',
 				text: currentState.currentApiConfigName,
 				apiConfiguration: apiConfig,
-			})
-			return currentState // No state update needed
-		})
-	}, [])
+			});
+			return currentState; // No state update needed
+		});
+	}, []);
 
 	const handleInputChange = useCallback(
 		(field: keyof ApiConfiguration) => (event: any) => {
 			setState((currentState) => {
 				vscode.postMessage({
-					type: "upsertApiConfiguration",
+					type: 'upsertApiConfiguration',
 					text: currentState.currentApiConfigName,
 					apiConfiguration: { ...currentState.apiConfiguration, [field]: event.target.value },
-				})
-				return currentState // No state update needed
-			})
+				});
+				return currentState; // No state update needed
+			});
 		},
 		[],
-	)
+	);
 
 	const handleMessage = useCallback(
 		(event: MessageEvent) => {
-			const message: ExtensionMessage = event.data
+			const message: ExtensionMessage = event.data;
 			switch (message.type) {
-				case "state": {
-					const newState = message.state!
+				case 'state': {
+					const newState = message.state!;
 					setState((prevState) => ({
 						...prevState,
 						...newState,
-					}))
-					const config = newState.apiConfiguration
-					const hasKey = checkExistKey(config)
-					setShowWelcome(!hasKey)
-					setDidHydrateState(true)
-					break
+					}));
+					const config = newState.apiConfiguration;
+					const hasKey = checkExistKey(config);
+					setShowWelcome(!hasKey);
+					setDidHydrateState(true);
+					break;
 				}
-				case "theme": {
+				case 'theme': {
 					if (message.text) {
-						setTheme(convertTextMateToHljs(JSON.parse(message.text)))
+						setTheme(convertTextMateToHljs(JSON.parse(message.text)));
 					}
-					break
+					break;
 				}
-				case "workspaceUpdated": {
-					setFilePaths(message.filePaths ?? [])
-					break
+				case 'workspaceUpdated': {
+					setFilePaths(message.filePaths ?? []);
+					break;
 				}
-				case "partialMessage": {
-					const partialMessage = message.partialMessage!
+				case 'partialMessage': {
+					const partialMessage = message.partialMessage!;
 					setState((prevState) => {
 						// worth noting it will never be possible for a more up-to-date message to be sent here or in normal messages post since the presentAssistantContent function uses lock
-						const lastIndex = findLastIndex(prevState.clineMessages, (msg) => msg.ts === partialMessage.ts)
+						const lastIndex = findLastIndex(prevState.clineMessages, (msg) => msg.ts === partialMessage.ts);
 						if (lastIndex !== -1) {
-							const newClineMessages = [...prevState.clineMessages]
-							newClineMessages[lastIndex] = partialMessage
-							return { ...prevState, clineMessages: newClineMessages }
+							const newClineMessages = [...prevState.clineMessages];
+							newClineMessages[lastIndex] = partialMessage;
+							return { ...prevState, clineMessages: newClineMessages };
 						}
-						return prevState
-					})
-					break
+						return prevState;
+					});
+					break;
 				}
-				case "glamaModels": {
-					const updatedModels = message.glamaModels ?? {}
+				case 'glamaModels': {
+					const updatedModels = message.glamaModels ?? {};
 					setGlamaModels({
 						[glamaDefaultModelId]: glamaDefaultModelInfo, // in case the extension sent a model list without the default model
 						...updatedModels,
-					})
-					break
+					});
+					break;
 				}
-				case "openRouterModels": {
-					const updatedModels = message.openRouterModels ?? {}
+				case 'openRouterModels': {
+					const updatedModels = message.openRouterModels ?? {};
 					setOpenRouterModels({
 						[openRouterDefaultModelId]: openRouterDefaultModelInfo, // in case the extension sent a model list without the default model
 						...updatedModels,
-					})
-					break
+					});
+					break;
 				}
-				case "openAiModels": {
-					const updatedModels = message.openAiModels ?? []
-					setOpenAiModels(updatedModels)
-					break
+				case 'openAiModels': {
+					const updatedModels = message.openAiModels ?? [];
+					setOpenAiModels(updatedModels);
+					break;
 				}
-				case "mcpServers": {
-					setMcpServers(message.mcpServers ?? [])
-					break
+				case 'mcpServers': {
+					setMcpServers(message.mcpServers ?? []);
+					break;
 				}
-				case "listApiConfig": {
-					setListApiConfigMeta(message.listApiConfig ?? [])
-					break
+				case 'listApiConfig': {
+					setListApiConfigMeta(message.listApiConfig ?? []);
+					break;
 				}
-				case "toolCategories": {
-					console.log('[waht]','toolCategories',message.toolCategories)
-					setToolCategories(message.toolCategories ?? [])
-					break
+				case 'toolCategories': {
+					console.log('[waht]','toolCategories',message.toolCategories);
+					setToolCategories(message.toolCategories ?? []);
+					break;
 				}
-				case "allowedTools": {
-					setAllowedTools(message.allowedTools ?? [])
-					break
+				case 'allowedTools': {
+					setAllowedTools(message.allowedTools ?? []);
+					break;
 				}
 			}
 		},
 		[setListApiConfigMeta],
-	)
+	);
 
-	useEvent("message", handleMessage)
+	useEvent('message', handleMessage);
 
 	useEffect(() => {
-		vscode.postMessage({ type: "webviewDidLaunch" })
-	}, [])
+		vscode.postMessage({ type: 'webviewDidLaunch' });
+	}, []);
 
 	const contextValue: ExtensionStateContextType = {
 		...state,
@@ -262,7 +262,7 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 				apiConfiguration: value,
 			})),
 		setCustomInstructions: (value) => setState((prevState) => ({ ...prevState, customInstructions: value })),
-    setAlwaysAllowMcp: (value) => setState((prevState) => ({ ...prevState, alwaysAllowMcp: value })),
+		setAlwaysAllowMcp: (value) => setState((prevState) => ({ ...prevState, alwaysAllowMcp: value })),
 		setShowAnnouncement: (value) => setState((prevState) => ({ ...prevState, shouldShowAnnouncement: value })),
 		setAllowedCommands: (value) => setState((prevState) => ({ ...prevState, allowedCommands: value })),
 		setSoundEnabled: (value) => setState((prevState) => ({ ...prevState, soundEnabled: value })),
@@ -292,15 +292,15 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		setAutoApprovalEnabled: (value) => setState((prevState) => ({ ...prevState, autoApprovalEnabled: value })),
 		handleInputChange,
 		setCustomModes: (value) => setState((prevState) => ({ ...prevState, customModes: value })),
-	}
+	};
 
-	return <ExtensionStateContext.Provider value={contextValue}>{children}</ExtensionStateContext.Provider>
-}
+	return <ExtensionStateContext.Provider value={contextValue}>{children}</ExtensionStateContext.Provider>;
+};
 
 export const useExtensionState = () => {
-	const context = useContext(ExtensionStateContext)
+	const context = useContext(ExtensionStateContext);
 	if (context === undefined) {
-		throw new Error("useExtensionState must be used within an ExtensionStateContextProvider")
+		throw new Error('useExtensionState must be used within an ExtensionStateContextProvider');
 	}
-	return context
-}
+	return context;
+};

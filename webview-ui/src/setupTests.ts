@@ -1,19 +1,19 @@
-import "@testing-library/jest-dom"
+import '@testing-library/jest-dom';
 
 // Mock crypto.getRandomValues
-Object.defineProperty(window, "crypto", {
+Object.defineProperty(window, 'crypto', {
 	value: {
 		getRandomValues: function (buffer: Uint8Array) {
 			for (let i = 0; i < buffer.length; i++) {
-				buffer[i] = Math.floor(Math.random() * 256)
+				buffer[i] = Math.floor(Math.random() * 256);
 			}
-			return buffer
+			return buffer;
 		},
 	},
-})
+});
 
 // Mock matchMedia
-Object.defineProperty(window, "matchMedia", {
+Object.defineProperty(window, 'matchMedia', {
 	writable: true,
 	value: jest.fn().mockImplementation((query) => ({
 		matches: false,
@@ -25,4 +25,4 @@ Object.defineProperty(window, "matchMedia", {
 		removeEventListener: jest.fn(),
 		dispatchEvent: jest.fn(),
 	})),
-})
+});

@@ -1,12 +1,12 @@
-import React from "react"
-import { render, waitFor } from "@testing-library/react"
-import ChatView from "../ChatView"
-import { ExtensionStateContextProvider } from "../../../context/ExtensionStateContext"
-import { vscode } from "../../../utils/vscode"
+import React from 'react';
+import { render, waitFor } from '@testing-library/react';
+import ChatView from '../ChatView';
+import { ExtensionStateContextProvider } from '../../../context/ExtensionStateContext';
+import { vscode } from '../../../utils/vscode';
 
 // Define minimal types needed for testing
 interface ClineMessage {
-	type: "say" | "ask"
+	type: 'say' | 'ask'
 	say?: string
 	ask?: string
 	ts: number
@@ -25,31 +25,31 @@ interface ExtensionState {
 }
 
 // Mock vscode API
-jest.mock("../../../utils/vscode", () => ({
+jest.mock('../../../utils/vscode', () => ({
 	vscode: {
 		postMessage: jest.fn(),
 	},
-}))
+}));
 
 // Mock components that use ESM dependencies
-jest.mock("../BrowserSessionRow", () => ({
+jest.mock('../BrowserSessionRow', () => ({
 	__esModule: true,
 	default: function MockBrowserSessionRow({ messages }: { messages: ClineMessage[] }) {
-		return <div data-testid="browser-session">{JSON.stringify(messages)}</div>
+		return <div data-testid="browser-session">{JSON.stringify(messages)}</div>;
 	},
-}))
+}));
 
-jest.mock("../ChatRow", () => ({
+jest.mock('../ChatRow', () => ({
 	__esModule: true,
 	default: function MockChatRow({ message }: { message: ClineMessage }) {
-		return <div data-testid="chat-row">{JSON.stringify(message)}</div>
+		return <div data-testid="chat-row">{JSON.stringify(message)}</div>;
 	},
-}))
+}));
 
-jest.mock("../AutoApproveMenu", () => ({
+jest.mock('../AutoApproveMenu', () => ({
 	__esModule: true,
 	default: () => null,
-}))
+}));
 
 interface ChatTextAreaProps {
 	onSend: (value: string) => void
@@ -60,8 +60,8 @@ interface ChatTextAreaProps {
 	shouldDisableImages?: boolean
 }
 
-jest.mock("../ChatTextArea", () => {
-	const mockReact = require("react")
+jest.mock('../ChatTextArea', () => {
+	const mockReact = require('react');
 	return {
 		__esModule: true,
 		default: mockReact.forwardRef(function MockChatTextArea(
@@ -72,20 +72,20 @@ jest.mock("../ChatTextArea", () => {
 				<div data-testid="chat-textarea">
 					<input ref={ref} type="text" onChange={(e) => props.onSend(e.target.value)} />
 				</div>
-			)
+			);
 		}),
-	}
-})
+	};
+});
 
-jest.mock("../TaskHeader", () => ({
+jest.mock('../TaskHeader', () => ({
 	__esModule: true,
 	default: function MockTaskHeader({ task }: { task: ClineMessage }) {
-		return <div data-testid="task-header">{JSON.stringify(task)}</div>
+		return <div data-testid="task-header">{JSON.stringify(task)}</div>;
 	},
-}))
+}));
 
 // Mock VSCode components
-jest.mock("@vscode/webview-ui-toolkit/react", () => ({
+jest.mock('@vscode/webview-ui-toolkit/react', () => ({
 	VSCodeButton: function MockVSCodeButton({
 		children,
 		onClick,
@@ -99,7 +99,7 @@ jest.mock("@vscode/webview-ui-toolkit/react", () => ({
 			<button onClick={onClick} data-appearance={appearance}>
 				{children}
 			</button>
-		)
+		);
 	},
 	VSCodeTextField: function MockVSCodeTextField({
 		value,
@@ -117,20 +117,20 @@ jest.mock("@vscode/webview-ui-toolkit/react", () => ({
 				onChange={(e) => onInput?.({ target: { value: e.target.value } })}
 				placeholder={placeholder}
 			/>
-		)
+		);
 	},
 	VSCodeLink: function MockVSCodeLink({ children, href }: { children: React.ReactNode; href?: string }) {
-		return <a href={href}>{children}</a>
+		return <a href={href}>{children}</a>;
 	},
-}))
+}));
 
 // Mock window.postMessage to trigger state hydration
 const mockPostMessage = (state: Partial<ExtensionState>) => {
 	window.postMessage(
 		{
-			type: "state",
+			type: 'state',
 			state: {
-				version: "1.0.0",
+				version: '1.0.0',
 				clineMessages: [],
 				taskHistory: [],
 				shouldShowAnnouncement: false,
@@ -139,16 +139,16 @@ const mockPostMessage = (state: Partial<ExtensionState>) => {
 				...state,
 			},
 		},
-		"*",
-	)
-}
+		'*',
+	);
+};
 
-describe("ChatView - Auto Approval Tests", () => {
+describe('ChatView - Auto Approval Tests', () => {
 	beforeEach(() => {
-		jest.clearAllMocks()
-	})
+		jest.clearAllMocks();
+	});
 
-	it("does not auto-approve any actions when autoApprovalEnabled is false", () => {
+	it('does not auto-approve any actions when autoApprovalEnabled is false', () => {
 		render(
 			<ExtensionStateContextProvider>
 				<ChatView
@@ -158,7 +158,7 @@ describe("ChatView - Auto Approval Tests", () => {
 					showHistoryView={() => {}}
 				/>
 			</ExtensionStateContextProvider>,
-		)
+		);
 
 		// First hydrate state with initial task
 		mockPostMessage({
@@ -167,36 +167,36 @@ describe("ChatView - Auto Approval Tests", () => {
 			alwaysAllowReadOnly: true,
 			alwaysAllowWrite: true,
 			alwaysAllowExecute: true,
-			allowedCommands: ["npm test"],
+			allowedCommands: ['npm test'],
 			clineMessages: [
 				{
-					type: "say",
-					say: "task",
+					type: 'say',
+					say: 'task',
 					ts: Date.now() - 2000,
-					text: "Initial task",
+					text: 'Initial task',
 				},
 			],
-		})
+		});
 
 		// Test various types of actions that should not be auto-approved
 		const testCases = [
 			{
-				ask: "browser_action_launch",
-				text: JSON.stringify({ action: "launch", url: "http://example.com" }),
+				ask: 'browser_action_launch',
+				text: JSON.stringify({ action: 'launch', url: 'http://example.com' }),
 			},
 			{
-				ask: "tool",
-				text: JSON.stringify({ tool: "readFile", path: "test.txt" }),
+				ask: 'tool',
+				text: JSON.stringify({ tool: 'readFile', path: 'test.txt' }),
 			},
 			{
-				ask: "tool",
-				text: JSON.stringify({ tool: "editedExistingFile", path: "test.txt" }),
+				ask: 'tool',
+				text: JSON.stringify({ tool: 'editedExistingFile', path: 'test.txt' }),
 			},
 			{
-				ask: "command",
-				text: "npm test",
+				ask: 'command',
+				text: 'npm test',
 			},
-		]
+		];
 
 		testCases.forEach((testCase) => {
 			mockPostMessage({
@@ -205,33 +205,33 @@ describe("ChatView - Auto Approval Tests", () => {
 				alwaysAllowReadOnly: true,
 				alwaysAllowWrite: true,
 				alwaysAllowExecute: true,
-				allowedCommands: ["npm test"],
+				allowedCommands: ['npm test'],
 				clineMessages: [
 					{
-						type: "say",
-						say: "task",
+						type: 'say',
+						say: 'task',
 						ts: Date.now() - 2000,
-						text: "Initial task",
+						text: 'Initial task',
 					},
 					{
-						type: "ask",
+						type: 'ask',
 						ask: testCase.ask,
 						ts: Date.now(),
 						text: testCase.text,
 						partial: false,
 					},
 				],
-			})
+			});
 
 			// Verify no auto-approval message was sent
 			expect(vscode.postMessage).not.toHaveBeenCalledWith({
-				type: "askResponse",
-				askResponse: "yesButtonClicked",
-			})
-		})
-	})
+				type: 'askResponse',
+				askResponse: 'yesButtonClicked',
+			});
+		});
+	});
 
-	it("auto-approves browser actions when alwaysAllowBrowser is enabled", async () => {
+	it('auto-approves browser actions when alwaysAllowBrowser is enabled', async () => {
 		render(
 			<ExtensionStateContextProvider>
 				<ChatView
@@ -241,7 +241,7 @@ describe("ChatView - Auto Approval Tests", () => {
 					showHistoryView={() => {}}
 				/>
 			</ExtensionStateContextProvider>,
-		)
+		);
 
 		// First hydrate state with initial task
 		mockPostMessage({
@@ -249,13 +249,13 @@ describe("ChatView - Auto Approval Tests", () => {
 			alwaysAllowBrowser: true,
 			clineMessages: [
 				{
-					type: "say",
-					say: "task",
+					type: 'say',
+					say: 'task',
 					ts: Date.now() - 2000,
-					text: "Initial task",
+					text: 'Initial task',
 				},
 			],
-		})
+		});
 
 		// Then send the browser action ask message
 		mockPostMessage({
@@ -263,31 +263,31 @@ describe("ChatView - Auto Approval Tests", () => {
 			alwaysAllowBrowser: true,
 			clineMessages: [
 				{
-					type: "say",
-					say: "task",
+					type: 'say',
+					say: 'task',
 					ts: Date.now() - 2000,
-					text: "Initial task",
+					text: 'Initial task',
 				},
 				{
-					type: "ask",
-					ask: "browser_action_launch",
+					type: 'ask',
+					ask: 'browser_action_launch',
 					ts: Date.now(),
-					text: JSON.stringify({ action: "launch", url: "http://example.com" }),
+					text: JSON.stringify({ action: 'launch', url: 'http://example.com' }),
 					partial: false,
 				},
 			],
-		})
+		});
 
 		// Wait for the auto-approval message
 		await waitFor(() => {
 			expect(vscode.postMessage).toHaveBeenCalledWith({
-				type: "askResponse",
-				askResponse: "yesButtonClicked",
-			})
-		})
-	})
+				type: 'askResponse',
+				askResponse: 'yesButtonClicked',
+			});
+		});
+	});
 
-	it("auto-approves read-only tools when alwaysAllowReadOnly is enabled", async () => {
+	it('auto-approves read-only tools when alwaysAllowReadOnly is enabled', async () => {
 		render(
 			<ExtensionStateContextProvider>
 				<ChatView
@@ -297,7 +297,7 @@ describe("ChatView - Auto Approval Tests", () => {
 					showHistoryView={() => {}}
 				/>
 			</ExtensionStateContextProvider>,
-		)
+		);
 
 		// First hydrate state with initial task
 		mockPostMessage({
@@ -305,13 +305,13 @@ describe("ChatView - Auto Approval Tests", () => {
 			alwaysAllowReadOnly: true,
 			clineMessages: [
 				{
-					type: "say",
-					say: "task",
+					type: 'say',
+					say: 'task',
 					ts: Date.now() - 2000,
-					text: "Initial task",
+					text: 'Initial task',
 				},
 			],
-		})
+		});
 
 		// Then send the read-only tool ask message
 		mockPostMessage({
@@ -319,32 +319,32 @@ describe("ChatView - Auto Approval Tests", () => {
 			alwaysAllowReadOnly: true,
 			clineMessages: [
 				{
-					type: "say",
-					say: "task",
+					type: 'say',
+					say: 'task',
 					ts: Date.now() - 2000,
-					text: "Initial task",
+					text: 'Initial task',
 				},
 				{
-					type: "ask",
-					ask: "tool",
+					type: 'ask',
+					ask: 'tool',
 					ts: Date.now(),
-					text: JSON.stringify({ tool: "readFile", path: "test.txt" }),
+					text: JSON.stringify({ tool: 'readFile', path: 'test.txt' }),
 					partial: false,
 				},
 			],
-		})
+		});
 
 		// Wait for the auto-approval message
 		await waitFor(() => {
 			expect(vscode.postMessage).toHaveBeenCalledWith({
-				type: "askResponse",
-				askResponse: "yesButtonClicked",
-			})
-		})
-	})
+				type: 'askResponse',
+				askResponse: 'yesButtonClicked',
+			});
+		});
+	});
 
-	describe("Write Tool Auto-Approval Tests", () => {
-		it("auto-approves write tools when alwaysAllowWrite is enabled and message is a tool request", async () => {
+	describe('Write Tool Auto-Approval Tests', () => {
+		it('auto-approves write tools when alwaysAllowWrite is enabled and message is a tool request', async () => {
 			render(
 				<ExtensionStateContextProvider>
 					<ChatView
@@ -354,7 +354,7 @@ describe("ChatView - Auto Approval Tests", () => {
 						showHistoryView={() => {}}
 					/>
 				</ExtensionStateContextProvider>,
-			)
+			);
 
 			// First hydrate state with initial task
 			mockPostMessage({
@@ -363,13 +363,13 @@ describe("ChatView - Auto Approval Tests", () => {
 				writeDelayMs: 0,
 				clineMessages: [
 					{
-						type: "say",
-						say: "task",
+						type: 'say',
+						say: 'task',
 						ts: Date.now() - 2000,
-						text: "Initial task",
+						text: 'Initial task',
 					},
 				],
-			})
+			});
 
 			// Then send the write tool ask message
 			mockPostMessage({
@@ -378,31 +378,31 @@ describe("ChatView - Auto Approval Tests", () => {
 				writeDelayMs: 0,
 				clineMessages: [
 					{
-						type: "say",
-						say: "task",
+						type: 'say',
+						say: 'task',
 						ts: Date.now() - 2000,
-						text: "Initial task",
+						text: 'Initial task',
 					},
 					{
-						type: "ask",
-						ask: "tool",
+						type: 'ask',
+						ask: 'tool',
 						ts: Date.now(),
-						text: JSON.stringify({ tool: "editedExistingFile", path: "test.txt" }),
+						text: JSON.stringify({ tool: 'editedExistingFile', path: 'test.txt' }),
 						partial: false,
 					},
 				],
-			})
+			});
 
 			// Wait for the auto-approval message
 			await waitFor(() => {
 				expect(vscode.postMessage).toHaveBeenCalledWith({
-					type: "askResponse",
-					askResponse: "yesButtonClicked",
-				})
-			})
-		})
+					type: 'askResponse',
+					askResponse: 'yesButtonClicked',
+				});
+			});
+		});
 
-		it("does not auto-approve write operations when alwaysAllowWrite is enabled but message is not a tool request", () => {
+		it('does not auto-approve write operations when alwaysAllowWrite is enabled but message is not a tool request', () => {
 			render(
 				<ExtensionStateContextProvider>
 					<ChatView
@@ -412,7 +412,7 @@ describe("ChatView - Auto Approval Tests", () => {
 						showHistoryView={() => {}}
 					/>
 				</ExtensionStateContextProvider>,
-			)
+			);
 
 			// First hydrate state with initial task
 			mockPostMessage({
@@ -420,13 +420,13 @@ describe("ChatView - Auto Approval Tests", () => {
 				alwaysAllowWrite: true,
 				clineMessages: [
 					{
-						type: "say",
-						say: "task",
+						type: 'say',
+						say: 'task',
 						ts: Date.now() - 2000,
-						text: "Initial task",
+						text: 'Initial task',
 					},
 				],
-			})
+			});
 
 			// Then send a non-tool write operation message
 			mockPostMessage({
@@ -434,30 +434,30 @@ describe("ChatView - Auto Approval Tests", () => {
 				alwaysAllowWrite: true,
 				clineMessages: [
 					{
-						type: "say",
-						say: "task",
+						type: 'say',
+						say: 'task',
 						ts: Date.now() - 2000,
-						text: "Initial task",
+						text: 'Initial task',
 					},
 					{
-						type: "ask",
-						ask: "write_operation",
+						type: 'ask',
+						ask: 'write_operation',
 						ts: Date.now(),
-						text: JSON.stringify({ path: "test.txt", content: "test content" }),
+						text: JSON.stringify({ path: 'test.txt', content: 'test content' }),
 						partial: false,
 					},
 				],
-			})
+			});
 
 			// Verify no auto-approval message was sent
 			expect(vscode.postMessage).not.toHaveBeenCalledWith({
-				type: "askResponse",
-				askResponse: "yesButtonClicked",
-			})
-		})
-	})
+				type: 'askResponse',
+				askResponse: 'yesButtonClicked',
+			});
+		});
+	});
 
-	it("auto-approves allowed commands when alwaysAllowExecute is enabled", async () => {
+	it('auto-approves allowed commands when alwaysAllowExecute is enabled', async () => {
 		render(
 			<ExtensionStateContextProvider>
 				<ChatView
@@ -467,55 +467,55 @@ describe("ChatView - Auto Approval Tests", () => {
 					showHistoryView={() => {}}
 				/>
 			</ExtensionStateContextProvider>,
-		)
+		);
 
 		// First hydrate state with initial task
 		mockPostMessage({
 			autoApprovalEnabled: true,
 			alwaysAllowExecute: true,
-			allowedCommands: ["npm test"],
+			allowedCommands: ['npm test'],
 			clineMessages: [
 				{
-					type: "say",
-					say: "task",
+					type: 'say',
+					say: 'task',
 					ts: Date.now() - 2000,
-					text: "Initial task",
+					text: 'Initial task',
 				},
 			],
-		})
+		});
 
 		// Then send the command ask message
 		mockPostMessage({
 			autoApprovalEnabled: true,
 			alwaysAllowExecute: true,
-			allowedCommands: ["npm test"],
+			allowedCommands: ['npm test'],
 			clineMessages: [
 				{
-					type: "say",
-					say: "task",
+					type: 'say',
+					say: 'task',
 					ts: Date.now() - 2000,
-					text: "Initial task",
+					text: 'Initial task',
 				},
 				{
-					type: "ask",
-					ask: "command",
+					type: 'ask',
+					ask: 'command',
 					ts: Date.now(),
-					text: "npm test",
+					text: 'npm test',
 					partial: false,
 				},
 			],
-		})
+		});
 
 		// Wait for the auto-approval message
 		await waitFor(() => {
 			expect(vscode.postMessage).toHaveBeenCalledWith({
-				type: "askResponse",
-				askResponse: "yesButtonClicked",
-			})
-		})
-	})
+				type: 'askResponse',
+				askResponse: 'yesButtonClicked',
+			});
+		});
+	});
 
-	it("does not auto-approve disallowed commands even when alwaysAllowExecute is enabled", () => {
+	it('does not auto-approve disallowed commands even when alwaysAllowExecute is enabled', () => {
 		render(
 			<ExtensionStateContextProvider>
 				<ChatView
@@ -525,54 +525,54 @@ describe("ChatView - Auto Approval Tests", () => {
 					showHistoryView={() => {}}
 				/>
 			</ExtensionStateContextProvider>,
-		)
+		);
 
 		// First hydrate state with initial task
 		mockPostMessage({
 			autoApprovalEnabled: true,
 			alwaysAllowExecute: true,
-			allowedCommands: ["npm test"],
+			allowedCommands: ['npm test'],
 			clineMessages: [
 				{
-					type: "say",
-					say: "task",
+					type: 'say',
+					say: 'task',
 					ts: Date.now() - 2000,
-					text: "Initial task",
+					text: 'Initial task',
 				},
 			],
-		})
+		});
 
 		// Then send the disallowed command ask message
 		mockPostMessage({
 			autoApprovalEnabled: true,
 			alwaysAllowExecute: true,
-			allowedCommands: ["npm test"],
+			allowedCommands: ['npm test'],
 			clineMessages: [
 				{
-					type: "say",
-					say: "task",
+					type: 'say',
+					say: 'task',
 					ts: Date.now() - 2000,
-					text: "Initial task",
+					text: 'Initial task',
 				},
 				{
-					type: "ask",
-					ask: "command",
+					type: 'ask',
+					ask: 'command',
 					ts: Date.now(),
-					text: "rm -rf /",
+					text: 'rm -rf /',
 					partial: false,
 				},
 			],
-		})
+		});
 
 		// Verify no auto-approval message was sent
 		expect(vscode.postMessage).not.toHaveBeenCalledWith({
-			type: "askResponse",
-			askResponse: "yesButtonClicked",
-		})
-	})
+			type: 'askResponse',
+			askResponse: 'yesButtonClicked',
+		});
+	});
 
-	describe("Command Chaining Tests", () => {
-		it("auto-approves chained commands when all parts are allowed", async () => {
+	describe('Command Chaining Tests', () => {
+		it('auto-approves chained commands when all parts are allowed', async () => {
 			render(
 				<ExtensionStateContextProvider>
 					<ChatView
@@ -582,72 +582,72 @@ describe("ChatView - Auto Approval Tests", () => {
 						showHistoryView={() => {}}
 					/>
 				</ExtensionStateContextProvider>,
-			)
+			);
 
 			// Test various allowed command chaining scenarios
 			const allowedChainedCommands = [
-				"npm test && npm run build",
-				"npm test; npm run build",
-				"npm test || npm run build",
-				"npm test | npm run build",
+				'npm test && npm run build',
+				'npm test; npm run build',
+				'npm test || npm run build',
+				'npm test | npm run build',
 				// Add test for quoted pipes which should be treated as part of the command, not as a chain operator
 				'echo "hello | world"',
 				'npm test "param with | inside" && npm run build',
 				// PowerShell command with Select-String
 				'npm test 2>&1 | Select-String -NotMatch "node_modules" | Select-String "FAIL|Error"',
-			]
+			];
 
 			for (const command of allowedChainedCommands) {
-				jest.clearAllMocks()
+				jest.clearAllMocks();
 
 				// First hydrate state with initial task
 				mockPostMessage({
 					autoApprovalEnabled: true,
 					alwaysAllowExecute: true,
-					allowedCommands: ["npm test", "npm run build", "echo", "Select-String"],
+					allowedCommands: ['npm test', 'npm run build', 'echo', 'Select-String'],
 					clineMessages: [
 						{
-							type: "say",
-							say: "task",
+							type: 'say',
+							say: 'task',
 							ts: Date.now() - 2000,
-							text: "Initial task",
+							text: 'Initial task',
 						},
 					],
-				})
+				});
 
 				// Then send the chained command ask message
 				mockPostMessage({
 					autoApprovalEnabled: true,
 					alwaysAllowExecute: true,
-					allowedCommands: ["npm test", "npm run build", "echo", "Select-String"],
+					allowedCommands: ['npm test', 'npm run build', 'echo', 'Select-String'],
 					clineMessages: [
 						{
-							type: "say",
-							say: "task",
+							type: 'say',
+							say: 'task',
 							ts: Date.now() - 2000,
-							text: "Initial task",
+							text: 'Initial task',
 						},
 						{
-							type: "ask",
-							ask: "command",
+							type: 'ask',
+							ask: 'command',
 							ts: Date.now(),
 							text: command,
 							partial: false,
 						},
 					],
-				})
+				});
 
 				// Wait for the auto-approval message
 				await waitFor(() => {
 					expect(vscode.postMessage).toHaveBeenCalledWith({
-						type: "askResponse",
-						askResponse: "yesButtonClicked",
-					})
-				})
+						type: 'askResponse',
+						askResponse: 'yesButtonClicked',
+					});
+				});
 			}
-		})
+		});
 
-		it("does not auto-approve chained commands when any part is disallowed", () => {
+		it('does not auto-approve chained commands when any part is disallowed', () => {
 			render(
 				<ExtensionStateContextProvider>
 					<ChatView
@@ -657,69 +657,69 @@ describe("ChatView - Auto Approval Tests", () => {
 						showHistoryView={() => {}}
 					/>
 				</ExtensionStateContextProvider>,
-			)
+			);
 
 			// Test various command chaining scenarios with disallowed parts
 			const disallowedChainedCommands = [
-				"npm test && rm -rf /",
-				"npm test; rm -rf /",
-				"npm test || rm -rf /",
-				"npm test | rm -rf /",
+				'npm test && rm -rf /',
+				'npm test; rm -rf /',
+				'npm test || rm -rf /',
+				'npm test | rm -rf /',
 				// Test subshell execution using $() and backticks
-				"npm test $(echo dangerous)",
-				"npm test `echo dangerous`",
+				'npm test $(echo dangerous)',
+				'npm test `echo dangerous`',
 				// Test unquoted pipes with disallowed commands
-				"npm test | rm -rf /",
+				'npm test | rm -rf /',
 				// Test PowerShell command with disallowed parts
 				'npm test 2>&1 | Select-String -NotMatch "node_modules" | rm -rf /',
-			]
+			];
 
 			disallowedChainedCommands.forEach((command) => {
 				// First hydrate state with initial task
 				mockPostMessage({
 					alwaysAllowExecute: true,
-					allowedCommands: ["npm test", "Select-String"],
+					allowedCommands: ['npm test', 'Select-String'],
 					clineMessages: [
 						{
-							type: "say",
-							say: "task",
+							type: 'say',
+							say: 'task',
 							ts: Date.now() - 2000,
-							text: "Initial task",
+							text: 'Initial task',
 						},
 					],
-				})
+				});
 
 				// Then send the chained command ask message
 				mockPostMessage({
 					autoApprovalEnabled: true,
 					alwaysAllowExecute: true,
-					allowedCommands: ["npm test", "Select-String"],
+					allowedCommands: ['npm test', 'Select-String'],
 					clineMessages: [
 						{
-							type: "say",
-							say: "task",
+							type: 'say',
+							say: 'task',
 							ts: Date.now() - 2000,
-							text: "Initial task",
+							text: 'Initial task',
 						},
 						{
-							type: "ask",
-							ask: "command",
+							type: 'ask',
+							ask: 'command',
 							ts: Date.now(),
 							text: command,
 							partial: false,
 						},
 					],
-				})
+				});
 
 				// Verify no auto-approval message was sent for chained commands with disallowed parts
 				expect(vscode.postMessage).not.toHaveBeenCalledWith({
-					type: "askResponse",
-					askResponse: "yesButtonClicked",
-				})
-			})
-		})
+					type: 'askResponse',
+					askResponse: 'yesButtonClicked',
+				});
+			});
+		});
 
-		it("handles complex PowerShell command chains correctly", async () => {
+		it('handles complex PowerShell command chains correctly', async () => {
 			render(
 				<ExtensionStateContextProvider>
 					<ChatView
@@ -729,7 +729,7 @@ describe("ChatView - Auto Approval Tests", () => {
 						showHistoryView={() => {}}
 					/>
 				</ExtensionStateContextProvider>,
-			)
+			);
 
 			// Test PowerShell specific command chains
 			const powershellCommands = {
@@ -743,109 +743,109 @@ describe("ChatView - Auto Approval Tests", () => {
 					'npm test 2>&1 | Select-String "FAIL|Error" && del /F /Q *',
 					'npm test 2>&1 | Select-String -NotMatch "node_modules" | Remove-Item -Recurse',
 				],
-			}
+			};
 
 			// Test allowed PowerShell commands
 			for (const command of powershellCommands.allowed) {
-				jest.clearAllMocks()
+				jest.clearAllMocks();
 
 				mockPostMessage({
 					autoApprovalEnabled: true,
 					alwaysAllowExecute: true,
-					allowedCommands: ["npm test", "Select-String"],
+					allowedCommands: ['npm test', 'Select-String'],
 					clineMessages: [
 						{
-							type: "say",
-							say: "task",
+							type: 'say',
+							say: 'task',
 							ts: Date.now() - 2000,
-							text: "Initial task",
+							text: 'Initial task',
 						},
 					],
-				})
+				});
 
 				mockPostMessage({
 					autoApprovalEnabled: true,
 					alwaysAllowExecute: true,
-					allowedCommands: ["npm test", "Select-String"],
+					allowedCommands: ['npm test', 'Select-String'],
 					clineMessages: [
 						{
-							type: "say",
-							say: "task",
+							type: 'say',
+							say: 'task',
 							ts: Date.now() - 2000,
-							text: "Initial task",
+							text: 'Initial task',
 						},
 						{
-							type: "ask",
-							ask: "command",
+							type: 'ask',
+							ask: 'command',
 							ts: Date.now(),
 							text: command,
 							partial: false,
 						},
 					],
-				})
+				});
 
 				await waitFor(() => {
 					expect(vscode.postMessage).toHaveBeenCalledWith({
-						type: "askResponse",
-						askResponse: "yesButtonClicked",
-					})
-				})
+						type: 'askResponse',
+						askResponse: 'yesButtonClicked',
+					});
+				});
 			}
 
 			// Test disallowed PowerShell commands
 			for (const command of powershellCommands.disallowed) {
-				jest.clearAllMocks()
+				jest.clearAllMocks();
 
 				mockPostMessage({
 					autoApprovalEnabled: true,
 					alwaysAllowExecute: true,
-					allowedCommands: ["npm test", "Select-String"],
+					allowedCommands: ['npm test', 'Select-String'],
 					clineMessages: [
 						{
-							type: "say",
-							say: "task",
+							type: 'say',
+							say: 'task',
 							ts: Date.now() - 2000,
-							text: "Initial task",
+							text: 'Initial task',
 						},
 					],
-				})
+				});
 
 				mockPostMessage({
 					autoApprovalEnabled: true,
 					alwaysAllowExecute: true,
-					allowedCommands: ["npm test", "Select-String"],
+					allowedCommands: ['npm test', 'Select-String'],
 					clineMessages: [
 						{
-							type: "say",
-							say: "task",
+							type: 'say',
+							say: 'task',
 							ts: Date.now() - 2000,
-							text: "Initial task",
+							text: 'Initial task',
 						},
 						{
-							type: "ask",
-							ask: "command",
+							type: 'ask',
+							ask: 'command',
 							ts: Date.now(),
 							text: command,
 							partial: false,
 						},
 					],
-				})
+				});
 
 				expect(vscode.postMessage).not.toHaveBeenCalledWith({
-					type: "askResponse",
-					askResponse: "yesButtonClicked",
-				})
+					type: 'askResponse',
+					askResponse: 'yesButtonClicked',
+				});
 			}
-		})
-	})
-})
+		});
+	});
+});
 
-describe("ChatView - Sound Playing Tests", () => {
+describe('ChatView - Sound Playing Tests', () => {
 	beforeEach(() => {
-		jest.clearAllMocks()
-	})
+		jest.clearAllMocks();
+	});
 
-	it("does not play sound for auto-approved browser actions", async () => {
+	it('does not play sound for auto-approved browser actions', async () => {
 		render(
 			<ExtensionStateContextProvider>
 				<ChatView
@@ -855,7 +855,7 @@ describe("ChatView - Sound Playing Tests", () => {
 					showHistoryView={() => {}}
 				/>
 			</ExtensionStateContextProvider>,
-		)
+		);
 
 		// First hydrate state with initial task and streaming
 		mockPostMessage({
@@ -863,20 +863,20 @@ describe("ChatView - Sound Playing Tests", () => {
 			alwaysAllowBrowser: true,
 			clineMessages: [
 				{
-					type: "say",
-					say: "task",
+					type: 'say',
+					say: 'task',
 					ts: Date.now() - 2000,
-					text: "Initial task",
+					text: 'Initial task',
 				},
 				{
-					type: "say",
-					say: "api_req_started",
+					type: 'say',
+					say: 'api_req_started',
 					ts: Date.now() - 1000,
 					text: JSON.stringify({}),
 					partial: true,
 				},
 			],
-		})
+		});
 
 		// Then send the browser action ask message (streaming finished)
 		mockPostMessage({
@@ -884,29 +884,29 @@ describe("ChatView - Sound Playing Tests", () => {
 			alwaysAllowBrowser: true,
 			clineMessages: [
 				{
-					type: "say",
-					say: "task",
+					type: 'say',
+					say: 'task',
 					ts: Date.now() - 2000,
-					text: "Initial task",
+					text: 'Initial task',
 				},
 				{
-					type: "ask",
-					ask: "browser_action_launch",
+					type: 'ask',
+					ask: 'browser_action_launch',
 					ts: Date.now(),
-					text: JSON.stringify({ action: "launch", url: "http://example.com" }),
+					text: JSON.stringify({ action: 'launch', url: 'http://example.com' }),
 					partial: false,
 				},
 			],
-		})
+		});
 
 		// Verify no sound was played
 		expect(vscode.postMessage).not.toHaveBeenCalledWith({
-			type: "playSound",
+			type: 'playSound',
 			audioType: expect.any(String),
-		})
-	})
+		});
+	});
 
-	it("plays notification sound for non-auto-approved browser actions", async () => {
+	it('plays notification sound for non-auto-approved browser actions', async () => {
 		render(
 			<ExtensionStateContextProvider>
 				<ChatView
@@ -916,7 +916,7 @@ describe("ChatView - Sound Playing Tests", () => {
 					showHistoryView={() => {}}
 				/>
 			</ExtensionStateContextProvider>,
-		)
+		);
 
 		// First hydrate state with initial task and streaming
 		mockPostMessage({
@@ -924,20 +924,20 @@ describe("ChatView - Sound Playing Tests", () => {
 			alwaysAllowBrowser: false,
 			clineMessages: [
 				{
-					type: "say",
-					say: "task",
+					type: 'say',
+					say: 'task',
 					ts: Date.now() - 2000,
-					text: "Initial task",
+					text: 'Initial task',
 				},
 				{
-					type: "say",
-					say: "api_req_started",
+					type: 'say',
+					say: 'api_req_started',
 					ts: Date.now() - 1000,
 					text: JSON.stringify({}),
 					partial: true,
 				},
 			],
-		})
+		});
 
 		// Then send the browser action ask message (streaming finished)
 		mockPostMessage({
@@ -945,31 +945,31 @@ describe("ChatView - Sound Playing Tests", () => {
 			alwaysAllowBrowser: false,
 			clineMessages: [
 				{
-					type: "say",
-					say: "task",
+					type: 'say',
+					say: 'task',
 					ts: Date.now() - 2000,
-					text: "Initial task",
+					text: 'Initial task',
 				},
 				{
-					type: "ask",
-					ask: "browser_action_launch",
+					type: 'ask',
+					ask: 'browser_action_launch',
 					ts: Date.now(),
-					text: JSON.stringify({ action: "launch", url: "http://example.com" }),
+					text: JSON.stringify({ action: 'launch', url: 'http://example.com' }),
 					partial: false,
 				},
 			],
-		})
+		});
 
 		// Verify notification sound was played
 		await waitFor(() => {
 			expect(vscode.postMessage).toHaveBeenCalledWith({
-				type: "playSound",
-				audioType: "notification",
-			})
-		})
-	})
+				type: 'playSound',
+				audioType: 'notification',
+			});
+		});
+	});
 
-	it("plays celebration sound for completion results", async () => {
+	it('plays celebration sound for completion results', async () => {
 		render(
 			<ExtensionStateContextProvider>
 				<ChatView
@@ -979,56 +979,56 @@ describe("ChatView - Sound Playing Tests", () => {
 					showHistoryView={() => {}}
 				/>
 			</ExtensionStateContextProvider>,
-		)
+		);
 
 		// First hydrate state with initial task and streaming
 		mockPostMessage({
 			clineMessages: [
 				{
-					type: "say",
-					say: "task",
+					type: 'say',
+					say: 'task',
 					ts: Date.now() - 2000,
-					text: "Initial task",
+					text: 'Initial task',
 				},
 				{
-					type: "say",
-					say: "api_req_started",
+					type: 'say',
+					say: 'api_req_started',
 					ts: Date.now() - 1000,
 					text: JSON.stringify({}),
 					partial: true,
 				},
 			],
-		})
+		});
 
 		// Then send the completion result message (streaming finished)
 		mockPostMessage({
 			clineMessages: [
 				{
-					type: "say",
-					say: "task",
+					type: 'say',
+					say: 'task',
 					ts: Date.now() - 2000,
-					text: "Initial task",
+					text: 'Initial task',
 				},
 				{
-					type: "ask",
-					ask: "completion_result",
+					type: 'ask',
+					ask: 'completion_result',
 					ts: Date.now(),
-					text: "Task completed successfully",
+					text: 'Task completed successfully',
 					partial: false,
 				},
 			],
-		})
+		});
 
 		// Verify celebration sound was played
 		await waitFor(() => {
 			expect(vscode.postMessage).toHaveBeenCalledWith({
-				type: "playSound",
-				audioType: "celebration",
-			})
-		})
-	})
+				type: 'playSound',
+				audioType: 'celebration',
+			});
+		});
+	});
 
-	it("plays progress_loop sound for api failures", async () => {
+	it('plays progress_loop sound for api failures', async () => {
 		render(
 			<ExtensionStateContextProvider>
 				<ChatView
@@ -1038,52 +1038,52 @@ describe("ChatView - Sound Playing Tests", () => {
 					showHistoryView={() => {}}
 				/>
 			</ExtensionStateContextProvider>,
-		)
+		);
 
 		// First hydrate state with initial task and streaming
 		mockPostMessage({
 			clineMessages: [
 				{
-					type: "say",
-					say: "task",
+					type: 'say',
+					say: 'task',
 					ts: Date.now() - 2000,
-					text: "Initial task",
+					text: 'Initial task',
 				},
 				{
-					type: "say",
-					say: "api_req_started",
+					type: 'say',
+					say: 'api_req_started',
 					ts: Date.now() - 1000,
 					text: JSON.stringify({}),
 					partial: true,
 				},
 			],
-		})
+		});
 
 		// Then send the api failure message (streaming finished)
 		mockPostMessage({
 			clineMessages: [
 				{
-					type: "say",
-					say: "task",
+					type: 'say',
+					say: 'task',
 					ts: Date.now() - 2000,
-					text: "Initial task",
+					text: 'Initial task',
 				},
 				{
-					type: "ask",
-					ask: "api_req_failed",
+					type: 'ask',
+					ask: 'api_req_failed',
 					ts: Date.now(),
-					text: "API request failed",
+					text: 'API request failed',
 					partial: false,
 				},
 			],
-		})
+		});
 
 		// Verify progress_loop sound was played
 		await waitFor(() => {
 			expect(vscode.postMessage).toHaveBeenCalledWith({
-				type: "playSound",
-				audioType: "progress_loop",
-			})
-		})
-	})
-})
+				type: 'playSound',
+				audioType: 'progress_loop',
+			});
+		});
+	});
+});

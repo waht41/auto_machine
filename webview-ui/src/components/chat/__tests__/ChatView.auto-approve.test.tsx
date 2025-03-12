@@ -1,77 +1,77 @@
-import React from "react"
-import { render, waitFor } from "@testing-library/react"
-import ChatView from "../ChatView"
-import { ExtensionStateContextProvider } from "../../../context/ExtensionStateContext"
-import { vscode } from "../../../utils/vscode"
+import React from 'react';
+import { render, waitFor } from '@testing-library/react';
+import ChatView from '../ChatView';
+import { ExtensionStateContextProvider } from '../../../context/ExtensionStateContext';
+import { vscode } from '../../../utils/vscode';
 
 // Mock vscode API
-jest.mock("../../../utils/vscode", () => ({
+jest.mock('../../../utils/vscode', () => ({
 	vscode: {
 		postMessage: jest.fn(),
 	},
-}))
+}));
 
 // Mock all problematic dependencies
-jest.mock("rehype-highlight", () => ({
+jest.mock('rehype-highlight', () => ({
 	__esModule: true,
 	default: () => () => {},
-}))
+}));
 
-jest.mock("hast-util-to-text", () => ({
+jest.mock('hast-util-to-text', () => ({
 	__esModule: true,
-	default: () => "",
-}))
+	default: () => '',
+}));
 
 // Mock components that use ESM dependencies
-jest.mock("../BrowserSessionRow", () => ({
+jest.mock('../BrowserSessionRow', () => ({
 	__esModule: true,
 	default: function MockBrowserSessionRow({ messages }: { messages: any[] }) {
-		return <div data-testid="browser-session">{JSON.stringify(messages)}</div>
+		return <div data-testid="browser-session">{JSON.stringify(messages)}</div>;
 	},
-}))
+}));
 
-jest.mock("../ChatRow", () => ({
+jest.mock('../ChatRow', () => ({
 	__esModule: true,
 	default: function MockChatRow({ message }: { message: any }) {
-		return <div data-testid="chat-row">{JSON.stringify(message)}</div>
+		return <div data-testid="chat-row">{JSON.stringify(message)}</div>;
 	},
-}))
+}));
 
-jest.mock("../TaskHeader", () => ({
+jest.mock('../TaskHeader', () => ({
 	__esModule: true,
 	default: function MockTaskHeader({ task }: { task: any }) {
-		return <div data-testid="task-header">{JSON.stringify(task)}</div>
+		return <div data-testid="task-header">{JSON.stringify(task)}</div>;
 	},
-}))
+}));
 
-jest.mock("../AutoApproveMenu", () => ({
+jest.mock('../AutoApproveMenu', () => ({
 	__esModule: true,
 	default: () => null,
-}))
+}));
 
-jest.mock("../../common/CodeBlock", () => ({
+jest.mock('../../common/CodeBlock', () => ({
 	__esModule: true,
 	default: () => null,
-	CODE_BLOCK_BG_COLOR: "rgb(30, 30, 30)",
-}))
+	CODE_BLOCK_BG_COLOR: 'rgb(30, 30, 30)',
+}));
 
-jest.mock("../../common/CodeAccordian", () => ({
+jest.mock('../../common/CodeAccordian', () => ({
 	__esModule: true,
 	default: () => null,
-}))
+}));
 
-jest.mock("../ContextMenu", () => ({
+jest.mock('../ContextMenu', () => ({
 	__esModule: true,
 	default: () => null,
-}))
+}));
 
 // Mock window.postMessage to trigger state hydration
 const mockPostMessage = (state: any) => {
 	window.postMessage(
 		{
-			type: "state",
+			type: 'state',
 			state: {
-				version: "1.0.0",
+				version: '1.0.0',
 				clineMessages: [],
 				taskHistory: [],
 				shouldShowAnnouncement: false,
@@ -81,16 +81,16 @@ const mockPostMessage = (state: any) => {
 				...state,
 			},
 		},
-		"*",
-	)
-}
+		'*',
+	);
+};
 
-describe("ChatView - Auto Approval Tests", () => {
+describe('ChatView - Auto Approval Tests', () => {
 	beforeEach(() => {
-		jest.clearAllMocks()
-	})
+		jest.clearAllMocks();
+	});
 
-	it("auto-approves read operations when enabled", async () => {
+	it('auto-approves read operations when enabled', async () => {
 		render(
 			<ExtensionStateContextProvider>
 				<ChatView
@@ -100,7 +100,7 @@ describe("ChatView - Auto Approval Tests", () => {
 					showHistoryView={() => {}}
 				/>
 			</ExtensionStateContextProvider>,
-		)
+		);
 
 		// First hydrate state with initial task
 		mockPostMessage({
@@ -108,13 +108,13 @@ describe("ChatView - Auto Approval Tests", () => {
 			autoApprovalEnabled: true,
 			clineMessages: [
 				{
-					type: "say",
-					say: "task",
+					type: 'say',
+					say: 'task',
 					ts: Date.now() - 2000,
-					text: "Initial task",
+					text: 'Initial task',
 				},
 			],
-		})
+		});
 
 		// Then send the read tool ask message
 		mockPostMessage({
@@ -122,31 +122,31 @@ describe("ChatView - Auto Approval Tests", () => {
 			autoApprovalEnabled: true,
 			clineMessages: [
 				{
-					type: "say",
-					say: "task",
+					type: 'say',
+					say: 'task',
 					ts: Date.now() - 2000,
-					text: "Initial task",
+					text: 'Initial task',
 				},
 				{
-					type: "ask",
-					ask: "tool",
+					type: 'ask',
+					ask: 'tool',
 					ts: Date.now(),
-					text: JSON.stringify({ tool: "readFile", path: "test.txt" }),
+					text: JSON.stringify({ tool: 'readFile', path: 'test.txt' }),
 					partial: false,
 				},
 			],
-		})
+		});
 
 		// Wait for the auto-approval message
 		await waitFor(() => {
 			expect(vscode.postMessage).toHaveBeenCalledWith({
-				type: "askResponse",
-				askResponse: "yesButtonClicked",
-			})
-		})
-	})
+				type: 'askResponse',
+				askResponse: 'yesButtonClicked',
+			});
+		});
+	});
 
-	it("does not auto-approve when autoApprovalEnabled is false", async () => {
+	it('does not auto-approve when autoApprovalEnabled is false', async () => {
 		render(
 			<ExtensionStateContextProvider>
 				<ChatView
@@ -156,7 +156,7 @@ describe("ChatView - Auto Approval Tests", () => {
 					showHistoryView={() => {}}
 				/>
 			</ExtensionStateContextProvider>,
-		)
+		);
 
 		// First hydrate state with initial task
 		mockPostMessage({
@@ -164,13 +164,13 @@ describe("ChatView - Auto Approval Tests", () => {
 			autoApprovalEnabled: false,
 			clineMessages: [
 				{
-					type: "say",
-					say: "task",
+					type: 'say',
+					say: 'task',
 					ts: Date.now() - 2000,
-					text: "Initial task",
+					text: 'Initial task',
 				},
 			],
-		})
+		});
 
 		// Then send the read tool ask message
 		mockPostMessage({
@@ -178,29 +178,29 @@ describe("ChatView - Auto Approval Tests", () => {
 			autoApprovalEnabled: false,
 			clineMessages: [
 				{
-					type: "say",
-					say: "task",
+					type: 'say',
+					say: 'task',
 					ts: Date.now() - 2000,
-					text: "Initial task",
+					text: 'Initial task',
 				},
 				{
-					type: "ask",
-					ask: "tool",
+					type: 'ask',
+					ask: 'tool',
 					ts: Date.now(),
-					text: JSON.stringify({ tool: "readFile", path: "test.txt" }),
+					text: JSON.stringify({ tool: 'readFile', path: 'test.txt' }),
 					partial: false,
 				},
 			],
-		})
+		});
 
 		// Verify no auto-approval message was sent
 		expect(vscode.postMessage).not.toHaveBeenCalledWith({
-			type: "askResponse",
-			askResponse: "yesButtonClicked",
-		})
-	})
+			type: 'askResponse',
+			askResponse: 'yesButtonClicked',
+		});
+	});
 
-	it("auto-approves write operations when enabled", async () => {
+	it('auto-approves write operations when enabled', async () => {
 		render(
 			<ExtensionStateContextProvider>
 				<ChatView
@@ -210,7 +210,7 @@ describe("ChatView - Auto Approval Tests", () => {
 					showHistoryView={() => {}}
 				/>
 			</ExtensionStateContextProvider>,
-		)
+		);
 
 		// First hydrate state with initial task
 		mockPostMessage({
@@ -219,13 +219,13 @@ describe("ChatView - Auto Approval Tests", () => {
 			writeDelayMs: 0,
 			clineMessages: [
 				{
-					type: "say",
-					say: "task",
+					type: 'say',
+					say: 'task',
 					ts: Date.now() - 2000,
-					text: "Initial task",
+					text: 'Initial task',
 				},
 			],
-		})
+		});
 
 		// Then send the write tool ask message
 		mockPostMessage({
@@ -234,31 +234,31 @@ describe("ChatView - Auto Approval Tests", () => {
 			writeDelayMs: 0,
 			clineMessages: [
 				{
-					type: "say",
-					say: "task",
+					type: 'say',
+					say: 'task',
 					ts: Date.now() - 2000,
-					text: "Initial task",
+					text: 'Initial task',
 				},
 				{
-					type: "ask",
-					ask: "tool",
+					type: 'ask',
+					ask: 'tool',
 					ts: Date.now(),
-					text: JSON.stringify({ tool: "editedExistingFile", path: "test.txt" }),
+					text: JSON.stringify({ tool: 'editedExistingFile', path: 'test.txt' }),
 					partial: false,
 				},
 			],
-		})
+		});
 
 		// Wait for the auto-approval message
 		await waitFor(() => {
 			expect(vscode.postMessage).toHaveBeenCalledWith({
-				type: "askResponse",
-				askResponse: "yesButtonClicked",
-			})
-		})
-	})
+				type: 'askResponse',
+				askResponse: 'yesButtonClicked',
+			});
+		});
+	});
 
-	it("auto-approves browser actions when enabled", async () => {
+	it('auto-approves browser actions when enabled', async () => {
 		render(
 			<ExtensionStateContextProvider>
 				<ChatView
@@ -268,7 +268,7 @@ describe("ChatView - Auto Approval Tests", () => {
 					showHistoryView={() => {}}
 				/>
 			</ExtensionStateContextProvider>,
-		)
+		);
 
 		// First hydrate state with initial task
 		mockPostMessage({
@@ -276,13 +276,13 @@ describe("ChatView - Auto Approval Tests", () => {
 			autoApprovalEnabled: true,
 			clineMessages: [
 				{
-					type: "say",
-					say: "task",
+					type: 'say',
+					say: 'task',
 					ts: Date.now() - 2000,
-					text: "Initial task",
+					text: 'Initial task',
 				},
 			],
-		})
+		});
 
 		// Then send the browser action ask message
 		mockPostMessage({
@@ -290,27 +290,27 @@ describe("ChatView - Auto Approval Tests", () => {
 			autoApprovalEnabled: true,
 			clineMessages: [
 				{
-					type: "say",
-					say: "task",
+					type: 'say',
+					say: 'task',
 					ts: Date.now() - 2000,
-					text: "Initial task",
+					text: 'Initial task',
 				},
 				{
-					type: "ask",
-					ask: "browser_action_launch",
+					type: 'ask',
+					ask: 'browser_action_launch',
 					ts: Date.now(),
-					text: JSON.stringify({ action: "launch", url: "http://example.com" }),
+					text: JSON.stringify({ action: 'launch', url: 'http://example.com' }),
 					partial: false,
 				},
 			],
-		})
+		});
 
 		// Wait for the auto-approval message
 		await waitFor(() => {
 			expect(vscode.postMessage).toHaveBeenCalledWith({
-				type: "askResponse",
-				askResponse: "yesButtonClicked",
-			})
-		})
-	})
-})
+				type: 'askResponse',
+				askResponse: 'yesButtonClicked',
+			});
+		});
+	});
+});

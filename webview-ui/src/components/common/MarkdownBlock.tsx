@@ -1,7 +1,7 @@
-import { memo } from "react";
-import ReactMarkdown from "react-markdown";
-import rehypeHighlight from "rehype-highlight";
-import styled from "styled-components";
+import { memo } from 'react';
+import ReactMarkdown from 'react-markdown';
+import rehypeHighlight from 'rehype-highlight';
+import styled from 'styled-components';
 // 导入暗色主题
 import 'highlight.js/styles/atom-one-dark.css';
 import yaml from 'highlight.js/lib/languages/yaml';
@@ -58,8 +58,8 @@ const CustomLink = (props: any) => {
 	return (
 		<a
 			href={href}
-			target={isExternal ? "_blank" : undefined}
-			rel={isExternal ? "noopener noreferrer" : undefined}
+			target={isExternal ? '_blank' : undefined}
+			rel={isExternal ? 'noopener noreferrer' : undefined}
 			{...props}
 		>
 			{props.children}
@@ -67,7 +67,7 @@ const CustomLink = (props: any) => {
 	);
 };
 
-const MarkdownBlock = memo(({ markdown = "", className }: MarkdownBlockProps) => {
+const MarkdownBlock = memo(({ markdown = '', className }: MarkdownBlockProps) => {
 	return (
 		<Container className={className}>
 			<ReactMarkdown
@@ -88,6 +88,6 @@ const MarkdownBlock = memo(({ markdown = "", className }: MarkdownBlockProps) =>
 	);
 });
 
-MarkdownBlock.displayName = "MarkdownBlock";
+MarkdownBlock.displayName = 'MarkdownBlock';
 
 export default MarkdownBlock;

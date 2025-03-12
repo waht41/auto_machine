@@ -18,7 +18,7 @@ import {
 	VSCodeTag,
 	VSCodeTextArea,
 	VSCodeTextField,
-} from "@vscode/webview-ui-toolkit/react"
+} from '@vscode/webview-ui-toolkit/react';
 
 function Demo() {
 	// function handleHowdyClick() {
@@ -30,24 +30,24 @@ function Demo() {
 
 	const rowData = [
 		{
-			cell1: "Cell Data",
-			cell2: "Cell Data",
-			cell3: "Cell Data",
-			cell4: "Cell Data",
+			cell1: 'Cell Data',
+			cell2: 'Cell Data',
+			cell3: 'Cell Data',
+			cell4: 'Cell Data',
 		},
 		{
-			cell1: "Cell Data",
-			cell2: "Cell Data",
-			cell3: "Cell Data",
-			cell4: "Cell Data",
+			cell1: 'Cell Data',
+			cell2: 'Cell Data',
+			cell3: 'Cell Data',
+			cell4: 'Cell Data',
 		},
 		{
-			cell1: "Cell Data",
-			cell2: "Cell Data",
-			cell3: "Cell Data",
-			cell4: "Cell Data",
+			cell1: 'Cell Data',
+			cell2: 'Cell Data',
+			cell3: 'Cell Data',
+			cell4: 'Cell Data',
 		},
-	]
+	];
 
 	return (
 		<main>
@@ -81,7 +81,7 @@ function Demo() {
 				</VSCodeDataGrid>
 
 				<VSCodeTextField>
-					<section slot="end" style={{ display: "flex", alignItems: "center" }}>
+					<section slot="end" style={{ display: 'flex', alignItems: 'center' }}>
 						<VSCodeButton appearance="icon" aria-label="Match Case">
 							<span className="codicon codicon-case-sensitive"></span>
 						</VSCodeButton>
@@ -124,7 +124,7 @@ function Demo() {
 				<VSCodeTextArea placeholder="Text Area" />
 			</div>
 		</main>
-	)
+	);
 }
 
-export default Demo
+export default Demo;

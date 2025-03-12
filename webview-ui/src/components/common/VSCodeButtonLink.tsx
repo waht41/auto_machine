@@ -1,5 +1,5 @@
-import React from "react"
-import { VSCodeButton } from "@vscode/webview-ui-toolkit/react"
+import React from 'react';
+import { VSCodeButton } from '@vscode/webview-ui-toolkit/react';
 
 interface VSCodeButtonLinkProps {
 	href: string
@@ -12,12 +12,12 @@ const VSCodeButtonLink: React.FC<VSCodeButtonLinkProps> = ({ href, children, ...
 		<a
 			href={href}
 			style={{
-				textDecoration: "none",
-				color: "inherit",
+				textDecoration: 'none',
+				color: 'inherit',
 			}}>
 			<VSCodeButton {...props}>{children}</VSCodeButton>
 		</a>
-	)
-}
+	);
+};
 
-export default VSCodeButtonLink
+export default VSCodeButtonLink;

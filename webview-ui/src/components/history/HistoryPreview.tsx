@@ -1,33 +1,33 @@
-import { VSCodeButton } from "@vscode/webview-ui-toolkit/react"
-import { useExtensionState } from "../../context/ExtensionStateContext"
-import { vscode } from "../../utils/vscode"
-import { memo } from "react"
-import { formatLargeNumber } from "../../utils/format"
+import { VSCodeButton } from '@vscode/webview-ui-toolkit/react';
+import { useExtensionState } from '../../context/ExtensionStateContext';
+import { vscode } from '../../utils/vscode';
+import { memo } from 'react';
+import { formatLargeNumber } from '../../utils/format';
 
 type HistoryPreviewProps = {
 	showHistoryView: () => void
 }
 
 const HistoryPreview = ({ showHistoryView }: HistoryPreviewProps) => {
-	const { taskHistory } = useExtensionState()
+	const { taskHistory } = useExtensionState();
 	const handleHistorySelect = (id: string) => {
-		vscode.postMessage({ type: "showTaskWithId", text: id })
-	}
+		vscode.postMessage({ type: 'showTaskWithId', text: id });
+	};
 
 	const formatDate = (timestamp: number) => {
-		const date = new Date(timestamp)
+		const date = new Date(timestamp);
 		return date
-			?.toLocaleString("en-US", {
-				month: "long",
-				day: "numeric",
-				hour: "numeric",
-				minute: "2-digit",
+			?.toLocaleString('en-US', {
+				month: 'long',
+				day: 'numeric',
+				hour: 'numeric',
+				minute: '2-digit',
 				hour12: true,
 			})
-			.replace(", ", " ")
-			.replace(" at", ",")
-			.toUpperCase()
-	}
+			.replace(', ', ' ')
+			.replace(' at', ',')
+			.toUpperCase();
+	};
 
 	return (
 		<div style={{ flexShrink: 0 }}>
@@ -52,25 +52,25 @@ const HistoryPreview = ({ showHistoryView }: HistoryPreviewProps) => {
 
 			<div
 				style={{
-					color: "var(--vscode-descriptionForeground)",
-					margin: "10px 20px 10px 20px",
-					display: "flex",
-					alignItems: "center",
+					color: 'var(--vscode-descriptionForeground)',
+					margin: '10px 20px 10px 20px',
+					display: 'flex',
+					alignItems: 'center',
 				}}>
 				<span
 					className="codicon codicon-comment-discussion"
-					style={{ marginRight: "4px", transform: "scale(0.9)" }}></span>
+					style={{ marginRight: '4px', transform: 'scale(0.9)' }}></span>
 				<span
 					style={{
 						fontWeight: 500,
-						fontSize: "0.85em",
-						textTransform: "uppercase",
+						fontSize: '0.85em',
+						textTransform: 'uppercase',
 					}}>
 					Recent Tasks
 				</span>
 			</div>
 
-			<div style={{ padding: "0px 20px 0 20px" }}>
+			<div style={{ padding: '0px 20px 0 20px' }}>
 				{taskHistory
 					.filter((item) => item.ts && item.task)
 					.slice(0, 3)
@@ -79,50 +79,50 @@ const HistoryPreview = ({ showHistoryView }: HistoryPreviewProps) => {
 							key={item.id}
 							className="history-preview-item"
 							onClick={() => handleHistorySelect(item.id)}>
-							<div style={{ padding: "12px" }}>
-								<div style={{ marginBottom: "8px" }}>
+							<div style={{ padding: '12px' }}>
+								<div style={{ marginBottom: '8px' }}>
 									<span
 										style={{
-											color: "var(--vscode-descriptionForeground)",
+											color: 'var(--vscode-descriptionForeground)',
 											fontWeight: 500,
-											fontSize: "0.85em",
-											textTransform: "uppercase",
+											fontSize: '0.85em',
+											textTransform: 'uppercase',
 										}}>
 										{formatDate(item.ts)}
 									</span>
 								</div>
 								<div
 									style={{
-										fontSize: "var(--vscode-font-size)",
-										color: "var(--vscode-descriptionForeground)",
-										marginBottom: "8px",
-										display: "-webkit-box",
+										fontSize: 'var(--vscode-font-size)',
+										color: 'var(--vscode-descriptionForeground)',
+										marginBottom: '8px',
+										display: '-webkit-box',
 										WebkitLineClamp: 3,
-										WebkitBoxOrient: "vertical",
-										overflow: "hidden",
-										whiteSpace: "pre-wrap",
-										wordBreak: "break-word",
-										overflowWrap: "anywhere",
+										WebkitBoxOrient: 'vertical',
+										overflow: 'hidden',
+										whiteSpace: 'pre-wrap',
+										wordBreak: 'break-word',
+										overflowWrap: 'anywhere',
 									}}>
 									{item.task}
 								</div>
-								<div style={{ fontSize: "0.85em", color: "var(--vscode-descriptionForeground)" }}>
+								<div style={{ fontSize: '0.85em', color: 'var(--vscode-descriptionForeground)' }}>
 									<span>
 										Tokens: ↑{formatLargeNumber(item.tokensIn || 0)} ↓
 										{formatLargeNumber(item.tokensOut || 0)}
 									</span>
 									{!!item.cacheWrites && (
 										<>
-											{" • "}
+											{' • '}
 											<span>
-												Cache: +{formatLargeNumber(item.cacheWrites || 0)} →{" "}
+												Cache: +{formatLargeNumber(item.cacheWrites || 0)} →{' '}
 												{formatLargeNumber(item.cacheReads || 0)}
 											</span>
 										</>
 									)}
 									{!!item.totalCost && (
 										<>
-											{" • "}
+											{' • '}
 											<span>API Cost: ${item.totalCost?.toFixed(4)}</span>
 										</>
 									)}
@@ -130,7 +130,7 @@ const HistoryPreview = ({ showHistoryView }: HistoryPreviewProps) => {
 							</div>
 						</div>
 					))}
-				<div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+				<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
 					<VSCodeButton
 						appearance="icon"
 						onClick={() => showHistoryView()}
@@ -139,8 +139,8 @@ const HistoryPreview = ({ showHistoryView }: HistoryPreviewProps) => {
 						}}>
 						<div
 							style={{
-								fontSize: "var(--vscode-font-size)",
-								color: "var(--vscode-descriptionForeground)",
+								fontSize: 'var(--vscode-font-size)',
+								color: 'var(--vscode-descriptionForeground)',
 							}}>
 							View all history
 						</div>
@@ -148,7 +148,7 @@ const HistoryPreview = ({ showHistoryView }: HistoryPreviewProps) => {
 				</div>
 			</div>
 		</div>
-	)
-}
+	);
+};
 
-export default memo(HistoryPreview)
+export default memo(HistoryPreview);

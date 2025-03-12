@@ -1,4 +1,4 @@
-import { vscode } from "../utils/vscode"
+import { vscode } from '../utils/vscode';
 
 export interface GitCommit {
 	hash: string
@@ -9,38 +9,38 @@ export interface GitCommit {
 }
 
 class GitService {
-	private commits: GitCommit[] | null = null
-	private lastQuery: string = ""
+	private commits: GitCommit[] | null = null;
+	private lastQuery = '';
 
-	async searchCommits(query: string = ""): Promise<GitCommit[]> {
+	async searchCommits(query = ''): Promise<GitCommit[]> {
 		if (query === this.lastQuery && this.commits) {
-			return this.commits
+			return this.commits;
 		}
 
 		// Request search from extension
-		vscode.postMessage({ type: "searchCommits", query })
+		vscode.postMessage({ type: 'searchCommits', query });
 
 		// Wait for response
 		const response = await new Promise<GitCommit[]>((resolve) => {
 			const handler = (event: MessageEvent) => {
-				const message = event.data
-				if (message.type === "commitSearchResults") {
-					window.removeEventListener("message", handler)
-					resolve(message.commits)
+				const message = event.data;
+				if (message.type === 'commitSearchResults') {
+					window.removeEventListener('message', handler);
+					resolve(message.commits);
 				}
-			}
-			window.addEventListener("message", handler)
-		})
+			};
+			window.addEventListener('message', handler);
+		});
 
-		this.commits = response
-		this.lastQuery = query
-		return response
+		this.commits = response;
+		this.lastQuery = query;
+		return response;
 	}
 
 	clearCache() {
-		this.commits = null
-		this.lastQuery = ""
+		this.commits = null;
+		this.lastQuery = '';
 	}
 }
 
-export const gitService = new GitService()
+export const gitService = new GitService();

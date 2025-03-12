@@ -1,6 +1,6 @@
-import { VSCodeButton, VSCodeTextField } from "@vscode/webview-ui-toolkit/react"
-import { memo, useEffect, useRef, useState } from "react"
-import { ApiConfigMeta } from "../../../../src/shared/ExtensionMessage"
+import { VSCodeButton, VSCodeTextField } from '@vscode/webview-ui-toolkit/react';
+import { memo, useEffect, useRef, useState } from 'react';
+import { ApiConfigMeta } from '../../../../src/shared/ExtensionMessage';
 
 interface ApiConfigManagerProps {
 	currentApiConfigName?: string
@@ -12,93 +12,93 @@ interface ApiConfigManagerProps {
 }
 
 const ApiConfigManager = ({
-	currentApiConfigName = "",
+	currentApiConfigName = '',
 	listApiConfigMeta = [],
 	onSelectConfig,
 	onDeleteConfig,
 	onRenameConfig,
 	onUpsertConfig,
 }: ApiConfigManagerProps) => {
-	const [editState, setEditState] = useState<"new" | "rename" | null>(null)
-	const [inputValue, setInputValue] = useState("")
-	const inputRef = useRef<HTMLInputElement>()
+	const [editState, setEditState] = useState<'new' | 'rename' | null>(null);
+	const [inputValue, setInputValue] = useState('');
+	const inputRef = useRef<HTMLInputElement>();
 
 	// Focus input when entering edit mode
 	useEffect(() => {
 		if (editState) {
-			setTimeout(() => inputRef.current?.focus(), 0)
+			setTimeout(() => inputRef.current?.focus(), 0);
 		}
-	}, [editState])
+	}, [editState]);
 
 	// Reset edit state when current profile changes
 	useEffect(() => {
-		setEditState(null)
-		setInputValue("")
-	}, [currentApiConfigName])
+		setEditState(null);
+		setInputValue('');
+	}, [currentApiConfigName]);
 
 	const handleAdd = () => {
-		const newConfigName = currentApiConfigName + " (copy)"
-		onUpsertConfig(newConfigName)
-	}
+		const newConfigName = currentApiConfigName + ' (copy)';
+		onUpsertConfig(newConfigName);
+	};
 
 	const handleStartRename = () => {
-		setEditState("rename")
-		setInputValue(currentApiConfigName || "")
-	}
+		setEditState('rename');
+		setInputValue(currentApiConfigName || '');
+	};
 
 	const handleCancel = () => {
-		setEditState(null)
-		setInputValue("")
-	}
+		setEditState(null);
+		setInputValue('');
+	};
 
 	const handleSave = () => {
-		const trimmedValue = inputValue.trim()
-		if (!trimmedValue) return
+		const trimmedValue = inputValue.trim();
+		if (!trimmedValue) return;
 
-		if (editState === "new") {
-			onUpsertConfig(trimmedValue)
-		} else if (editState === "rename" && currentApiConfigName) {
-			onRenameConfig(currentApiConfigName, trimmedValue)
+		if (editState === 'new') {
+			onUpsertConfig(trimmedValue);
+		} else if (editState === 'rename' && currentApiConfigName) {
+			onRenameConfig(currentApiConfigName, trimmedValue);
 		}
 
-		setEditState(null)
-		setInputValue("")
-	}
+		setEditState(null);
+		setInputValue('');
+	};
 
 	const handleDelete = () => {
-		if (!currentApiConfigName || !listApiConfigMeta || listApiConfigMeta.length <= 1) return
+		if (!currentApiConfigName || !listApiConfigMeta || listApiConfigMeta.length <= 1) return;
 
 		// Let the extension handle both deletion and selection
-		onDeleteConfig(currentApiConfigName)
-	}
+		onDeleteConfig(currentApiConfigName);
+	};
 
-	const isOnlyProfile = listApiConfigMeta?.length === 1
+	const isOnlyProfile = listApiConfigMeta?.length === 1;
 
 	return (
 		<div style={{ marginBottom: 5 }}>
 			<div
 				style={{
-					display: "flex",
-					flexDirection: "column",
-					gap: "2px",
+					display: 'flex',
+					flexDirection: 'column',
+					gap: '2px',
 				}}>
 				<label htmlFor="config-profile">
-					<span style={{ fontWeight: "500" }}>Configuration Profile</span>
+					<span style={{ fontWeight: '500' }}>Configuration Profile</span>
 				</label>
 
 				{editState ? (
-					<div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
+					<div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
 						<VSCodeTextField
 							ref={inputRef as any}
 							value={inputValue}
 							onInput={(e: any) => setInputValue(e.target.value)}
-							placeholder={editState === "new" ? "Enter profile name" : "Enter new name"}
+							placeholder={editState === 'new' ? 'Enter profile name' : 'Enter new name'}
 							style={{ flexGrow: 1 }}
 							onKeyDown={(e: any) => {
-								if (e.key === "Enter" && inputValue.trim()) {
-									handleSave()
-								} else if (e.key === "Escape") {
-									handleCancel()
+								if (e.key === 'Enter' && inputValue.trim()) {
+									handleSave();
+								} else if (e.key === 'Escape') {
+									handleCancel();
 								}
 							}}
 						/>
@@ -110,9 +110,9 @@ const ApiConfigManager = ({
 							style={{
 								padding: 0,
 								margin: 0,
-								height: "28px",
-								width: "28px",
-								minWidth: "28px",
+								height: '28px',
+								width: '28px',
+								minWidth: '28px',
 							}}>
 							<span className="codicon codicon-check" />
 						</VSCodeButton>
@@ -123,31 +123,31 @@ const ApiConfigManager = ({
 							style={{
 								padding: 0,
 								margin: 0,
-								height: "28px",
-								width: "28px",
-								minWidth: "28px",
+								height: '28px',
+								width: '28px',
+								minWidth: '28px',
 							}}>
 							<span className="codicon codicon-close" />
 						</VSCodeButton>
 					</div>
 				) : (
 					<>
-						<div style={{ display: "flex", gap: "4px", alignItems: "center" }}>
+						<div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
 							<select
 								id="config-profile"
 								value={currentApiConfigName}
 								onChange={(e) => onSelectConfig(e.target.value)}
 								style={{
 									flexGrow: 1,
-									padding: "4px 8px",
-									paddingRight: "24px",
-									backgroundColor: "var(--vscode-dropdown-background)",
-									color: "var(--vscode-dropdown-foreground)",
-									border: "1px solid var(--vscode-dropdown-border)",
-									borderRadius: "2px",
-									height: "28px",
-									cursor: "pointer",
-									outline: "none",
+									padding: '4px 8px',
+									paddingRight: '24px',
+									backgroundColor: 'var(--vscode-dropdown-background)',
+									color: 'var(--vscode-dropdown-foreground)',
+									border: '1px solid var(--vscode-dropdown-border)',
+									borderRadius: '2px',
+									height: '28px',
+									cursor: 'pointer',
+									outline: 'none',
 								}}>
 								{listApiConfigMeta?.map((config) => (
 									<option key={config.name} value={config.name}>
@@ -162,9 +162,9 @@ const ApiConfigManager = ({
 								style={{
 									padding: 0,
 									margin: 0,
-									height: "28px",
-									width: "28px",
-									minWidth: "28px",
+									height: '28px',
+									width: '28px',
+									minWidth: '28px',
 								}}>
 								<span className="codicon codicon-add" />
 							</VSCodeButton>
@@ -177,23 +177,23 @@ const ApiConfigManager = ({
 										style={{
 											padding: 0,
 											margin: 0,
-											height: "28px",
-											width: "28px",
-											minWidth: "28px",
+											height: '28px',
+											width: '28px',
+											minWidth: '28px',
 										}}>
 										<span className="codicon codicon-edit" />
 									</VSCodeButton>
 									<VSCodeButton
 										appearance="icon"
 										onClick={handleDelete}
-										title={isOnlyProfile ? "Cannot delete the only profile" : "Delete profile"}
+										title={isOnlyProfile ? 'Cannot delete the only profile' : 'Delete profile'}
 										disabled={isOnlyProfile}
 										style={{
 											padding: 0,
 											margin: 0,
-											height: "28px",
-											width: "28px",
-											minWidth: "28px",
+											height: '28px',
+											width: '28px',
+											minWidth: '28px',
 										}}>
 										<span className="codicon codicon-trash" />
 									</VSCodeButton>
@@ -202,9 +202,9 @@ const ApiConfigManager = ({
 						</div>
 						<p
 							style={{
-								fontSize: "12px",
-								margin: "5px 0 12px",
-								color: "var(--vscode-descriptionForeground)",
+								fontSize: '12px',
+								margin: '5px 0 12px',
+								color: 'var(--vscode-descriptionForeground)',
 							}}>
 							Save different API configurations to quickly switch between providers and settings
 						</p>
@@ -212,7 +212,7 @@ const ApiConfigManager = ({
 				)}
 			</div>
 		</div>
-	)
-}
+	);
+};
 
-export default memo(ApiConfigManager)
+export default memo(ApiConfigManager);

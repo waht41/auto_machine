@@ -1,6 +1,6 @@
-import React, { useState, useRef, useLayoutEffect, memo } from "react"
-import { useWindowSize } from "react-use"
-import { vscode } from "../../utils/vscode"
+import React, { useState, useRef, useLayoutEffect, memo } from 'react';
+import { useWindowSize } from 'react-use';
+import { vscode } from '../../utils/vscode';
 
 interface ThumbnailsProps {
 	images: string[]
@@ -10,38 +10,38 @@ interface ThumbnailsProps {
 }
 
 const Thumbnails = ({ images, style, setImages, onHeightChange }: ThumbnailsProps) => {
-	const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
-	const containerRef = useRef<HTMLDivElement>(null)
-	const { width } = useWindowSize()
+	const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+	const containerRef = useRef<HTMLDivElement>(null);
+	const { width } = useWindowSize();
 
 	useLayoutEffect(() => {
 		if (containerRef.current) {
-			let height = containerRef.current.clientHeight
+			let height = containerRef.current.clientHeight;
 			// some browsers return 0 for clientHeight
 			if (!height) {
-				height = containerRef.current.getBoundingClientRect().height
+				height = containerRef.current.getBoundingClientRect().height;
 			}
-			onHeightChange?.(height)
+			onHeightChange?.(height);
 		}
-		setHoveredIndex(null)
-	}, [images, width, onHeightChange])
+		setHoveredIndex(null);
+	}, [images, width, onHeightChange]);
 
 	const handleDelete = (index: number) => {
-		setImages?.((prevImages) => prevImages.filter((_, i) => i !== index))
-	}
+		setImages?.((prevImages) => prevImages.filter((_, i) => i !== index));
+	};
 
-	const isDeletable = setImages !== undefined
+	const isDeletable = setImages !== undefined;
 
 	const handleImageClick = (image: string) => {
-		vscode.postMessage({ type: "openImage", text: image })
-	}
+		vscode.postMessage({ type: 'openImage', text: image });
+	};
 
 	return (
 		<div
 			ref={containerRef}
 			style={{
-				display: "flex",
-				flexWrap: "wrap",
+				display: 'flex',
+				flexWrap: 'wrap',
 				gap: 5,
 				rowGap: 3,
 				...style,
@@ -49,7 +49,7 @@ const Thumbnails = ({ images, style, setImages, onHeightChange }: ThumbnailsProp
 			{images.map((image, index) => (
 				<div
 					key={index}
-					style={{ position: "relative" }}
+					style={{ position: 'relative' }}
 					onMouseEnter={() => setHoveredIndex(index)}
 					onMouseLeave={() => setHoveredIndex(null)}>
 					<img
@@ -58,9 +58,9 @@ const Thumbnails = ({ images, style, setImages, onHeightChange }: ThumbnailsProp
 						style={{
 							width: 34,
 							height: 34,
-							objectFit: "cover",
+							objectFit: 'cover',
 							borderRadius: 4,
-							cursor: "pointer",
+							cursor: 'pointer',
 						}}
 						onClick={() => handleImageClick(image)}
 					/>
@@ -68,31 +68,31 @@ const Thumbnails = ({ images, style, setImages, onHeightChange }: ThumbnailsProp
 						<div
 							onClick={() => handleDelete(index)}
 							style={{
-								position: "absolute",
+								position: 'absolute',
 								top: -4,
 								right: -4,
 								width: 13,
 								height: 13,
-								borderRadius: "50%",
-								backgroundColor: "var(--vscode-badge-background)",
-								display: "flex",
-								justifyContent: "center",
-								alignItems: "center",
-								cursor: "pointer",
+								borderRadius: '50%',
+								backgroundColor: 'var(--vscode-badge-background)',
+								display: 'flex',
+								justifyContent: 'center',
+								alignItems: 'center',
+								cursor: 'pointer',
 							}}>
 							<span
 								className="codicon codicon-close"
 								style={{
-									color: "var(--vscode-foreground)",
+									color: 'var(--vscode-foreground)',
 									fontSize: 10,
-									fontWeight: "bold",
+									fontWeight: 'bold',
 								}}></span>
 						</div>
 					)}
 				</div>
 			))}
 		</div>
-	)
-}
+	);
+};
 
-export default memo(Thumbnails)
+export default memo(Thumbnails);

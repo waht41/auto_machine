@@ -1,75 +1,75 @@
-import { ApiConfiguration, glamaDefaultModelId, openRouterDefaultModelId } from "../../../src/shared/api"
-import { ModelInfo } from "../../../src/shared/api"
+import { ApiConfiguration, glamaDefaultModelId, openRouterDefaultModelId } from '../../../src/shared/api';
+import { ModelInfo } from '../../../src/shared/api';
 export function validateApiConfiguration(apiConfiguration?: ApiConfiguration): string | undefined {
 	if (apiConfiguration) {
 		switch (apiConfiguration.apiProvider) {
-			case "anthropic":
+			case 'anthropic':
 				if (!apiConfiguration.apiKey) {
-					return "You must provide a valid API key or choose a different provider."
+					return 'You must provide a valid API key or choose a different provider.';
 				}
-				break
-			case "glama":
+				break;
+			case 'glama':
 				if (!apiConfiguration.glamaApiKey) {
-					return "You must provide a valid API key or choose a different provider."
+					return 'You must provide a valid API key or choose a different provider.';
 				}
-				break
-			case "bedrock":
+				break;
+			case 'bedrock':
 				if (!apiConfiguration.awsRegion) {
-					return "You must choose a region to use with AWS Bedrock."
+					return 'You must choose a region to use with AWS Bedrock.';
 				}
-				break
-			case "openrouter":
+				break;
+			case 'openrouter':
 				if (!apiConfiguration.openRouterApiKey) {
-					return "You must provide a valid API key or choose a different provider."
+					return 'You must provide a valid API key or choose a different provider.';
 				}
-				break
-			case "vertex":
+				break;
+			case 'vertex':
 				if (!apiConfiguration.vertexProjectId || !apiConfiguration.vertexRegion) {
-					return "You must provide a valid Google Cloud Project ID and Region."
+					return 'You must provide a valid Google Cloud Project ID and Region.';
 				}
-				break
-			case "gemini":
+				break;
+			case 'gemini':
 				if (!apiConfiguration.geminiApiKey) {
-					return "You must provide a valid API key or choose a different provider."
+					return 'You must provide a valid API key or choose a different provider.';
 				}
-				break
-			case "openai-native":
+				break;
+			case 'openai-native':
 				if (!apiConfiguration.openAiNativeApiKey) {
-					return "You must provide a valid API key or choose a different provider."
+					return 'You must provide a valid API key or choose a different provider.';
 				}
-				break
-			case "mistral":
+				break;
+			case 'mistral':
 				if (!apiConfiguration.mistralApiKey) {
-					return "You must provide a valid API key or choose a different provider."
+					return 'You must provide a valid API key or choose a different provider.';
 				}
-				break
-			case "openai":
+				break;
+			case 'openai':
 				if (
 					!apiConfiguration.openAiBaseUrl ||
 					!apiConfiguration.openAiApiKey ||
 					!apiConfiguration.openAiModelId
 				) {
-					return "You must provide a valid base URL, API key, and model ID."
+					return 'You must provide a valid base URL, API key, and model ID.';
 				}
-				break
-			case "ollama":
+				break;
+			case 'ollama':
 				if (!apiConfiguration.ollamaModelId) {
-					return "You must provide a valid model ID."
+					return 'You must provide a valid model ID.';
 				}
-				break
-			case "lmstudio":
+				break;
+			case 'lmstudio':
 				if (!apiConfiguration.lmStudioModelId) {
-					return "You must provide a valid model ID."
+					return 'You must provide a valid model ID.';
 				}
-				break
-			case "vscode-lm":
+				break;
+			case 'vscode-lm':
 				if (!apiConfiguration.vsCodeLmModelSelector) {
-					return "You must provide a valid model selector."
+					return 'You must provide a valid model selector.';
 				}
-				break
+				break;
 		}
 	}
-	return undefined
+	return undefined;
 }
 
 export function validateModelId(
@@ -79,27 +79,27 @@ export function validateModelId(
 ): string | undefined {
 	if (apiConfiguration) {
 		switch (apiConfiguration.apiProvider) {
-			case "glama":
-				const glamaModelId = apiConfiguration.glamaModelId || glamaDefaultModelId // in case the user hasn't changed the model id, it will be undefined by default
+			case 'glama':
+				const glamaModelId = apiConfiguration.glamaModelId || glamaDefaultModelId; // in case the user hasn't changed the model id, it will be undefined by default
 				if (!glamaModelId) {
-					return "You must provide a model ID."
+					return 'You must provide a model ID.';
 				}
 				if (glamaModels && !Object.keys(glamaModels).includes(glamaModelId)) {
 					// even if the model list endpoint failed, extensionstatecontext will always have the default model info
-					return "The model ID you provided is not available. Please choose a different model."
+					return 'The model ID you provided is not available. Please choose a different model.';
 				}
-				break
-			case "openrouter":
-				const modelId = apiConfiguration.openRouterModelId || openRouterDefaultModelId // in case the user hasn't changed the model id, it will be undefined by default
+				break;
+			case 'openrouter':
+				const modelId = apiConfiguration.openRouterModelId || openRouterDefaultModelId; // in case the user hasn't changed the model id, it will be undefined by default
 				if (!modelId) {
-					return "You must provide a model ID."
+					return 'You must provide a model ID.';
 				}
 				if (openRouterModels && !Object.keys(openRouterModels).includes(modelId)) {
 					// even if the model list endpoint failed, extensionstatecontext will always have the default model info
-					return "The model ID you provided is not available. Please choose a different model."
+					return 'The model ID you provided is not available. Please choose a different model.';
 				}
-				break
+				break;
 		}
 	}
-	return undefined
+	return undefined;
 }

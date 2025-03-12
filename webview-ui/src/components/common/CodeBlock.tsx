@@ -1,11 +1,11 @@
-import { memo, useEffect } from "react"
-import { useRemark } from "react-remark"
-import rehypeHighlight, { Options } from "rehype-highlight"
-import styled from "styled-components"
-import { visit } from "unist-util-visit"
-import { useExtensionState } from "../../context/ExtensionStateContext"
+import { memo, useEffect } from 'react';
+import { useRemark } from 'react-remark';
+import rehypeHighlight, { Options } from 'rehype-highlight';
+import styled from 'styled-components';
+import { visit } from 'unist-util-visit';
+import { useExtensionState } from '../../context/ExtensionStateContext';
 
-export const CODE_BLOCK_BG_COLOR = "var(--vscode-editor-background, --vscode-sideBar-background, rgb(30 30 30))"
+export const CODE_BLOCK_BG_COLOR = 'var(--vscode-editor-background, --vscode-sideBar-background, rgb(30 30 30))';
 
 /*
 overflowX: auto + inner div with padding results in an issue where the top/left/bottom padding renders but the right padding inside does not count as overflow as the width of the element is not exceeded. Once the inner div is outside the boundaries of the parent it counts as overflow.
@@ -35,7 +35,7 @@ const StyledMarkdown = styled.div<{ forceWrap: boolean }>`
 		background-color: ${CODE_BLOCK_BG_COLOR};
 		border-radius: 5px;
 		margin: 0;
-		min-width: ${({ forceWrap }) => (forceWrap ? "auto" : "max-content")};
+		min-width: ${({ forceWrap }) => (forceWrap ? 'auto' : 'max-content')};
 		padding: 10px 10px;
 	}
 
@@ -91,7 +91,7 @@ const StyledMarkdown = styled.div<{ forceWrap: boolean }>`
 	ul {
 		line-height: 1.5;
 	}
-`
+`;
 
 const StyledPre = styled.pre<{ theme: any }>`
 	& .hljs {
@@ -105,26 +105,26 @@ const StyledPre = styled.pre<{ theme: any }>`
       & ${key} {
         color: ${props.theme[key]};
       }
-    `
+    `;
 			})
-			.join("")}
-`
+			.join('')}
+`;
 
 const CodeBlock = memo(({ source, forceWrap = false }: CodeBlockProps) => {
-	const { theme } = useExtensionState()
+	const { theme } = useExtensionState();
 	const [reactContent, setMarkdownSource] = useRemark({
 		remarkPlugins: [
 			() => {
 				return (tree) => {
-					visit(tree, "code", (node: any) => {
+					visit(tree, 'code', (node: any) => {
 						if (!node.lang) {
-							node.lang = "javascript"
-						} else if (node.lang.includes(".")) {
+							node.lang = 'javascript';
+						} else if (node.lang.includes('.')) {
 							// if the language is a file, get the extension
-							node.lang = node.lang.split(".").slice(-1)[0]
+							node.lang = node.lang.split('.').slice(-1)[0];
 						}
-					})
-				}
+					});
+				};
 			},
 		],
 		rehypePlugins: [
@@ -138,22 +138,22 @@ const CodeBlock = memo(({ source, forceWrap = false }: CodeBlockProps) => {
 				pre: ({ node, ...preProps }: any) => <StyledPre {...preProps} theme={theme} />,
 			},
 		},
-	})
+	});
 
 	useEffect(() => {
-		setMarkdownSource(source || "")
-	}, [source, setMarkdownSource, theme])
+		setMarkdownSource(source || '');
+	}, [source, setMarkdownSource, theme]);
 
 	return (
 		<div
 			style={{
-				overflowY: forceWrap ? "visible" : "auto",
-				maxHeight: forceWrap ? "none" : "100%",
+				overflowY: forceWrap ? 'visible' : 'auto',
+				maxHeight: forceWrap ? 'none' : '100%',
 				backgroundColor: CODE_BLOCK_BG_COLOR,
 			}}>
 			<StyledMarkdown forceWrap={forceWrap}>{reactContent}</StyledMarkdown>
 		</div>
-	)
-})
+	);
+});
 
-export default CodeBlock
+export default CodeBlock;

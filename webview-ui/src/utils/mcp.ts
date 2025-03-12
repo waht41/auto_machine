@@ -1,4 +1,4 @@
-import { McpResource, McpResourceTemplate } from "../../../src/shared/mcp"
+import { McpResource, McpResourceTemplate } from '../../../src/shared/mcp';
 
 /**
  * Matches a URI against an array of URI templates and returns the matching template
@@ -14,14 +14,14 @@ export function findMatchingTemplate(
 		// Convert template to regex pattern
 		const pattern = String(template.uriTemplate)
 			// First escape special regex characters
-			.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+			.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 			// Then replace {param} with ([^/]+) to match any non-slash characters
 			// We need to use \{ and \} because we just escaped them
-			.replace(/\\\{([^}]+)\\\}/g, "([^/]+)")
+			.replace(/\\\{([^}]+)\\\}/g, '([^/]+)');
 
-		const regex = new RegExp(`^${pattern}$`)
-		return regex.test(uri)
-	})
+		const regex = new RegExp(`^${pattern}$`);
+		return regex.test(uri);
+	});
 }
 
 /**
@@ -37,9 +37,9 @@ export function findMatchingResourceOrTemplate(
 	templates: McpResourceTemplate[] = [],
 ): McpResource | McpResourceTemplate | undefined {
 	// First try to find an exact resource match
-	const exactMatch = resources.find((resource) => resource.uri === uri)
-	if (exactMatch) return exactMatch
+	const exactMatch = resources.find((resource) => resource.uri === uri);
+	if (exactMatch) return exactMatch;
 
 	// If no exact match, try to find a matching template
-	return findMatchingTemplate(uri, templates)
+	return findMatchingTemplate(uri, templates);
 }

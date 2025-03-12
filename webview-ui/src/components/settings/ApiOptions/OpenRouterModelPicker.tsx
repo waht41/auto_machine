@@ -1,26 +1,26 @@
-import { VSCodeLink, VSCodeTextField } from "@vscode/webview-ui-toolkit/react"
-import debounce from "debounce"
-import { Fzf } from "fzf"
-import React, { KeyboardEvent, memo, useEffect, useMemo, useRef, useState } from "react"
-import { useRemark } from "react-remark"
-import { useMount } from "react-use"
-import styled from "styled-components"
-import { openRouterDefaultModelId } from "@/shared/api"
-import { useExtensionState } from "@webview-ui/context/ExtensionStateContext"
-import { vscode } from "@webview-ui/utils/vscode"
-import { highlightFzfMatch } from "@webview-ui/utils/highlight"
-import { ModelInfoView } from "./ModelInfoView"
-import { normalizeApiConfiguration } from "@webview-ui/components/settings/ApiOptions/utils";
+import { VSCodeLink, VSCodeTextField } from '@vscode/webview-ui-toolkit/react';
+import debounce from 'debounce';
+import { Fzf } from 'fzf';
+import React, { KeyboardEvent, memo, useEffect, useMemo, useRef, useState } from 'react';
+import { useRemark } from 'react-remark';
+import { useMount } from 'react-use';
+import styled from 'styled-components';
+import { openRouterDefaultModelId } from '@/shared/api';
+import { useExtensionState } from '@webview-ui/context/ExtensionStateContext';
+import { vscode } from '@webview-ui/utils/vscode';
+import { highlightFzfMatch } from '@webview-ui/utils/highlight';
+import { ModelInfoView } from './ModelInfoView';
+import { normalizeApiConfiguration } from '@webview-ui/components/settings/ApiOptions/utils';
 
 const OpenRouterModelPicker: React.FC = () => {
-	const { apiConfiguration, setApiConfiguration, openRouterModels, onUpdateApiConfig } = useExtensionState()
-	const [searchTerm, setSearchTerm] = useState(apiConfiguration?.openRouterModelId || openRouterDefaultModelId)
-	const [isDropdownVisible, setIsDropdownVisible] = useState(false)
-	const [selectedIndex, setSelectedIndex] = useState(-1)
-	const dropdownRef = useRef<HTMLDivElement>(null)
-	const itemRefs = useRef<(HTMLDivElement | null)[]>([])
-	const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false)
-	const dropdownListRef = useRef<HTMLDivElement>(null)
+	const { apiConfiguration, setApiConfiguration, openRouterModels, onUpdateApiConfig } = useExtensionState();
+	const [searchTerm, setSearchTerm] = useState(apiConfiguration?.openRouterModelId || openRouterDefaultModelId);
+	const [isDropdownVisible, setIsDropdownVisible] = useState(false);
+	const [selectedIndex, setSelectedIndex] = useState(-1);
+	const dropdownRef = useRef<HTMLDivElement>(null);
+	const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
+	const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+	const dropdownListRef = useRef<HTMLDivElement>(null);
 
 	const handleModelChange = (newModelId: string) => {
 		// could be setting invalid model id/undefined info but validation will catch it
@@ -28,125 +28,125 @@ const OpenRouterModelPicker: React.FC = () => {
 			...apiConfiguration,
 			openRouterModelId: newModelId,
 			openRouterModelInfo: openRouterModels[newModelId],
-		}
+		};
 
-		setApiConfiguration(apiConfig)
-		onUpdateApiConfig(apiConfig)
-		setSearchTerm(newModelId)
-	}
+		setApiConfiguration(apiConfig);
+		onUpdateApiConfig(apiConfig);
+		setSearchTerm(newModelId);
+	};
 
 	const { selectedModelId, selectedModelInfo } = useMemo(() => {
-		return normalizeApiConfiguration(apiConfiguration)
-	}, [apiConfiguration])
+		return normalizeApiConfiguration(apiConfiguration);
+	}, [apiConfiguration]);
 
 	useEffect(() => {
 		if (apiConfiguration?.openRouterModelId && apiConfiguration?.openRouterModelId !== searchTerm) {
-			setSearchTerm(apiConfiguration?.openRouterModelId)
+			setSearchTerm(apiConfiguration?.openRouterModelId);
 		}
-	}, [apiConfiguration, searchTerm])
+	}, [apiConfiguration, searchTerm]);
 
 	const debouncedRefreshModels = useMemo(
 		() =>
 			debounce(() => {
-				vscode.postMessage({ type: "refreshOpenRouterModels" })
+				vscode.postMessage({ type: 'refreshOpenRouterModels' });
 			}, 50),
 		[],
-	)
+	);
 
 	useMount(() => {
-		debouncedRefreshModels()
+		debouncedRefreshModels();
 
 		// Cleanup debounced function
 		return () => {
-			debouncedRefreshModels.clear()
-		}
-	})
+			debouncedRefreshModels.clear();
+		};
+	});
 
 	useEffect(() => {
 		const handleClickOutside = (event: MouseEvent) => {
 			if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-				setIsDropdownVisible(false)
+				setIsDropdownVisible(false);
 			}
-		}
+		};
 
-		document.addEventListener("mousedown", handleClickOutside)
+		document.addEventListener('mousedown', handleClickOutside);
 		return () => {
-			document.removeEventListener("mousedown", handleClickOutside)
-		}
-	}, [])
+			document.removeEventListener('mousedown', handleClickOutside);
+		};
+	}, []);
 
 	const modelIds = useMemo(() => {
-		return Object.keys(openRouterModels).sort((a, b) => a.localeCompare(b))
-	}, [openRouterModels])
+		return Object.keys(openRouterModels).sort((a, b) => a.localeCompare(b));
+	}, [openRouterModels]);
 
 	const searchableItems = useMemo(() => {
 		return modelIds.map((id) => ({
 			id,
 			html: id,
-		}))
-	}, [modelIds])
+		}));
+	}, [modelIds]);
 
 	const fzf = useMemo(() => {
 		return new Fzf(searchableItems, {
 			selector: (item) => item.html,
-		})
-	}, [searchableItems])
+		});
+	}, [searchableItems]);
 
 	const modelSearchResults = useMemo(() => {
-		if (!searchTerm) return searchableItems
+		if (!searchTerm) return searchableItems;
 
-		const searchResults = fzf.find(searchTerm)
+		const searchResults = fzf.find(searchTerm);
 		return searchResults.map((result) => ({
 			...result.item,
-			html: highlightFzfMatch(result.item.html, Array.from(result.positions), "model-item-highlight"),
-		}))
-	}, [searchableItems, searchTerm, fzf])
+			html: highlightFzfMatch(result.item.html, Array.from(result.positions), 'model-item-highlight'),
+		}));
+	}, [searchableItems, searchTerm, fzf]);
 
 	const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-		if (!isDropdownVisible) return
+		if (!isDropdownVisible) return;
 
 		switch (event.key) {
-			case "ArrowDown":
-				event.preventDefault()
-				setSelectedIndex((prev) => (prev < modelSearchResults.length - 1 ? prev + 1 : prev))
-				break
-			case "ArrowUp":
-				event.preventDefault()
-				setSelectedIndex((prev) => (prev > 0 ? prev - 1 : prev))
-				break
-			case "Enter":
-				event.preventDefault()
+			case 'ArrowDown':
+				event.preventDefault();
+				setSelectedIndex((prev) => (prev < modelSearchResults.length - 1 ? prev + 1 : prev));
+				break;
+			case 'ArrowUp':
+				event.preventDefault();
+				setSelectedIndex((prev) => (prev > 0 ? prev - 1 : prev));
+				break;
+			case 'Enter':
+				event.preventDefault();
 				if (selectedIndex >= 0 && selectedIndex < modelSearchResults.length) {
-					handleModelChange(modelSearchResults[selectedIndex].id)
-					setIsDropdownVisible(false)
+					handleModelChange(modelSearchResults[selectedIndex].id);
+					setIsDropdownVisible(false);
 				}
-				break
-			case "Escape":
-				setIsDropdownVisible(false)
-				setSelectedIndex(-1)
-				break
+				break;
+			case 'Escape':
+				setIsDropdownVisible(false);
+				setSelectedIndex(-1);
+				break;
 		}
-	}
+	};
 
 	const hasInfo = useMemo(() => {
-		return modelIds.some((id) => id.toLowerCase() === searchTerm.toLowerCase())
-	}, [modelIds, searchTerm])
+		return modelIds.some((id) => id.toLowerCase() === searchTerm.toLowerCase());
+	}, [modelIds, searchTerm]);
 
 	useEffect(() => {
-		setSelectedIndex(-1)
+		setSelectedIndex(-1);
 		if (dropdownListRef.current) {
-			dropdownListRef.current.scrollTop = 0
+			dropdownListRef.current.scrollTop = 0;
 		}
-	}, [searchTerm])
+	}, [searchTerm]);
 
 	useEffect(() => {
 		if (selectedIndex >= 0 && itemRefs.current[selectedIndex]) {
 			itemRefs.current[selectedIndex]?.scrollIntoView({
-				block: "nearest",
-				behavior: "smooth",
-			})
+				block: 'nearest',
+				behavior: 'smooth',
+			});
 		}
-	}, [selectedIndex])
+	}, [selectedIndex]);
 
 	return (
 		<>
@@ -168,26 +168,26 @@ const OpenRouterModelPicker: React.FC = () => {
 						placeholder="Search and select a model..."
 						value={searchTerm}
 						onInput={(e) => {
-							handleModelChange((e.target as HTMLInputElement)?.value?.toLowerCase())
-							setIsDropdownVisible(true)
+							handleModelChange((e.target as HTMLInputElement)?.value?.toLowerCase());
+							setIsDropdownVisible(true);
 						}}
 						onFocus={() => setIsDropdownVisible(true)}
 						onKeyDown={handleKeyDown}
-						style={{ width: "100%", zIndex: OPENROUTER_MODEL_PICKER_Z_INDEX, position: "relative" }}>
+						style={{ width: '100%', zIndex: OPENROUTER_MODEL_PICKER_Z_INDEX, position: 'relative' }}>
 						{searchTerm && (
 							<div
 								className="input-icon-button codicon codicon-close"
 								aria-label="Clear search"
 								onClick={() => {
-									handleModelChange("")
-									setIsDropdownVisible(true)
+									handleModelChange('');
+									setIsDropdownVisible(true);
 								}}
 								slot="end"
 								style={{
-									display: "flex",
-									justifyContent: "center",
-									alignItems: "center",
-									height: "100%",
+									display: 'flex',
+									justifyContent: 'center',
+									alignItems: 'center',
+									height: '100%',
 								}}
 							/>
 						)}
@@ -201,8 +201,8 @@ const OpenRouterModelPicker: React.FC = () => {
 									isSelected={index === selectedIndex}
 									onMouseEnter={() => setSelectedIndex(index)}
 									onClick={() => {
-										handleModelChange(item.id)
-										setIsDropdownVisible(false)
+										handleModelChange(item.id);
+										setIsDropdownVisible(false);
 									}}
 									dangerouslySetInnerHTML={{
 										__html: item.html,
@@ -224,37 +224,37 @@ const OpenRouterModelPicker: React.FC = () => {
 			) : (
 				<p
 					style={{
-						fontSize: "12px",
+						fontSize: '12px',
 						marginTop: 0,
-						color: "var(--vscode-descriptionForeground)",
+						color: 'var(--vscode-descriptionForeground)',
 					}}>
-					The extension automatically fetches the latest list of models available on{" "}
-					<VSCodeLink style={{ display: "inline", fontSize: "inherit" }} href="https://openrouter.ai/models">
+					The extension automatically fetches the latest list of models available on{' '}
+					<VSCodeLink style={{ display: 'inline', fontSize: 'inherit' }} href="https://openrouter.ai/models">
 						OpenRouter.
 					</VSCodeLink>
-					If you're unsure which model to choose, Roo Code works best with{" "}
+					If you're unsure which model to choose, Roo Code works best with{' '}
 					<VSCodeLink
-						style={{ display: "inline", fontSize: "inherit" }}
-						onClick={() => handleModelChange("anthropic/claude-3.5-sonnet:beta")}>
+						style={{ display: 'inline', fontSize: 'inherit' }}
+						onClick={() => handleModelChange('anthropic/claude-3.5-sonnet:beta')}>
 						anthropic/claude-3.5-sonnet:beta.
 					</VSCodeLink>
 					You can also try searching "free" for no-cost options currently available.
 				</p>
 			)}
 		</>
-	)
-}
+	);
+};
 
-export default OpenRouterModelPicker
+export default OpenRouterModelPicker;
 
 // Dropdown
 
 const DropdownWrapper = styled.div`
 	position: relative;
 	width: 100%;
-`
+`;
 
-export const OPENROUTER_MODEL_PICKER_Z_INDEX = 1_000
+export const OPENROUTER_MODEL_PICKER_Z_INDEX = 1_000;
 
 const DropdownList = styled.div`
 	position: absolute;
@@ -268,7 +268,7 @@ const DropdownList = styled.div`
 	z-index: ${OPENROUTER_MODEL_PICKER_Z_INDEX - 1};
 	border-bottom-left-radius: 3px;
 	border-bottom-right-radius: 3px;
-`
+`;
 
 const DropdownItem = styled.div<{ isSelected: boolean }>`
 	padding: 5px 10px;
@@ -276,12 +276,12 @@ const DropdownItem = styled.div<{ isSelected: boolean }>`
 	word-break: break-all;
 	white-space: normal;
 
-	background-color: ${({ isSelected }) => (isSelected ? "var(--vscode-list-activeSelectionBackground)" : "inherit")};
+	background-color: ${({ isSelected }) => (isSelected ? 'var(--vscode-list-activeSelectionBackground)' : 'inherit')};
 
 	&:hover {
 		background-color: var(--vscode-list-activeSelectionBackground);
 	}
-`
+`;
 
 // Markdown
 
@@ -328,7 +328,7 @@ const StyledMarkdown = styled.div`
 			text-decoration: underline;
 		}
 	}
-`
+`;
 
 export const ModelDescriptionMarkdown = memo(
 	({
@@ -342,45 +342,45 @@ export const ModelDescriptionMarkdown = memo(
 		isExpanded: boolean
 		setIsExpanded: (isExpanded: boolean) => void
 	}) => {
-		const [reactContent, setMarkdown] = useRemark()
+		const [reactContent, setMarkdown] = useRemark();
 		// const [isExpanded, setIsExpanded] = useState(false)
-		const [showSeeMore, setShowSeeMore] = useState(false)
-		const textContainerRef = useRef<HTMLDivElement>(null)
-		const textRef = useRef<HTMLDivElement>(null)
+		const [showSeeMore, setShowSeeMore] = useState(false);
+		const textContainerRef = useRef<HTMLDivElement>(null);
+		const textRef = useRef<HTMLDivElement>(null);
 
 		useEffect(() => {
-			setMarkdown(markdown || "")
-		}, [markdown, setMarkdown])
+			setMarkdown(markdown || '');
+		}, [markdown, setMarkdown]);
 
 		useEffect(() => {
 			if (textRef.current && textContainerRef.current) {
-				const { scrollHeight } = textRef.current
-				const { clientHeight } = textContainerRef.current
-				const isOverflowing = scrollHeight > clientHeight
-				setShowSeeMore(isOverflowing)
+				const { scrollHeight } = textRef.current;
+				const { clientHeight } = textContainerRef.current;
+				const isOverflowing = scrollHeight > clientHeight;
+				setShowSeeMore(isOverflowing);
 				// if (!isOverflowing) {
 				// 	setIsExpanded(false)
 				// }
 			}
-		}, [reactContent, setIsExpanded])
+		}, [reactContent, setIsExpanded]);
 
 		return (
-			<StyledMarkdown key={modelKey} style={{ display: "inline-block", marginBottom: 0 }}>
+			<StyledMarkdown key={modelKey} style={{ display: 'inline-block', marginBottom: 0 }}>
 				<div
 					ref={textContainerRef}
 					style={{
-						overflowY: isExpanded ? "auto" : "hidden",
-						position: "relative",
-						wordBreak: "break-word",
-						overflowWrap: "anywhere",
+						overflowY: isExpanded ? 'auto' : 'hidden',
+						position: 'relative',
+						wordBreak: 'break-word',
+						overflowWrap: 'anywhere',
 					}}>
 					<div
 						ref={textRef}
 						style={{
-							display: "-webkit-box",
-							WebkitLineClamp: isExpanded ? "unset" : 3,
-							WebkitBoxOrient: "vertical",
-							overflow: "hidden",
+							display: '-webkit-box',
+							WebkitLineClamp: isExpanded ? 'unset' : 3,
+							WebkitBoxOrient: 'vertical',
+							overflow: 'hidden',
 							// whiteSpace: "pre-wrap",
 							// wordBreak: "break-word",
 							// overflowWrap: "anywhere",
@@ -390,28 +390,28 @@ export const ModelDescriptionMarkdown = memo(
 					{!isExpanded && showSeeMore && (
 						<div
 							style={{
-								position: "absolute",
+								position: 'absolute',
 								right: 0,
 								bottom: 0,
-								display: "flex",
-								alignItems: "center",
+								display: 'flex',
+								alignItems: 'center',
 							}}>
 							<div
 								style={{
 									width: 30,
-									height: "1.2em",
+									height: '1.2em',
 									background:
-										"linear-gradient(to right, transparent, var(--vscode-sideBar-background))",
+										'linear-gradient(to right, transparent, var(--vscode-sideBar-background))',
 								}}
 							/>
 							<VSCodeLink
 								style={{
 									// cursor: "pointer",
 									// color: "var(--vscode-textLink-foreground)",
-									fontSize: "inherit",
+									fontSize: 'inherit',
 									paddingRight: 0,
 									paddingLeft: 3,
-									backgroundColor: "var(--vscode-sideBar-background)",
+									backgroundColor: 'var(--vscode-sideBar-background)',
 								}}
 								onClick={() => setIsExpanded(true)}>
 								See more
@@ -433,6 +433,6 @@ export const ModelDescriptionMarkdown = memo(
 				</div>
 			)} */}
 			</StyledMarkdown>
-		)
+		);
 	},
-)
+);

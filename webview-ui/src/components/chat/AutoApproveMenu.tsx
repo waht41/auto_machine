@@ -1,7 +1,7 @@
-import { useCallback, useMemo, useState } from "react";
-import { IToolCategory, IToolNode } from "@core/tool-adapter/type";
-import styled from "styled-components";
-import { Tooltip, TreeSelect } from "antd";
+import { useCallback, useMemo, useState } from 'react';
+import { IToolCategory, IToolNode } from '@core/tool-adapter/type';
+import styled from 'styled-components';
+import { Tooltip, TreeSelect } from 'antd';
 
 // 使用styled-components定义样式组件
 const Container = styled.div`
@@ -55,80 +55,80 @@ const StyledHeaderTreeSelect = styled(TreeSelect)`
 `;
 
 const tools: IToolCategory[] = [
-  {
-    id: "file",
-    label: "File",
-    description: "File permissions",
-    tools: [
-      {
-        id: "readFiles",
-        label: "Read files and directories",
-        description: "Allows access to read any file on your computer.",
-      },
-      {
-        id: "editFiles",
-        label: "Edit files",
-        description: "Allows modification of any files on your computer.",
-      },
-    ],
-  },
-  {
-    id: "commands",
-    label: "Commands",
-    description: "Command permissions",
-    tools: [
-      {
-        id: "executeCommands",
-        label: "Execute approved commands",
-        description:
-          "Allows execution of approved terminal commands. You can configure this in the settings panel.",
-      },
-    ],
-  },
-  {
-    id: "browser",
-    label: "Browser",
-    description: "Browser permissions",
-    tools: [
-      {
-        id: "useBrowser",
-        label: "Use the browser",
-        description: "Allows ability to launch and interact with any website in a headless browser.",
-      },
-    ],
-  },
-  {
-    id: "mcp",
-    label: "MCP",
-    description: "MCP permissions",
-    tools: [
-      {
-        id: "useMcp",
-        label: "Use MCP servers",
-        description: "Allows use of configured MCP servers which may modify filesystem or interact with APIs.",
-        tools: [
-          {
-            id: "sql",
-            label: "SQL",
-            description: "Allows use of SQL servers.",
-          }
-        ]
-      },
-    ],
-  },
-  {
-    id: "retry",
-    label: "Retry",
-    description: "Retry permissions",
-    tools: [
-      {
-        id: "retryRequests",
-        label: "Retry failed requests",
-        description: "Automatically retry failed requests when the provider returns an error response.",
-      },
-    ],
-  },
-]
+	{
+		id: 'file',
+		label: 'File',
+		description: 'File permissions',
+		tools: [
+			{
+				id: 'readFiles',
+				label: 'Read files and directories',
+				description: 'Allows access to read any file on your computer.',
+			},
+			{
+				id: 'editFiles',
+				label: 'Edit files',
+				description: 'Allows modification of any files on your computer.',
+			},
+		],
+	},
+	{
+		id: 'commands',
+		label: 'Commands',
+		description: 'Command permissions',
+		tools: [
+			{
+				id: 'executeCommands',
+				label: 'Execute approved commands',
+				description:
+          'Allows execution of approved terminal commands. You can configure this in the settings panel.',
+			},
+		],
+	},
+	{
+		id: 'browser',
+		label: 'Browser',
+		description: 'Browser permissions',
+		tools: [
+			{
+				id: 'useBrowser',
+				label: 'Use the browser',
+				description: 'Allows ability to launch and interact with any website in a headless browser.',
+			},
+		],
+	},
+	{
+		id: 'mcp',
+		label: 'MCP',
+		description: 'MCP permissions',
+		tools: [
+			{
+				id: 'useMcp',
+				label: 'Use MCP servers',
+				description: 'Allows use of configured MCP servers which may modify filesystem or interact with APIs.',
+				tools: [
+					{
+						id: 'sql',
+						label: 'SQL',
+						description: 'Allows use of SQL servers.',
+					}
+				]
+			},
+		],
+	},
+	{
+		id: 'retry',
+		label: 'Retry',
+		description: 'Retry permissions',
+		tools: [
+			{
+				id: 'retryRequests',
+				label: 'Retry failed requests',
+				description: 'Automatically retry failed requests when the provider returns an error response.',
+			},
+		],
+	},
+];
 
 interface IProp{
   toolCategories: IToolCategory[]
@@ -138,15 +138,15 @@ interface IProp{
 
 const AutoApproveMenu = ({toolCategories, allowedTools, setAllowedTools}:IProp) => {
 
-  return (
-    <Container>
-      <MenuContainer>
-        <MenuHeader allowedTools={allowedTools} tools={toolCategories || tools} setAllowedTools={setAllowedTools} />
-        <MenuBody/>
-      </MenuContainer>
-    </Container>
-  )
-}
+	return (
+		<Container>
+			<MenuContainer>
+				<MenuHeader allowedTools={allowedTools} tools={toolCategories || tools} setAllowedTools={setAllowedTools} />
+				<MenuBody/>
+			</MenuContainer>
+		</Container>
+	);
+};
 
 interface MenuHeaderProps {
   allowedTools: string[]
@@ -155,79 +155,79 @@ interface MenuHeaderProps {
 }
 
 const MenuHeader = ({ allowedTools, tools, setAllowedTools }: MenuHeaderProps) => {
-  // 阻止事件冒泡，防止点击 TreeSelect 时触发 HeaderContainer 的点击事件
-  const convertedTools = useMemo(() => convertToNodes(tools), [tools]);
+	// 阻止事件冒泡，防止点击 TreeSelect 时触发 HeaderContainer 的点击事件
+	const convertedTools = useMemo(() => convertToNodes(tools), [tools]);
 
-  return (
-    <HeaderContainer>
-      <HeaderContent>
-        <HeaderTitle>Auto-approve:</HeaderTitle>
-          <StyledHeaderTreeSelect
-            treeData={convertedTools}
-            value={allowedTools}
-            onChange={(checked) => {
-              setAllowedTools(checked);
-            }}
-            treeCheckable={true}
-            showCheckedStrategy={TreeSelect.SHOW_CHILD}
-            placeholder="click here to choose tools"
-            dropdownStyle={{ maxHeight: 400, overflow: 'auto' }}
-            treeDefaultExpandAll
-            treeNodeLabelProp="title"
-          />
-      </HeaderContent>
-    </HeaderContainer>
-  );
-}
+	return (
+		<HeaderContainer>
+			<HeaderContent>
+				<HeaderTitle>Auto-approve:</HeaderTitle>
+				<StyledHeaderTreeSelect
+					treeData={convertedTools}
+					value={allowedTools}
+					onChange={(checked) => {
+						setAllowedTools(checked);
+					}}
+					treeCheckable={true}
+					showCheckedStrategy={TreeSelect.SHOW_CHILD}
+					placeholder="click here to choose tools"
+					dropdownStyle={{ maxHeight: 400, overflow: 'auto' }}
+					treeDefaultExpandAll
+					treeNodeLabelProp="title"
+				/>
+			</HeaderContent>
+		</HeaderContainer>
+	);
+};
 
 // 判断节点是否为类别（有子工具）
 const isCategory = (node: IToolNode): node is IToolCategory => {
-  return 'tools' in node && Array.isArray((node as IToolCategory).tools);
+	return 'tools' in node && Array.isArray((node as IToolCategory).tools);
 };
 
 // 将工具数据转换为 TreeSelect 所需的节点格式
 const convertToNodes = (toolCategories: IToolCategory[]): any[] => {
-  // 递归处理节点
-  const processNode = (node: IToolNode): any => {
-    const processedNode: any = {
-      title: (
-        <Tooltip title={node.description}>
-          {node.label}
-        </Tooltip>
-      ),
-      value: node.id,
-      key: node.id,
-    };
+	// 递归处理节点
+	const processNode = (node: IToolNode): any => {
+		const processedNode: any = {
+			title: (
+				<Tooltip title={node.description}>
+					{node.label}
+				</Tooltip>
+			),
+			value: node.id,
+			key: node.id,
+		};
 
-    if (isCategory(node)) {
-      processedNode.children = node.tools.map(tool => processNode(tool));
-    }
+		if (isCategory(node)) {
+			processedNode.children = node.tools.map(tool => processNode(tool));
+		}
 
-    return processedNode;
-  };
+		return processedNode;
+	};
 
-  // 创建一个根节点，包含所有工具类别
-  return [{
-    title: (
-      <Tooltip title="所有可用的自动批准工具">
+	// 创建一个根节点，包含所有工具类别
+	return [{
+		title: (
+			<Tooltip title="所有可用的自动批准工具">
         所有工具
-      </Tooltip>
-    ),
-    value: "all",
-    key: "all",
-    children: toolCategories.map(category => processNode(category))
-  }];
+			</Tooltip>
+		),
+		value: 'all',
+		key: 'all',
+		children: toolCategories.map(category => processNode(category))
+	}];
 };
 
 const MenuBody = () => {
-  return (
-    <BodyContainer>
-      <Description>
+	return (
+		<BodyContainer>
+			<Description>
         Auto-approve allows the assistant to perform actions without asking for permission.
         Only enable for actions you fully trust.
-      </Description>
-    </BodyContainer>
-  );
-}
+			</Description>
+		</BodyContainer>
+	);
+};
 
 export default AutoApproveMenu;
