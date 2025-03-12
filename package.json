@@ -40,8 +40,8 @@
     "preview": "vite preview",
     "package": "electron-builder",
     "release": "npm run build && npm run package",
-    "lint": "eslint src/**/*.{ts,tsx}",
-    "lint:fix": "eslint src/**/*.{ts,tsx} --fix"
+    "lint": "eslint \"src/**/*.{ts,tsx}\" \"webview-ui/**/*.{ts,tsx}\"",
+    "lint:fix": "eslint \"src/**/*.{ts,tsx}\" \"webview-ui/**/*.{ts,tsx}\" --fix"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.2",
