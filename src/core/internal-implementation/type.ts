@@ -3,7 +3,7 @@ import { McpHub } from '@operation/MCP';
 
 export interface IInternalContext{
     cline: Cline;
-    mcpHub: McpHub
+    mcpHub?: McpHub
     replacing?: boolean;
     approval?: boolean;
 }

@@ -47,6 +47,8 @@ import process from 'node:process';
 import { toUserContent, UserContent } from '@core/prompts/utils';
 import { Command, Middleware } from '@executors/types';
 import { StreamChatManager } from '@core/manager/StreamChatManager';
+import { IApiConversationHistory } from '@core/manager/type';
+import { IInternalContext } from '@core/internal-implementation/type';
 
 const cwd = process.cwd();
 
@@ -152,11 +154,11 @@ export class Cline {
 		this.updateDiffStrategy(experimentalDiffStrategy);
 	}
 
-	private get apiConversationHistory(): Anthropic.MessageParam[] {
+	get apiConversationHistory(): IApiConversationHistory {
 		return this.streamChatManager.apiConversationHistory;
 	}
 
-	private set apiConversationHistory(value: Anthropic.MessageParam[]) {
+	private set apiConversationHistory(value: IApiConversationHistory) {
 		this.streamChatManager.apiConversationHistory = value;
 	}
 
@@ -573,7 +575,7 @@ export class Cline {
 		this.initiateTaskLoop(userContent);
 	}
 
-	private getInternalContext(replacing: boolean = false) {
+	private getInternalContext(replacing: boolean = false) : IInternalContext {
 		return {
 			cline: this,
 			mcpHub: this.mcpHub,
@@ -583,8 +585,6 @@ export class Cline {
 
 	async receiveApproval({tool}:
 	{ tool: any }) {
-		//todo waht 还没写完
-		console.log('[waht]', 'receiveApproval', tool);
 		const result = await this.applyCommand(tool, this.getInternalContext());
 		this.resume({text: typeof result === 'string' ? result : undefined, images: []});
 	}
@@ -1137,11 +1137,11 @@ export class Cline {
 		}
 	}
 
-	async applyToolUse(block: ToolUse, context?: any): Promise<any> {
+	async applyToolUse(block: ToolUse, context?: IInternalContext): Promise<string | unknown> {
 		return await this.applyCommand({...block.params, type: block.name}, context);
 	}
 
-	async applyCommand(command: Command, context?: any): Promise<any> {
+	async applyCommand(command: Command, context?: IInternalContext): Promise<string | null> {
 		console.log('[waht] try apply tool', command);
 		if (this.executor.executorNames.includes(command.type)) {
 			return await this.executor.runCommand(command, context) ?? 'no result return';

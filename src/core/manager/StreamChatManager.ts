@@ -3,13 +3,8 @@ import { ApiStream, ApiStreamChunk } from '@/api/transform/stream';
 import { ClineApiReqInfo } from '@/shared/ExtensionMessage';
 import { parseBlocks } from '@core/assistant-message/parse-assistant-message';
 import { calculateApiCost } from '@/utils/cost';
-import { McpHub } from '@operation/MCP';
-import pWaitFor from 'p-wait-for';
 import { SYSTEM_PROMPT } from '@core/prompts/system';
-import { truncateHalfConversation } from '@core/sliding-window';
-import delay from 'delay';
-import { serializeError } from 'serialize-error';
-import { Anthropic } from '@anthropic-ai/sdk';
+import { IApiConversationHistory } from '@core/manager/type';
 
 export class StreamChatManager{
 	currentStreamingContentIndex = 0;
@@ -21,7 +16,7 @@ export class StreamChatManager{
 	didGetNewMessage = false;
 	presentAssistantMessageLocked = false;
 	presentAssistantMessageHasPendingUpdates = false;
-	apiConversationHistory: (Anthropic.MessageParam & { ts?: number })[] = [];
+	apiConversationHistory: IApiConversationHistory = [];
 	constructor(private api: ApiHandler) {
 	}
 
