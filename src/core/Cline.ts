@@ -19,12 +19,12 @@ import { findLastIndex } from "@/shared/array"
 import { combineApiRequests } from "@/shared/combineApiRequests"
 import { combineCommandSequences } from "@/shared/combineCommandSequences"
 import {
-	ClineApiReqCancelReason,
-	ClineApiReqInfo,
-	ClineAsk,
-	ClineMessage,
-	ClineSay,
-	ExtensionMessage,
+  ClineApiReqCancelReason,
+  ClineApiReqInfo,
+  ClineAsk,
+  ClineMessage,
+  ClineSay,
+  ExtensionMessage,
 } from "@/shared/ExtensionMessage"
 import { getApiMetrics } from "@/shared/getApiMetrics"
 import { HistoryItem } from "@/shared/HistoryItem"
@@ -47,6 +47,7 @@ import { registerInternalImplementation } from "@core/internal-implementation";
 import process from "node:process";
 import { toUserContent, UserContent } from "@core/prompts/utils";
 import { Command, Middleware } from "@executors/types";
+import { StreamChatManager } from "@core/manager/StreamChatManager";
 
 const cwd = process.cwd()
 
@@ -82,7 +83,6 @@ export class Cline {
 	diffEnabled: boolean = false
 	fuzzyMatchThreshold: number = 1.0
 
-	apiConversationHistory: (Anthropic.MessageParam & { ts?: number })[] = []
 	clineMessages: ClineMessage[] = []
 	private askResponse?: ClineAskResponse
 	private askResponseText?: string
@@ -108,10 +108,10 @@ export class Cline {
 	private didGetNewMessage = false
 	private didCompleteReadingStream = false
 
-
 	private executor = new CommandRunner()
 	private asking = false;
   private mcpHub?: McpHub
+  private streamChatManager: StreamChatManager
 
 	constructor(
 		prop: IProp
@@ -129,6 +129,7 @@ export class Cline {
 		this.providerRef = new WeakRef(provider)
 		this.diffViewProvider = new DiffViewProvider(cwd)
     this.mcpHub = mcpHub
+    this.streamChatManager = new StreamChatManager(this.api)
 		registerInternalImplementation(this.executor)
 		for (const middleware of middleWares) {
 			this.executor.use(middleware)
@@ -140,6 +141,14 @@ export class Cline {
 		// Initialize diffStrategy based on current state
 		this.updateDiffStrategy(experimentalDiffStrategy)
 	}
+
+  private get apiConversationHistory(): Anthropic.MessageParam[] {
+    return this.streamChatManager.apiConversationHistory;
+  }
+
+  private set apiConversationHistory(value: Anthropic.MessageParam[]) {
+    this.streamChatManager.apiConversationHistory = value;
+  }
 
 	async start({task, images}: {task?: string, images?: string[]}) {
 		if (!task && !images) {
@@ -917,7 +926,7 @@ export class Cline {
 		}
 	}
 
-	async *attemptApiRequest(previousApiReqIndex: number): ApiStream {
+	async attemptApiRequest(previousApiReqIndex: number): Promise<ApiStream> {
 		let mcpHub: McpHub | undefined
 
 		const { mcpEnabled, alwaysApproveResubmit, requestDelaySeconds } =
@@ -929,34 +938,10 @@ export class Cline {
 				throw new Error("MCP hub not available")
 			}
 			// Wait for MCP servers to be connected before generating system prompt
-			await pWaitFor(() => mcpHub!.isConnecting !== true, { timeout: 10_000 }).catch(() => {
+			await pWaitFor(() => !mcpHub!.isConnecting, { timeout: 10_000 }).catch(() => {
 				console.error("MCP servers failed to connect in time")
 			})
 		}
-
-		const { browserViewportSize, mode, customModePrompts, preferredLanguage } =
-			(await this.providerRef.deref()?.getState()) ?? {}
-		const { customModes } = (await this.providerRef.deref()?.getState()) ?? {}
-		const systemPrompt = await (async () => {
-			const provider = this.providerRef.deref()
-			if (!provider) {
-				throw new Error("Provider not available")
-			}
-			return SYSTEM_PROMPT(
-				provider.context,
-				cwd,
-				this.api.getModel().info.supportsComputerUse ?? false,
-				mcpHub,
-				this.diffStrategy,
-				browserViewportSize,
-				mode,
-				customModePrompts,
-				customModes,
-				this.customInstructions,
-				preferredLanguage,
-				this.diffEnabled,
-			)
-		})()
 
 		// If the previous API request's total token usage is close to the context window, truncate the conversation history to free up space for the new request
 		if (previousApiReqIndex >= 0) {
@@ -975,78 +960,7 @@ export class Cline {
 			}
 		}
 
-		// Clean conversation history by:
-		// 1. Converting to Anthropic.MessageParam by spreading only the API-required properties
-		// 2. Converting image blocks to text descriptions if model doesn't support images
-		const cleanConversationHistory = this.apiConversationHistory.map(({ role, content }) => {
-			// Handle array content (could contain image blocks)
-			if (Array.isArray(content)) {
-				if (!this.api.getModel().info.supportsImages) {
-					// Convert image blocks to text descriptions
-					content = content.map((block) => {
-						if (block.type === "image") {
-							// Convert image blocks to text descriptions
-							// Note: We can't access the actual image content/url due to API limitations,
-							// but we can indicate that an image was present in the conversation
-							return {
-								type: "text",
-								text: "[Referenced image in conversation]",
-							}
-						}
-						return block
-					})
-				}
-			}
-			return { role, content }
-		})
-		const stream = this.api.createMessage(systemPrompt, cleanConversationHistory)
-		const iterator = stream[Symbol.asyncIterator]()
-
-		try {
-			// awaiting first chunk to see if it will throw an error
-			const firstChunk = await iterator.next()
-			yield firstChunk.value
-		} catch (error) {
-			// note that this api_req_failed ask is unique in that we only present this option if the api hasn't streamed any content yet (ie it fails on the first chunk due), as it would allow them to hit a retry button. However if the api failed mid-stream, it could be in any arbitrary state where some tools may have executed, so that error is handled differently and requires cancelling the task entirely.
-			if (alwaysApproveResubmit) {
-				const errorMsg = error.message ?? "Unknown error"
-				console.error("API request failed:", errorMsg)
-				const requestDelay = requestDelaySeconds || 5
-				// Automatically retry with delay
-				// Show countdown timer in error color
-				for (let i = requestDelay; i > 0; i--) {
-					await this.say(
-						"api_req_retry_delayed",
-						`${errorMsg}\n\nRetrying in ${i} seconds...`,
-						undefined,
-						true,
-					)
-					await delay(1000)
-				}
-				await this.say("api_req_retry_delayed", `${errorMsg}\n\nRetrying now...`, undefined, false)
-				// delegate generator output from the recursive call
-				yield* this.attemptApiRequest(previousApiReqIndex)
-				return
-			} else {
-				const { response } = await this.ask(
-					"api_req_failed",
-					error.message ?? JSON.stringify(serializeError(error), null, 2),
-				)
-				if (response !== "yesButtonClicked") {
-					// this will never happen since if noButtonClicked, we will clear current task, aborting this instance
-					throw new Error("API request failed")
-				}
-				await this.say("api_req_retried")
-				// delegate generator output from the recursive call
-				yield* this.attemptApiRequest(previousApiReqIndex)
-				return
-			}
-		}
-
-		// no error, so we can continue to yield all remaining chunks
-		// (needs to be placed outside of try/catch since it we want caller to handle errors not with api_req_failed as that is reserved for first chunk failures only)
-		// this delegates to another generator or iterable object. In this case, it's saying "yield all remaining values from this iterator". This effectively passes along all subsequent chunks from the original stream.
-		yield* iterator
+		return this.streamChatManager.attemptApiRequest();
 	}
 
 	async handleAssistantMessage(replacing = false) {
@@ -1448,7 +1362,7 @@ export class Cline {
 
 		await this.resetStream()
 
-		const stream = this.attemptApiRequest(previousApiReqIndex) // yields only if the first chunk is successful, otherwise will allow the user to retry the request (most likely due to rate limit error, which gets thrown on the first chunk)
+		const stream = await this.attemptApiRequest(previousApiReqIndex) // yields only if the first chunk is successful, otherwise will allow the user to retry the request (most likely due to rate limit error, which gets thrown on the first chunk)
 		let assistantMessage = ""
 		let reasoningMessage = ""
 		try {
