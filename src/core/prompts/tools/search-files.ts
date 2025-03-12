@@ -1,4 +1,4 @@
-import { ToolArgs } from "./types"
+import { ToolArgs } from './types';
 
 export function getSearchFilesDescription(args: ToolArgs): string {
 	return `## search_files
@@ -19,5 +19,5 @@ Example: Requesting to search for all .ts files in the current directory
 <path>.</path>
 <regex>.*</regex>
 <file_pattern>*.ts</file_pattern>
-</search_files>`
+</search_files>`;
 }

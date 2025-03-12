@@ -1,21 +1,21 @@
-import { Anthropic } from "@anthropic-ai/sdk"
-import { AnthropicVertex } from "@anthropic-ai/vertex-sdk"
-import { ApiHandler, SingleCompletionHandler } from "../"
-import { ApiHandlerOptions, ModelInfo, vertexDefaultModelId, VertexModelId, vertexModels } from "../../shared/api"
-import { ApiStream } from "../transform/stream"
+import { Anthropic } from '@anthropic-ai/sdk';
+import { AnthropicVertex } from '@anthropic-ai/vertex-sdk';
+import { ApiHandler, SingleCompletionHandler } from '../';
+import { ApiHandlerOptions, ModelInfo, vertexDefaultModelId, VertexModelId, vertexModels } from '../../shared/api';
+import { ApiStream } from '../transform/stream';
 
 // https://docs.anthropic.com/en/api/claude-on-vertex-ai
 export class VertexHandler implements ApiHandler, SingleCompletionHandler {
-	private options: ApiHandlerOptions
-	private client: AnthropicVertex
+	private options: ApiHandlerOptions;
+	private client: AnthropicVertex;
 
 	constructor(options: ApiHandlerOptions) {
-		this.options = options
+		this.options = options;
 		this.client = new AnthropicVertex({
 			projectId: this.options.vertexProjectId,
 			// https://cloud.google.com/vertex-ai/generative-ai/docs/partner-models/use-claude#regions
 			region: this.options.vertexRegion,
-		})
+		});
 	}
 
 	async *createMessage(systemPrompt: string, messages: Anthropic.Messages.MessageParam[]): ApiStream {
@@ -26,62 +26,62 @@ export class VertexHandler implements ApiHandler, SingleCompletionHandler {
 			system: systemPrompt,
 			messages,
 			stream: true,
-		})
+		});
 		for await (const chunk of stream) {
 			switch (chunk.type) {
-				case "message_start":
-					const usage = chunk.message.usage
+				case 'message_start':
+					const usage = chunk.message.usage;
 					yield {
-						type: "usage",
+						type: 'usage',
 						inputTokens: usage.input_tokens || 0,
 						outputTokens: usage.output_tokens || 0,
-					}
-					break
-				case "message_delta":
+					};
+					break;
+				case 'message_delta':
 					yield {
-						type: "usage",
+						type: 'usage',
 						inputTokens: 0,
 						outputTokens: chunk.usage.output_tokens || 0,
-					}
-					break
+					};
+					break;
 
-				case "content_block_start":
+				case 'content_block_start':
 					switch (chunk.content_block.type) {
-						case "text":
+						case 'text':
 							if (chunk.index > 0) {
 								yield {
-									type: "text",
-									text: "\n",
-								}
+									type: 'text',
+									text: '\n',
+								};
 							}
 							yield {
-								type: "text",
+								type: 'text',
 								text: chunk.content_block.text,
-							}
-							break
+							};
+							break;
 					}
-					break
-				case "content_block_delta":
+					break;
+				case 'content_block_delta':
 					switch (chunk.delta.type) {
-						case "text_delta":
+						case 'text_delta':
 							yield {
-								type: "text",
+								type: 'text',
 								text: chunk.delta.text,
-							}
-							break
+							};
+							break;
 					}
-					break
+					break;
 			}
 		}
 	}
 
 	getModel(): { id: VertexModelId; info: ModelInfo } {
-		const modelId = this.options.apiModelId
+		const modelId = this.options.apiModelId;
 		if (modelId && modelId in vertexModels) {
-			const id = modelId as VertexModelId
-			return { id, info: vertexModels[id] }
+			const id = modelId as VertexModelId;
+			return { id, info: vertexModels[id] };
 		}
-		return { id: vertexDefaultModelId, info: vertexModels[vertexDefaultModelId] }
+		return { id: vertexDefaultModelId, info: vertexModels[vertexDefaultModelId] };
 	}
 
 	async completePrompt(prompt: string): Promise<string> {
@@ -90,20 +90,20 @@ export class VertexHandler implements ApiHandler, SingleCompletionHandler {
 				model: this.getModel().id,
 				max_tokens: this.getModel().info.maxTokens || 8192,
 				temperature: 0,
-				messages: [{ role: "user", content: prompt }],
+				messages: [{ role: 'user', content: prompt }],
 				stream: false,
-			})
+			});
 
-			const content = response.content[0]
-			if (content.type === "text") {
-				return content.text
+			const content = response.content[0];
+			if (content.type === 'text') {
+				return content.text;
 			}
-			return ""
+			return '';
 		} catch (error) {
 			if (error instanceof Error) {
-				throw new Error(`Vertex completion error: ${error.message}`)
+				throw new Error(`Vertex completion error: ${error.message}`);
 			}
-			throw error
+			throw error;
 		}
 	}
 }

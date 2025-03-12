@@ -1,84 +1,84 @@
-import { ApiConfiguration, ApiProvider } from "./api"
-import { Mode, PromptComponent, ModeConfig } from "./modes"
+import { ApiConfiguration, ApiProvider } from './api';
+import { Mode, PromptComponent, ModeConfig } from './modes';
 
-export type PromptMode = Mode | "enhance"
+export type PromptMode = Mode | 'enhance'
 
-export type AudioType = "notification" | "celebration" | "progress_loop"
+export type AudioType = 'notification' | 'celebration' | 'progress_loop'
 
 export interface WebviewMessage {
 	type:
-		| "apiConfiguration"
-		| "currentApiConfigName"
-		| "upsertApiConfiguration"
-		| "deleteApiConfiguration"
-		| "loadApiConfiguration"
-		| "renameApiConfiguration"
-		| "getListApiConfiguration"
-		| "customInstructions"
-		| "allowedCommands"
-		| "webviewDidLaunch"
-		| "newTask"
-		| "askResponse"
-		| "clearTask"
-		| "didShowAnnouncement"
-		| "selectImages"
-		| "exportCurrentTask"
-		| "showTaskWithId"
-		| "deleteTaskWithId"
-		| "exportTaskWithId"
-		| "resetState"
-		| "requestOllamaModels"
-		| "requestLmStudioModels"
-		| "openImage"
-		| "openFile"
-		| "openMention"
-		| "cancelTask"
-		| "refreshOpenRouterModels"
-		| "refreshOpenAiModels"
-		| "alwaysAllowMcp"
-		| "playSound"
-		| "soundEnabled"
-		| "soundVolume"
-		| "diffEnabled"
-		| "browserViewportSize"
-		| "screenshotQuality"
-		| "openMcpSettings"
-		| "restartMcpServer"
-		| "toggleToolAlwaysAllow"
-		| "toggleMcpServer"
-		| "updateMcpTimeout"
-		| "fuzzyMatchThreshold"
-		| "preferredLanguage"
-		| "writeDelayMs"
-		| "enhancePrompt"
-		| "enhancedPrompt"
-		| "draggedImages"
-		| "deleteMessage"
-		| "terminalOutputLineLimit"
-		| "mcpEnabled"
-		| "searchCommits"
-		| "refreshGlamaModels"
-		| "alwaysApproveResubmit"
-		| "requestDelaySeconds"
-		| "setApiConfigPassword"
-		| "requestVsCodeLmModels"
-		| "mode"
-		| "updatePrompt"
-		| "updateSupportPrompt"
-		| "resetSupportPrompt"
-		| "getSystemPrompt"
-		| "systemPrompt"
-		| "enhancementApiConfigId"
-		| "experimentalDiffStrategy"
-		| "autoApprovalEnabled"
-		| "updateCustomMode"
-		| "deleteCustomMode"
-		| "setopenAiCustomModelInfo"
-		| "openCustomModesSettings"
-		| "resumeTask"
-    | "answer"
-    | "userApproval"
-		| "setAllowedTools"
+		| 'apiConfiguration'
+		| 'currentApiConfigName'
+		| 'upsertApiConfiguration'
+		| 'deleteApiConfiguration'
+		| 'loadApiConfiguration'
+		| 'renameApiConfiguration'
+		| 'getListApiConfiguration'
+		| 'customInstructions'
+		| 'allowedCommands'
+		| 'webviewDidLaunch'
+		| 'newTask'
+		| 'askResponse'
+		| 'clearTask'
+		| 'didShowAnnouncement'
+		| 'selectImages'
+		| 'exportCurrentTask'
+		| 'showTaskWithId'
+		| 'deleteTaskWithId'
+		| 'exportTaskWithId'
+		| 'resetState'
+		| 'requestOllamaModels'
+		| 'requestLmStudioModels'
+		| 'openImage'
+		| 'openFile'
+		| 'openMention'
+		| 'cancelTask'
+		| 'refreshOpenRouterModels'
+		| 'refreshOpenAiModels'
+		| 'alwaysAllowMcp'
+		| 'playSound'
+		| 'soundEnabled'
+		| 'soundVolume'
+		| 'diffEnabled'
+		| 'browserViewportSize'
+		| 'screenshotQuality'
+		| 'openMcpSettings'
+		| 'restartMcpServer'
+		| 'toggleToolAlwaysAllow'
+		| 'toggleMcpServer'
+		| 'updateMcpTimeout'
+		| 'fuzzyMatchThreshold'
+		| 'preferredLanguage'
+		| 'writeDelayMs'
+		| 'enhancePrompt'
+		| 'enhancedPrompt'
+		| 'draggedImages'
+		| 'deleteMessage'
+		| 'terminalOutputLineLimit'
+		| 'mcpEnabled'
+		| 'searchCommits'
+		| 'refreshGlamaModels'
+		| 'alwaysApproveResubmit'
+		| 'requestDelaySeconds'
+		| 'setApiConfigPassword'
+		| 'requestVsCodeLmModels'
+		| 'mode'
+		| 'updatePrompt'
+		| 'updateSupportPrompt'
+		| 'resetSupportPrompt'
+		| 'getSystemPrompt'
+		| 'systemPrompt'
+		| 'enhancementApiConfigId'
+		| 'experimentalDiffStrategy'
+		| 'autoApprovalEnabled'
+		| 'updateCustomMode'
+		| 'deleteCustomMode'
+		| 'setopenAiCustomModelInfo'
+		| 'openCustomModesSettings'
+		| 'resumeTask'
+    | 'answer'
+    | 'userApproval'
+		| 'setAllowedTools'
 	text?: string
 	disabled?: boolean
 	askResponse?: ClineAskResponse
@@ -104,4 +104,4 @@ export interface WebviewMessage {
 	toolId?: string | string[]
 }
 
-export type ClineAskResponse = "yesButtonClicked" | "noButtonClicked" | "messageResponse"
+export type ClineAskResponse = 'yesButtonClicked' | 'noButtonClicked' | 'messageResponse'

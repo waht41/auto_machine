@@ -1,7 +1,7 @@
-import { DiffStrategy } from "../../diff/DiffStrategy"
-import { modes, ModeConfig } from "../../../shared/modes"
-import * as vscode from "vscode"
-import * as path from "path"
+import { DiffStrategy } from '../../diff/DiffStrategy';
+import { modes, ModeConfig } from '../../../shared/modes';
+import * as vscode from 'vscode';
+import * as path from 'path';
 
 export function getRulesSection(
 	cwd: string,
@@ -9,8 +9,8 @@ export function getRulesSection(
 	diffStrategy?: DiffStrategy,
 	context?: vscode.ExtensionContext,
 ): string {
-	const settingsDir = context ? path.join(context.globalStorageUri.fsPath, "settings") : "<settings directory>"
-	const customModesPath = path.join(settingsDir, "cline_custom_modes.json")
+	const settingsDir = context ? path.join(context.globalStorageUri.fsPath, 'settings') : '<settings directory>';
+	const customModesPath = path.join(settingsDir, 'cline_custom_modes.json');
 	return `====
 
 RULES
@@ -23,8 +23,8 @@ RULES
 - When creating a new project (such as an app, website, or any software project), organize all new files within a dedicated project directory unless the user specifies otherwise. Use appropriate file paths when writing files, as the write_to_file tool will automatically create any necessary directories. Structure the project logically, adhering to best practices for the specific type of project being created. Unless otherwise specified, new projects should be easily run without additional setup, for example most projects can be built in HTML, CSS, and JavaScript - which you can open in a browser.
 ${
 	diffStrategy
-		? "- You should use apply_diff instead of write_to_file when making changes to existing files since it is much faster and easier to apply a diff than to write the entire file again. Only use write_to_file to edit files when apply_diff has failed repeatedly to apply the diff."
-		: "- When you want to modify a file, use the write_to_file tool directly with the desired content. You do not need to display the content before using the tool."
+		? '- You should use apply_diff instead of write_to_file when making changes to existing files since it is much faster and easier to apply a diff than to write the entire file again. Only use write_to_file to edit files when apply_diff has failed repeatedly to apply the diff.'
+		: '- When you want to modify a file, use the write_to_file tool directly with the desired content. You do not need to display the content before using the tool.'
 }
 - Some modes have restrictions on which files they can edit. If you attempt to edit a restricted file, the operation will be rejected with a FileRestrictionError that will specify which file patterns are allowed for the current mode.
 - Be sure to consider the type of project (e.g. Python, JavaScript, web application) when determining the appropriate structure and files to include. Also consider what files may be most relevant to accomplishing the task, for example looking at a project's manifest file would help you understand the project's dependencies, which you could incorporate into any code you write.
@@ -36,10 +36,10 @@ ${
 - When executing commands, if you don't see the expected output, assume the terminal executed the command successfully and proceed with the task. The user's terminal may be unable to stream the output back properly. If you absolutely need to see the actual terminal output, use the ask_followup_question tool to request the user to copy and paste it back to you.
 - The user may provide a file's contents directly in their message, in which case you shouldn't use the read_file tool to get the file contents again since you already have it.
 - Your goal is to try to accomplish the user's task, NOT engage in a back and forth conversation.${
-		supportsComputerUse
-			? '\n- The user may ask generic non-development tasks, such as "what\'s the latest news" or "look up the weather in San Diego", in which case you might use the browser_action tool to complete the task if it makes sense to do so, rather than trying to create a website or using curl to answer the question. However, if an available MCP server tool or resource can be used instead, you should prefer to use it over browser_action.'
-			: ""
-	}
+	supportsComputerUse
+		? '\n- The user may ask generic non-development tasks, such as "what\'s the latest news" or "look up the weather in San Diego", in which case you might use the browser_action tool to complete the task if it makes sense to do so, rather than trying to create a website or using curl to answer the question. However, if an available MCP server tool or resource can be used instead, you should prefer to use it over browser_action.'
+		: ''
+}
 - NEVER end attempt_completion result with a question or request to engage in further conversation! Formulate the end of your result in a way that is final and does not require further input from the user.
 - You are STRICTLY FORBIDDEN from starting your messages with "Great", "Certainly", "Okay", "Sure". You should NOT be conversational in your responses, but rather direct and to the point. For example you should NOT say "Great, I've updated the CSS" but instead something like "I've updated the CSS". It is important you be clear and technical in your messages.
 - When presented with images, utilize your vision capabilities to thoroughly examine them and extract meaningful information. Incorporate these insights into your thought process as you accomplish the user's task.
@@ -48,8 +48,8 @@ ${
 - When using the write_to_file tool, ALWAYS provide the COMPLETE file content in your response. This is NON-NEGOTIABLE. Partial updates or placeholders like '// rest of code unchanged' are STRICTLY FORBIDDEN. You MUST include ALL parts of the file, even if they haven't been modified. Failure to do so will result in incomplete or broken code, severely impacting the user's project.
 - MCP operations should be used one at a time, similar to other tool usage. Wait for confirmation of success before proceeding with additional operations.
 - It is critical you wait for the user's response after each tool use, in order to confirm the success of the tool use. For example, if asked to make a todo app, you would create a file, wait for the user's response it was created successfully, then create another file if needed, wait for the user's response it was created successfully, etc.${
-		supportsComputerUse
-			? " Then if you want to test your work, you might use browser_action to launch the site, wait for the user's response confirming the site was launched along with a screenshot, then perhaps e.g., click a button to test functionality if needed, wait for the user's response confirming the button was clicked along with a screenshot of the new state, before finally closing the browser."
-			: ""
-	}`
+	supportsComputerUse
+		? ' Then if you want to test your work, you might use browser_action to launch the site, wait for the user\'s response confirming the site was launched along with a screenshot, then perhaps e.g., click a button to test functionality if needed, wait for the user\'s response confirming the button was clicked along with a screenshot of the new state, before finally closing the browser.'
+		: ''
+}`;
 }

@@ -1,20 +1,20 @@
-import { getExecuteCommandDescription } from "./execute-command"
-import { getReadFileDescription } from "./read-file"
-import { getWriteToFileDescription } from "./write-to-file"
-import { getSearchFilesDescription } from "./search-files"
-import { getListFilesDescription } from "./list-files"
-import { getListCodeDefinitionNamesDescription } from "./list-code-definition-names"
-import { getBrowserActionDescription } from "./browser-action"
-import { getAskFollowupQuestionDescription } from "./ask-followup-question"
-import { getAttemptCompletionDescription } from "./attempt-completion"
-import { getUseMcpToolDescription } from "./use-mcp-tool"
-import { getAccessMcpResourceDescription } from "./access-mcp-resource"
-import { getSwitchModeDescription } from "./switch-mode"
-import { DiffStrategy } from "../../diff/DiffStrategy"
-import { McpHub } from "@operation/MCP"
-import { Mode, ModeConfig, getModeConfig, isToolAllowedForMode, getGroupName } from "../../../shared/modes"
-import { ToolName, getToolName, getToolOptions, TOOL_GROUPS, ALWAYS_AVAILABLE_TOOLS } from "../../../shared/tool-groups"
-import { ToolArgs } from "./types"
+import { getExecuteCommandDescription } from './execute-command';
+import { getReadFileDescription } from './read-file';
+import { getWriteToFileDescription } from './write-to-file';
+import { getSearchFilesDescription } from './search-files';
+import { getListFilesDescription } from './list-files';
+import { getListCodeDefinitionNamesDescription } from './list-code-definition-names';
+import { getBrowserActionDescription } from './browser-action';
+import { getAskFollowupQuestionDescription } from './ask-followup-question';
+import { getAttemptCompletionDescription } from './attempt-completion';
+import { getUseMcpToolDescription } from './use-mcp-tool';
+import { getAccessMcpResourceDescription } from './access-mcp-resource';
+import { getSwitchModeDescription } from './switch-mode';
+import { DiffStrategy } from '../../diff/DiffStrategy';
+import { McpHub } from '@operation/MCP';
+import { Mode, ModeConfig, getModeConfig, isToolAllowedForMode, getGroupName } from '../../../shared/modes';
+import { ToolName, getToolName, getToolOptions, TOOL_GROUPS, ALWAYS_AVAILABLE_TOOLS } from '../../../shared/tool-groups';
+import { ToolArgs } from './types';
 
 // Map of tool names to their description functions
 const toolDescriptionMap: Record<string, (args: ToolArgs) => string | undefined> = {
@@ -31,8 +31,8 @@ const toolDescriptionMap: Record<string, (args: ToolArgs) => string | undefined>
 	access_mcp_resource: (args) => getAccessMcpResourceDescription(args),
 	switch_mode: () => getSwitchModeDescription(),
 	apply_diff: (args) =>
-		args.diffStrategy ? args.diffStrategy.getToolDescription({ cwd: args.cwd, toolOptions: args.toolOptions }) : "",
-}
+		args.diffStrategy ? args.diffStrategy.getToolDescription({ cwd: args.cwd, toolOptions: args.toolOptions }) : '',
+};
 
 export function getToolDescriptionsForMode(
 	mode: Mode,
@@ -43,47 +43,47 @@ export function getToolDescriptionsForMode(
 	mcpHub?: McpHub,
 	customModes?: ModeConfig[],
 ): string {
-	const config = getModeConfig(mode, customModes)
+	const config = getModeConfig(mode, customModes);
 	const args: ToolArgs = {
 		cwd,
 		supportsComputerUse,
 		diffStrategy,
 		browserViewportSize,
 		mcpHub,
-	}
+	};
 
-	const tools = new Set<string>()
+	const tools = new Set<string>();
 
 	// Add tools from mode's groups
 	config.groups.forEach((groupEntry) => {
-		const groupName = getGroupName(groupEntry)
-		const toolGroup = TOOL_GROUPS[groupName]
+		const groupName = getGroupName(groupEntry);
+		const toolGroup = TOOL_GROUPS[groupName];
 		if (toolGroup) {
 			toolGroup.forEach((tool) => {
 				if (isToolAllowedForMode(tool as ToolName, mode, customModes ?? [])) {
-					tools.add(tool)
+					tools.add(tool);
 				}
-			})
+			});
 		}
-	})
+	});
 
 	// Add always available tools
-	ALWAYS_AVAILABLE_TOOLS.forEach((tool) => tools.add(tool))
+	ALWAYS_AVAILABLE_TOOLS.forEach((tool) => tools.add(tool));
 
 	// Map tool descriptions for allowed tools
 	const descriptions = Array.from(tools).map((toolName) => {
-		const descriptionFn = toolDescriptionMap[toolName]
+		const descriptionFn = toolDescriptionMap[toolName];
 		if (!descriptionFn) {
-			return undefined
+			return undefined;
 		}
 
 		return descriptionFn({
 			...args,
 			toolOptions: undefined, // No tool options in group-based approach
-		})
-	})
+		});
+	});
 
-	return `# Tools\n\n${descriptions.filter(Boolean).join("\n\n")}`
+	return `# Tools\n\n${descriptions.filter(Boolean).join('\n\n')}`;
 }
 
 // Export individual description functions for backward compatibility
@@ -100,4 +100,4 @@ export {
 	getUseMcpToolDescription,
 	getAccessMcpResourceDescription,
 	getSwitchModeDescription,
-}
+};

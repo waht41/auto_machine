@@ -19,5 +19,5 @@ Example: Requesting to attempt completion with a result and command
 I've updated the CSS
 </result>
 <command>open index.html</command>
-</attempt_completion>`
+</attempt_completion>`;
 }

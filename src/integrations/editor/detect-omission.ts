@@ -12,25 +12,25 @@ export function detectCodeOmission(
 ): boolean {
 	// Skip all checks if predictedLineCount is less than 100
 	if (!predictedLineCount || predictedLineCount < 100) {
-		return false
+		return false;
 	}
 
-	const actualLineCount = newFileContent.split("\n").length
-	const lengthRatio = actualLineCount / predictedLineCount
+	const actualLineCount = newFileContent.split('\n').length;
+	const lengthRatio = actualLineCount / predictedLineCount;
 
-	const originalLines = originalFileContent.split("\n")
-	const newLines = newFileContent.split("\n")
+	const originalLines = originalFileContent.split('\n');
+	const newLines = newFileContent.split('\n');
 	const omissionKeywords = [
-		"remain",
-		"remains",
-		"unchanged",
-		"rest",
-		"previous",
-		"existing",
-		"content",
-		"same",
-		"...",
-	]
+		'remain',
+		'remains',
+		'unchanged',
+		'rest',
+		'previous',
+		'existing',
+		'content',
+		'same',
+		'...',
+	];
 
 	const commentPatterns = [
 		/^\s*\/\//, // Single-line comment for most languages
@@ -39,23 +39,23 @@ export function detectCodeOmission(
 		/^\s*{\s*\/\*/, // JSX comment opening
 		/^\s*<!--/, // HTML comment opening
 		/^\s*\[/, // Square bracket notation
-	]
+	];
 
 	// Consider comments as suspicious if they weren't in the original file
 	// and contain omission keywords
 	for (const line of newLines) {
 		if (commentPatterns.some((pattern) => pattern.test(line))) {
-			const words = line.toLowerCase().split(/\s+/)
+			const words = line.toLowerCase().split(/\s+/);
 			if (omissionKeywords.some((keyword) => words.includes(keyword))) {
 				if (!originalLines.includes(line)) {
 					// For files with 100+ lines, only flag if content is more than 20% shorter
 					if (lengthRatio <= 0.8) {
-						return true
+						return true;
 					}
 				}
 			}
 		}
 	}
 
-	return false
+	return false;
 }

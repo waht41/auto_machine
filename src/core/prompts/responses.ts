@@ -1,10 +1,10 @@
-import { Anthropic } from "@anthropic-ai/sdk"
-import * as path from "path"
-import * as diff from "diff"
-import { formatImagesIntoBlocks } from "@core/prompts/utils";
+import { Anthropic } from '@anthropic-ai/sdk';
+import * as path from 'path';
+import * as diff from 'diff';
+import { formatImagesIntoBlocks } from '@core/prompts/utils';
 
 export const formatResponse = {
-	toolDenied: () => `The user denied this operation.`,
+	toolDenied: () => 'The user denied this operation.',
 
 	toolDeniedWithFeedback: (feedback?: string) =>
 		`The user denied this operation and provided the following feedback:\n<feedback>\n${feedback}\n</feedback>`,
@@ -37,66 +37,66 @@ Otherwise, if you have not completed the task and do not need additional informa
 		images?: string[],
 	): string | Array<Anthropic.TextBlockParam | Anthropic.ImageBlockParam> => {
 		if (images && images.length > 0) {
-			const textBlock: Anthropic.TextBlockParam = { type: "text", text }
-			const imageBlocks: Anthropic.ImageBlockParam[] = formatImagesIntoBlocks(images)
+			const textBlock: Anthropic.TextBlockParam = { type: 'text', text };
+			const imageBlocks: Anthropic.ImageBlockParam[] = formatImagesIntoBlocks(images);
 			// Placing images after text leads to better results
-			return [textBlock, ...imageBlocks]
+			return [textBlock, ...imageBlocks];
 		} else {
-			return text
+			return text;
 		}
 	},
 
 	imageBlocks: (images?: string[]): Anthropic.ImageBlockParam[] => {
-		return formatImagesIntoBlocks(images)
+		return formatImagesIntoBlocks(images);
 	},
 
 	formatFilesList: (absolutePath: string, files: string[], didHitLimit: boolean): string => {
 		const sorted = files
 			.map((file) => {
 				// convert absolute path to relative path
-				const relativePath = path.relative(absolutePath, file).toPosix()
-				return file.endsWith("/") ? relativePath + "/" : relativePath
+				const relativePath = path.relative(absolutePath, file).toPosix();
+				return file.endsWith('/') ? relativePath + '/' : relativePath;
 			})
 			// Sort so files are listed under their respective directories to make it clear what files are children of what directories. Since we build file list top down, even if file list is truncated it will show directories that cline can then explore further.
 			.sort((a, b) => {
-				const aParts = a.split("/") // only works if we use toPosix first
-				const bParts = b.split("/")
+				const aParts = a.split('/'); // only works if we use toPosix first
+				const bParts = b.split('/');
 				for (let i = 0; i < Math.min(aParts.length, bParts.length); i++) {
 					if (aParts[i] !== bParts[i]) {
 						// If one is a directory and the other isn't at this level, sort the directory first
 						if (i + 1 === aParts.length && i + 1 < bParts.length) {
-							return -1
+							return -1;
 						}
 						if (i + 1 === bParts.length && i + 1 < aParts.length) {
-							return 1
+							return 1;
 						}
 						// Otherwise, sort alphabetically
-						return aParts[i].localeCompare(bParts[i], undefined, { numeric: true, sensitivity: "base" })
+						return aParts[i].localeCompare(bParts[i], undefined, { numeric: true, sensitivity: 'base' });
 					}
 				}
 				// If all parts are the same up to the length of the shorter path,
 				// the shorter one comes first
-				return aParts.length - bParts.length
-			})
+				return aParts.length - bParts.length;
+			});
 		if (didHitLimit) {
 			return `${sorted.join(
-				"\n",
-			)}\n\n(File list truncated. Use list_files on specific subdirectories if you need to explore further.)`
-		} else if (sorted.length === 0 || (sorted.length === 1 && sorted[0] === "")) {
-			return "No files found."
+				'\n',
+			)}\n\n(File list truncated. Use list_files on specific subdirectories if you need to explore further.)`;
+		} else if (sorted.length === 0 || (sorted.length === 1 && sorted[0] === '')) {
+			return 'No files found.';
 		} else {
-			return sorted.join("\n")
+			return sorted.join('\n');
 		}
 	},
 
-	createPrettyPatch: (filename = "file", oldStr?: string, newStr?: string) => {
+	createPrettyPatch: (filename = 'file', oldStr?: string, newStr?: string) => {
 		// strings cannot be undefined or diff throws exception
-		const patch = diff.createPatch(filename.toPosix(), oldStr || "", newStr || "")
-		const lines = patch.split("\n")
-		const prettyPatchLines = lines.slice(4)
-		return prettyPatchLines.join("\n")
+		const patch = diff.createPatch(filename.toPosix(), oldStr || '', newStr || '');
+		const lines = patch.split('\n');
+		const prettyPatchLines = lines.slice(4);
+		return prettyPatchLines.join('\n');
 	},
-}
+};
 
 const toolUseInstructionsReminder = `# Reminder: Instructions for Tool Use
 
@@ -116,4 +116,4 @@ I have completed the task...
 </result>
 </attempt_completion>
 
-Always adhere to this format for all tool uses to ensure proper parsing and execution.`
+Always adhere to this format for all tool uses to ensure proper parsing and execution.`;

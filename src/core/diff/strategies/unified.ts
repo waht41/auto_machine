@@ -1,5 +1,5 @@
-import { applyPatch } from "diff"
-import { DiffStrategy, DiffResult } from "../types"
+import { applyPatch } from 'diff';
+import { DiffStrategy, DiffResult } from '../types';
 
 export class UnifiedDiffStrategy implements DiffStrategy {
 	getToolDescription(args: { cwd: string; toolOptions?: { [key: string]: string } }): string {
@@ -105,25 +105,25 @@ Usage:
 <diff>
 Your diff here
 </diff>
-</apply_diff>`
+</apply_diff>`;
 	}
 
 	async applyDiff(originalContent: string, diffContent: string): Promise<DiffResult> {
 		try {
-			const result = applyPatch(originalContent, diffContent)
+			const result = applyPatch(originalContent, diffContent);
 			if (result === false) {
 				return {
 					success: false,
-					error: "Failed to apply unified diff - patch rejected",
+					error: 'Failed to apply unified diff - patch rejected',
 					details: {
 						searchContent: diffContent,
 					},
-				}
+				};
 			}
 			return {
 				success: true,
 				content: result,
-			}
+			};
 		} catch (error) {
 			return {
 				success: false,
@@ -131,7 +131,7 @@ Your diff here
 				details: {
 					searchContent: diffContent,
 				},
-			}
+			};
 		}
 	}
 }

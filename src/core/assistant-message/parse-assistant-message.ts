@@ -1,7 +1,7 @@
 import {
 	AssistantMessageContent,
 	TextContent,
-} from "."
+} from '.';
 import * as yaml from 'js-yaml';
 
 interface BlockParseResult {

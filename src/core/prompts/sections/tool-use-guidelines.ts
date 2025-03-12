@@ -18,5 +18,5 @@ It is crucial to proceed step-by-step, waiting for the user's message after each
 3. Adapt your approach based on new information or unexpected results.
 4. Ensure that each action builds correctly on the previous ones.
 
-By waiting for and carefully considering the user's response after each tool use, you can react accordingly and make informed decisions about how to proceed with the task. This iterative process helps ensure the overall success and accuracy of your work.`
+By waiting for and carefully considering the user's response after each tool use, you can react accordingly and make informed decisions about how to proceed with the task. This iterative process helps ensure the overall success and accuracy of your work.`;
 }

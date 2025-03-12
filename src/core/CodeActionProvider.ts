@@ -1,18 +1,18 @@
-import * as vscode from "vscode"
-import * as path from "path"
-import { ClineProvider } from "./webview/ClineProvider"
+import * as vscode from 'vscode';
+import * as path from 'path';
+import { ClineProvider } from './webview/ClineProvider';
 
 export const ACTION_NAMES = {
-	EXPLAIN: "Roo Code: Explain Code",
-	FIX: "Roo Code: Fix Code",
-	IMPROVE: "Roo Code: Improve Code",
-} as const
+	EXPLAIN: 'Roo Code: Explain Code',
+	FIX: 'Roo Code: Fix Code',
+	IMPROVE: 'Roo Code: Improve Code',
+} as const;
 
 const COMMAND_IDS = {
-	EXPLAIN: "roo-cline.explainCode",
-	FIX: "roo-cline.fixCode",
-	IMPROVE: "roo-cline.improveCode",
-} as const
+	EXPLAIN: 'roo-cline.explainCode',
+	FIX: 'roo-cline.fixCode',
+	IMPROVE: 'roo-cline.improveCode',
+} as const;
 
 interface DiagnosticData {
 	message: string
@@ -31,29 +31,29 @@ export class CodeActionProvider implements vscode.CodeActionProvider {
 	public static readonly providedCodeActionKinds = [
 		vscode.CodeActionKind.QuickFix,
 		vscode.CodeActionKind.RefactorRewrite,
-	]
+	];
 
 	// Cache file paths for performance
-	private readonly filePathCache = new WeakMap<vscode.TextDocument, string>()
+	private readonly filePathCache = new WeakMap<vscode.TextDocument, string>();
 
 	private getEffectiveRange(
 		document: vscode.TextDocument,
 		range: vscode.Range | vscode.Selection,
 	): EffectiveRange | null {
 		try {
-			const selectedText = document.getText(range)
+			const selectedText = document.getText(range);
 			if (selectedText) {
-				return { range, text: selectedText }
+				return { range, text: selectedText };
 			}
 
-			const currentLine = document.lineAt(range.start.line)
+			const currentLine = document.lineAt(range.start.line);
 			if (!currentLine.text.trim()) {
-				return null
+				return null;
 			}
 
 			// Optimize range creation by checking bounds first
-			const startLine = Math.max(0, currentLine.lineNumber - 1)
-			const endLine = Math.min(document.lineCount - 1, currentLine.lineNumber + 1)
+			const startLine = Math.max(0, currentLine.lineNumber - 1);
+			const endLine = Math.min(document.lineCount - 1, currentLine.lineNumber + 1);
 
 			// Only create new positions if needed
 			const effectiveRange = new vscode.Range(
@@ -61,40 +61,40 @@ export class CodeActionProvider implements vscode.CodeActionProvider {
 				endLine === currentLine.lineNumber
 					? range.end
 					: new vscode.Position(endLine, document.lineAt(endLine).text.length),
-			)
+			);
 
 			return {
 				range: effectiveRange,
 				text: document.getText(effectiveRange),
-			}
+			};
 		} catch (error) {
-			console.error("Error getting effective range:", error)
-			return null
+			console.error('Error getting effective range:', error);
+			return null;
 		}
 	}
 
 	private getFilePath(document: vscode.TextDocument): string {
 		// Check cache first
-		let filePath = this.filePathCache.get(document)
+		let filePath = this.filePathCache.get(document);
 		if (filePath) {
-			return filePath
+			return filePath;
 		}
 
 		try {
-			const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri)
+			const workspaceFolder = vscode.workspace.getWorkspaceFolder(document.uri);
 			if (!workspaceFolder) {
-				filePath = document.uri.fsPath
+				filePath = document.uri.fsPath;
 			} else {
-				const relativePath = path.relative(workspaceFolder.uri.fsPath, document.uri.fsPath)
-				filePath = !relativePath || relativePath.startsWith("..") ? document.uri.fsPath : relativePath
+				const relativePath = path.relative(workspaceFolder.uri.fsPath, document.uri.fsPath);
+				filePath = !relativePath || relativePath.startsWith('..') ? document.uri.fsPath : relativePath;
 			}
 
 			// Cache the result
-			this.filePathCache.set(document, filePath)
-			return filePath
+			this.filePathCache.set(document, filePath);
+			return filePath;
 		} catch (error) {
-			console.error("Error getting file path:", error)
-			return document.uri.fsPath
+			console.error('Error getting file path:', error);
+			return document.uri.fsPath;
 		}
 	}
 
@@ -105,13 +105,13 @@ export class CodeActionProvider implements vscode.CodeActionProvider {
 			code: diagnostic.code,
 			source: diagnostic.source,
 			range: diagnostic.range, // Reuse the range object
-		}
+		};
 	}
 
 	private createAction(title: string, kind: vscode.CodeActionKind, command: string, args: any[]): vscode.CodeAction {
-		const action = new vscode.CodeAction(title, kind)
-		action.command = { command, title, arguments: args }
-		return action
+		const action = new vscode.CodeAction(title, kind);
+		action.command = { command, title, arguments: args };
+		return action;
 	}
 
 	private createActionPair(
@@ -123,7 +123,7 @@ export class CodeActionProvider implements vscode.CodeActionProvider {
 		return [
 			this.createAction(`${baseTitle} in New Task`, kind, baseCommand, args),
 			this.createAction(`${baseTitle} in Current Task`, kind, `${baseCommand}InCurrentTask`, args),
-		]
+		];
 	}
 
 	private hasIntersectingRange(range1: vscode.Range, range2: vscode.Range): boolean {
@@ -133,7 +133,7 @@ export class CodeActionProvider implements vscode.CodeActionProvider {
 			range2.start.line > range1.end.line ||
 			(range2.end.line === range1.start.line && range2.end.character < range1.start.character) ||
 			(range2.start.line === range1.end.line && range2.start.character > range1.end.character)
-		)
+		);
 	}
 
 	public provideCodeActions(
@@ -142,13 +142,13 @@ export class CodeActionProvider implements vscode.CodeActionProvider {
 		context: vscode.CodeActionContext,
 	): vscode.ProviderResult<(vscode.CodeAction | vscode.Command)[]> {
 		try {
-			const effectiveRange = this.getEffectiveRange(document, range)
+			const effectiveRange = this.getEffectiveRange(document, range);
 			if (!effectiveRange) {
-				return []
+				return [];
 			}
 
-			const filePath = this.getFilePath(document)
-			const actions: vscode.CodeAction[] = []
+			const filePath = this.getFilePath(document);
+			const actions: vscode.CodeAction[] = [];
 
 			// Create actions using helper method
 			// Add explain actions
@@ -157,23 +157,23 @@ export class CodeActionProvider implements vscode.CodeActionProvider {
 					filePath,
 					effectiveRange.text,
 				]),
-			)
+			);
 
 			// Only process diagnostics if they exist
 			if (context.diagnostics.length > 0) {
 				const relevantDiagnostics = context.diagnostics.filter((d) =>
 					this.hasIntersectingRange(effectiveRange.range, d.range),
-				)
+				);
 
 				if (relevantDiagnostics.length > 0) {
-					const diagnosticMessages = relevantDiagnostics.map(this.createDiagnosticData)
+					const diagnosticMessages = relevantDiagnostics.map(this.createDiagnosticData);
 					actions.push(
 						...this.createActionPair(ACTION_NAMES.FIX, vscode.CodeActionKind.QuickFix, COMMAND_IDS.FIX, [
 							filePath,
 							effectiveRange.text,
 							diagnosticMessages,
 						]),
-					)
+					);
 				}
 			}
 
@@ -185,12 +185,12 @@ export class CodeActionProvider implements vscode.CodeActionProvider {
 					COMMAND_IDS.IMPROVE,
 					[filePath, effectiveRange.text],
 				),
-			)
+			);
 
-			return actions
+			return actions;
 		} catch (error) {
-			console.error("Error providing code actions:", error)
-			return []
+			console.error('Error providing code actions:', error);
+			return [];
 		}
 	}
 }

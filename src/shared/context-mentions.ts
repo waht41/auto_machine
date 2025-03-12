@@ -50,11 +50,11 @@ Mention regex:
 
 */
 export const mentionRegex =
-	/@((?:\/|\w+:\/\/)[^\s]+?|[a-f0-9]{7,40}\b|problems\b|git-changes\b)(?=[.,;:!?]?(?=[\s\r\n]|$))/
-export const mentionRegexGlobal = new RegExp(mentionRegex.source, "g")
+	/@((?:\/|\w+:\/\/)[^\s]+?|[a-f0-9]{7,40}\b|problems\b|git-changes\b)(?=[.,;:!?]?(?=[\s\r\n]|$))/;
+export const mentionRegexGlobal = new RegExp(mentionRegex.source, 'g');
 
 export interface MentionSuggestion {
-	type: "file" | "folder" | "git" | "problems"
+	type: 'file' | 'folder' | 'git' | 'problems'
 	label: string
 	description?: string
 	value: string
@@ -62,7 +62,7 @@ export interface MentionSuggestion {
 }
 
 export interface GitMentionSuggestion extends MentionSuggestion {
-	type: "git"
+	type: 'git'
 	hash: string
 	shortHash: string
 	subject: string
@@ -78,15 +78,15 @@ export function formatGitSuggestion(commit: {
 	date: string
 }): GitMentionSuggestion {
 	return {
-		type: "git",
+		type: 'git',
 		label: commit.subject,
 		description: `${commit.shortHash} by ${commit.author} on ${commit.date}`,
 		value: commit.hash,
-		icon: "$(git-commit)", // VSCode git commit icon
+		icon: '$(git-commit)', // VSCode git commit icon
 		hash: commit.hash,
 		shortHash: commit.shortHash,
 		subject: commit.subject,
 		author: commit.author,
 		date: commit.date,
-	}
+	};
 }

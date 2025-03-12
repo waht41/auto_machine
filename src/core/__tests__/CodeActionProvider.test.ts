@@ -1,16 +1,16 @@
-import * as vscode from "vscode"
-import { CodeActionProvider, ACTION_NAMES } from "../CodeActionProvider"
+import * as vscode from 'vscode';
+import { CodeActionProvider, ACTION_NAMES } from '../CodeActionProvider';
 
 // Mock VSCode API
-jest.mock("vscode", () => ({
+jest.mock('vscode', () => ({
 	CodeAction: jest.fn().mockImplementation((title, kind) => ({
 		title,
 		kind,
 		command: undefined,
 	})),
 	CodeActionKind: {
-		QuickFix: { value: "quickfix" },
-		RefactorRewrite: { value: "refactor.rewrite" },
+		QuickFix: { value: 'quickfix' },
+		RefactorRewrite: { value: 'refactor.rewrite' },
 	},
 	Range: jest.fn().mockImplementation((startLine, startChar, endLine, endChar) => ({
 		start: { line: startLine, character: startChar },
@@ -29,122 +29,122 @@ jest.mock("vscode", () => ({
 		Information: 2,
 		Hint: 3,
 	},
-}))
+}));
 
-describe("CodeActionProvider", () => {
-	let provider: CodeActionProvider
-	let mockDocument: any
-	let mockRange: any
-	let mockContext: any
+describe('CodeActionProvider', () => {
+	let provider: CodeActionProvider;
+	let mockDocument: any;
+	let mockRange: any;
+	let mockContext: any;
 
 	beforeEach(() => {
-		provider = new CodeActionProvider()
+		provider = new CodeActionProvider();
 
 		// Mock document
 		mockDocument = {
 			getText: jest.fn(),
 			lineAt: jest.fn(),
 			lineCount: 10,
-			uri: { fsPath: "/test/file.ts" },
-		}
+			uri: { fsPath: '/test/file.ts' },
+		};
 
 		// Mock range
-		mockRange = new vscode.Range(0, 0, 0, 10)
+		mockRange = new vscode.Range(0, 0, 0, 10);
 
 		// Mock context
 		mockContext = {
 			diagnostics: [],
-		}
-	})
+		};
+	});
 
-	describe("getEffectiveRange", () => {
-		it("should return selected text when available", () => {
-			mockDocument.getText.mockReturnValue("selected text")
+	describe('getEffectiveRange', () => {
+		it('should return selected text when available', () => {
+			mockDocument.getText.mockReturnValue('selected text');
 
-			const result = (provider as any).getEffectiveRange(mockDocument, mockRange)
+			const result = (provider as any).getEffectiveRange(mockDocument, mockRange);
 
 			expect(result).toEqual({
 				range: mockRange,
-				text: "selected text",
-			})
-		})
+				text: 'selected text',
+			});
+		});
 
-		it("should return null for empty line", () => {
-			mockDocument.getText.mockReturnValue("")
-			mockDocument.lineAt.mockReturnValue({ text: "", lineNumber: 0 })
+		it('should return null for empty line', () => {
+			mockDocument.getText.mockReturnValue('');
+			mockDocument.lineAt.mockReturnValue({ text: '', lineNumber: 0 });
 
-			const result = (provider as any).getEffectiveRange(mockDocument, mockRange)
+			const result = (provider as any).getEffectiveRange(mockDocument, mockRange);
 
-			expect(result).toBeNull()
-		})
-	})
+			expect(result).toBeNull();
+		});
+	});
 
-	describe("getFilePath", () => {
-		it("should return relative path when in workspace", () => {
+	describe('getFilePath', () => {
+		it('should return relative path when in workspace', () => {
 			const mockWorkspaceFolder = {
-				uri: { fsPath: "/test" },
+				uri: { fsPath: '/test' },
 			}
-			;(vscode.workspace.getWorkspaceFolder as jest.Mock).mockReturnValue(mockWorkspaceFolder)
+			;(vscode.workspace.getWorkspaceFolder as jest.Mock).mockReturnValue(mockWorkspaceFolder);
 
-			const result = (provider as any).getFilePath(mockDocument)
+			const result = (provider as any).getFilePath(mockDocument);
 
-			expect(result).toBe("file.ts")
-		})
+			expect(result).toBe('file.ts');
+		});
 
-		it("should return absolute path when not in workspace", () => {
-			;(vscode.workspace.getWorkspaceFolder as jest.Mock).mockReturnValue(null)
+		it('should return absolute path when not in workspace', () => {
+			(vscode.workspace.getWorkspaceFolder as jest.Mock).mockReturnValue(null);
 
-			const result = (provider as any).getFilePath(mockDocument)
+			const result = (provider as any).getFilePath(mockDocument);
 
-			expect(result).toBe("/test/file.ts")
-		})
-	})
+			expect(result).toBe('/test/file.ts');
+		});
+	});
 
-	describe("provideCodeActions", () => {
+	describe('provideCodeActions', () => {
 		beforeEach(() => {
-			mockDocument.getText.mockReturnValue("test code")
-			mockDocument.lineAt.mockReturnValue({ text: "test code", lineNumber: 0 })
-		})
+			mockDocument.getText.mockReturnValue('test code');
+			mockDocument.lineAt.mockReturnValue({ text: 'test code', lineNumber: 0 });
+		});
 
-		it("should provide explain and improve actions by default", () => {
-			const actions = provider.provideCodeActions(mockDocument, mockRange, mockContext)
+		it('should provide explain and improve actions by default', () => {
+			const actions = provider.provideCodeActions(mockDocument, mockRange, mockContext);
 
-			expect(actions).toHaveLength(4)
-			expect((actions as any)[0].title).toBe(`${ACTION_NAMES.EXPLAIN} in New Task`)
-			expect((actions as any)[1].title).toBe(`${ACTION_NAMES.EXPLAIN} in Current Task`)
-			expect((actions as any)[2].title).toBe(`${ACTION_NAMES.IMPROVE} in New Task`)
-			expect((actions as any)[3].title).toBe(`${ACTION_NAMES.IMPROVE} in Current Task`)
-		})
+			expect(actions).toHaveLength(4);
+			expect((actions as any)[0].title).toBe(`${ACTION_NAMES.EXPLAIN} in New Task`);
+			expect((actions as any)[1].title).toBe(`${ACTION_NAMES.EXPLAIN} in Current Task`);
+			expect((actions as any)[2].title).toBe(`${ACTION_NAMES.IMPROVE} in New Task`);
+			expect((actions as any)[3].title).toBe(`${ACTION_NAMES.IMPROVE} in Current Task`);
+		});
 
-		it("should provide fix action when diagnostics exist", () => {
+		it('should provide fix action when diagnostics exist', () => {
 			mockContext.diagnostics = [
 				{
-					message: "test error",
+					message: 'test error',
 					severity: vscode.DiagnosticSeverity.Error,
 					range: mockRange,
 				},
-			]
+			];
 
-			const actions = provider.provideCodeActions(mockDocument, mockRange, mockContext)
+			const actions = provider.provideCodeActions(mockDocument, mockRange, mockContext);
 
-			expect(actions).toHaveLength(6)
-			expect((actions as any).some((a: any) => a.title === `${ACTION_NAMES.FIX} in New Task`)).toBe(true)
-			expect((actions as any).some((a: any) => a.title === `${ACTION_NAMES.FIX} in Current Task`)).toBe(true)
-		})
+			expect(actions).toHaveLength(6);
+			expect((actions as any).some((a: any) => a.title === `${ACTION_NAMES.FIX} in New Task`)).toBe(true);
+			expect((actions as any).some((a: any) => a.title === `${ACTION_NAMES.FIX} in Current Task`)).toBe(true);
+		});
 
-		it("should handle errors gracefully", () => {
-			const consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {})
+		it('should handle errors gracefully', () => {
+			const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 			mockDocument.getText.mockImplementation(() => {
-				throw new Error("Test error")
-			})
-			mockDocument.lineAt.mockReturnValue({ text: "test", lineNumber: 0 })
+				throw new Error('Test error');
+			});
+			mockDocument.lineAt.mockReturnValue({ text: 'test', lineNumber: 0 });
 
-			const actions = provider.provideCodeActions(mockDocument, mockRange, mockContext)
+			const actions = provider.provideCodeActions(mockDocument, mockRange, mockContext);
 
-			expect(actions).toEqual([])
-			expect(consoleErrorSpy).toHaveBeenCalledWith("Error getting effective range:", expect.any(Error))
+			expect(actions).toEqual([]);
+			expect(consoleErrorSpy).toHaveBeenCalledWith('Error getting effective range:', expect.any(Error));
 
-			consoleErrorSpy.mockRestore()
-		})
-	})
-})
+			consoleErrorSpy.mockRestore();
+		});
+	});
+});

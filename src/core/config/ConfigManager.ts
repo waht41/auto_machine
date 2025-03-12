@@ -1,7 +1,7 @@
-import { ExtensionContext } from "vscode"
-import { ApiConfiguration } from "../../shared/api"
-import { Mode } from "../../shared/modes"
-import { ApiConfigMeta } from "../../shared/ExtensionMessage"
+import { ExtensionContext } from 'vscode';
+import { ApiConfiguration } from '../../shared/api';
+import { Mode } from '../../shared/modes';
+import { ApiConfigMeta } from '../../shared/ExtensionMessage';
 
 export interface ApiConfigData {
 	currentApiConfigName: string
@@ -13,24 +13,24 @@ export interface ApiConfigData {
 
 export class ConfigManager {
 	private readonly defaultConfig: ApiConfigData = {
-		currentApiConfigName: "default",
+		currentApiConfigName: 'default',
 		apiConfigs: {
 			default: {
 				id: this.generateId(),
 			},
 		},
-	}
+	};
 
-	private readonly SCOPE_PREFIX = "roo_cline_config_"
-	private readonly context: ExtensionContext
+	private readonly SCOPE_PREFIX = 'roo_cline_config_';
+	private readonly context: ExtensionContext;
 
 	constructor(context: ExtensionContext) {
-		this.context = context
-		this.initConfig().catch(console.error)
+		this.context = context;
+		this.initConfig().catch(console.error);
 	}
 
 	private generateId(): string {
-		return Math.random().toString(36).substring(2, 15)
+		return Math.random().toString(36).substring(2, 15);
 	}
 
 	/**
@@ -38,26 +38,26 @@ export class ConfigManager {
 	 */
 	async initConfig(): Promise<void> {
 		try {
-			const config = await this.readConfig()
+			const config = await this.readConfig();
 			if (!config) {
-				await this.writeConfig(this.defaultConfig)
-				return
+				await this.writeConfig(this.defaultConfig);
+				return;
 			}
 
 			// Migrate: ensure all configs have IDs
-			let needsMigration = false
+			let needsMigration = false;
 			for (const [name, apiConfig] of Object.entries(config.apiConfigs)) {
 				if (!apiConfig.id) {
-					apiConfig.id = this.generateId()
-					needsMigration = true
+					apiConfig.id = this.generateId();
+					needsMigration = true;
 				}
 			}
 
 			if (needsMigration) {
-				await this.writeConfig(config)
+				await this.writeConfig(config);
 			}
 		} catch (error) {
-			throw new Error(`Failed to initialize config: ${error}`)
+			throw new Error(`Failed to initialize config: ${error}`);
 		}
 	}
 
@@ -66,14 +66,14 @@ export class ConfigManager {
 	 */
 	async listConfig(): Promise<ApiConfigMeta[]> {
 		try {
-			const config = await this.readConfig()
+			const config = await this.readConfig();
 			return Object.entries(config.apiConfigs).map(([name, apiConfig]) => ({
 				name,
-				id: apiConfig.id || "",
+				id: apiConfig.id || '',
 				apiProvider: apiConfig.apiProvider,
-			}))
+			}));
 		} catch (error) {
-			throw new Error(`Failed to list configs: ${error}`)
+			throw new Error(`Failed to list configs: ${error}`);
 		}
 	}
 
@@ -82,15 +82,15 @@ export class ConfigManager {
 	 */
 	async saveConfig(name: string, config: ApiConfiguration): Promise<void> {
 		try {
-			const currentConfig = await this.readConfig()
-			const existingConfig = currentConfig.apiConfigs[name]
+			const currentConfig = await this.readConfig();
+			const existingConfig = currentConfig.apiConfigs[name];
 			currentConfig.apiConfigs[name] = {
 				...config,
 				id: existingConfig?.id || this.generateId(),
-			}
-			await this.writeConfig(currentConfig)
+			};
+			await this.writeConfig(currentConfig);
 		} catch (error) {
-			throw new Error(`Failed to save config: ${error}`)
+			throw new Error(`Failed to save config: ${error}`);
 		}
 	}
 
@@ -99,19 +99,19 @@ export class ConfigManager {
 	 */
 	async loadConfig(name: string): Promise<ApiConfiguration> {
 		try {
-			const config = await this.readConfig()
-			const apiConfig = config.apiConfigs[name]
+			const config = await this.readConfig();
+			const apiConfig = config.apiConfigs[name];
 
 			if (!apiConfig) {
-				throw new Error(`Config '${name}' not found`)
+				throw new Error(`Config '${name}' not found`);
 			}
 
-			config.currentApiConfigName = name
-			await this.writeConfig(config)
+			config.currentApiConfigName = name;
+			await this.writeConfig(config);
 
-			return apiConfig
+			return apiConfig;
 		} catch (error) {
-			throw new Error(`Failed to load config: ${error}`)
+			throw new Error(`Failed to load config: ${error}`);
 		}
 	}
 
@@ -120,20 +120,20 @@ export class ConfigManager {
 	 */
 	async deleteConfig(name: string): Promise<void> {
 		try {
-			const currentConfig = await this.readConfig()
+			const currentConfig = await this.readConfig();
 			if (!currentConfig.apiConfigs[name]) {
-				throw new Error(`Config '${name}' not found`)
+				throw new Error(`Config '${name}' not found`);
 			}
 
 			// Don't allow deleting the default config
 			if (Object.keys(currentConfig.apiConfigs).length === 1) {
-				throw new Error(`Cannot delete the last remaining configuration.`)
+				throw new Error('Cannot delete the last remaining configuration.');
 			}
 
-			delete currentConfig.apiConfigs[name]
-			await this.writeConfig(currentConfig)
+			delete currentConfig.apiConfigs[name];
+			await this.writeConfig(currentConfig);
 		} catch (error) {
-			throw new Error(`Failed to delete config: ${error}`)
+			throw new Error(`Failed to delete config: ${error}`);
 		}
 	}
 
@@ -142,15 +142,15 @@ export class ConfigManager {
 	 */
 	async setCurrentConfig(name: string): Promise<void> {
 		try {
-			const currentConfig = await this.readConfig()
+			const currentConfig = await this.readConfig();
 			if (!currentConfig.apiConfigs[name]) {
-				throw new Error(`Config '${name}' not found`)
+				throw new Error(`Config '${name}' not found`);
 			}
 
-			currentConfig.currentApiConfigName = name
-			await this.writeConfig(currentConfig)
+			currentConfig.currentApiConfigName = name;
+			await this.writeConfig(currentConfig);
 		} catch (error) {
-			throw new Error(`Failed to set current config: ${error}`)
+			throw new Error(`Failed to set current config: ${error}`);
 		}
 	}
 
@@ -159,10 +159,10 @@ export class ConfigManager {
 	 */
 	async hasConfig(name: string): Promise<boolean> {
 		try {
-			const config = await this.readConfig()
-			return name in config.apiConfigs
+			const config = await this.readConfig();
+			return name in config.apiConfigs;
 		} catch (error) {
-			throw new Error(`Failed to check config existence: ${error}`)
+			throw new Error(`Failed to check config existence: ${error}`);
 		}
 	}
 
@@ -171,14 +171,14 @@ export class ConfigManager {
 	 */
 	async setModeConfig(mode: Mode, configId: string): Promise<void> {
 		try {
-			const currentConfig = await this.readConfig()
+			const currentConfig = await this.readConfig();
 			if (!currentConfig.modeApiConfigs) {
-				currentConfig.modeApiConfigs = {}
+				currentConfig.modeApiConfigs = {};
 			}
-			currentConfig.modeApiConfigs[mode] = configId
-			await this.writeConfig(currentConfig)
+			currentConfig.modeApiConfigs[mode] = configId;
+			await this.writeConfig(currentConfig);
 		} catch (error) {
-			throw new Error(`Failed to set mode config: ${error}`)
+			throw new Error(`Failed to set mode config: ${error}`);
 		}
 	}
 
@@ -187,10 +187,10 @@ export class ConfigManager {
 	 */
 	async getModeConfigId(mode: Mode): Promise<string | undefined> {
 		try {
-			const config = await this.readConfig()
-			return config.modeApiConfigs?.[mode]
+			const config = await this.readConfig();
+			return config.modeApiConfigs?.[mode];
 		} catch (error) {
-			throw new Error(`Failed to get mode config: ${error}`)
+			throw new Error(`Failed to get mode config: ${error}`);
 		}
 	}
 
@@ -198,36 +198,36 @@ export class ConfigManager {
 	 * Get the key used for storing config in secrets
 	 */
 	private getConfigKey(): string {
-		return `${this.SCOPE_PREFIX}api_config`
+		return `${this.SCOPE_PREFIX}api_config`;
 	}
 
 	/**
 	 * Reset all configuration by deleting the stored config from secrets
 	 */
 	public async resetAllConfigs(): Promise<void> {
-		await this.context.secrets.delete(this.getConfigKey())
+		await this.context.secrets.delete(this.getConfigKey());
 	}
 
 	private async readConfig(): Promise<ApiConfigData> {
 		try {
-			const content = await this.context.secrets.get(this.getConfigKey())
+			const content = await this.context.secrets.get(this.getConfigKey());
 
 			if (!content) {
-				return this.defaultConfig
+				return this.defaultConfig;
 			}
 
-			return JSON.parse(content)
+			return JSON.parse(content);
 		} catch (error) {
-			throw new Error(`Failed to read config from secrets: ${error}`)
+			throw new Error(`Failed to read config from secrets: ${error}`);
 		}
 	}
 
 	private async writeConfig(config: ApiConfigData): Promise<void> {
 		try {
-			const content = JSON.stringify(config, null, 2)
-			await this.context.secrets.store(this.getConfigKey(), content)
+			const content = JSON.stringify(config, null, 2);
+			await this.context.secrets.store(this.getConfigKey(), content);
 		} catch (error) {
-			throw new Error(`Failed to write config to secrets: ${error}`)
+			throw new Error(`Failed to write config to secrets: ${error}`);
 		}
 	}
 }

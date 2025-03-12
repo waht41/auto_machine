@@ -11,5 +11,5 @@ Usage:
 Example: Requesting to ask the user for the path to the frontend-config.json file
 <ask_followup_question>
 <question>What is the path to the frontend-config.json file?</question>
-</ask_followup_question>`
+</ask_followup_question>`;
 }

@@ -1,5 +1,5 @@
-import { ApiConfiguration } from "../shared/api"
-import { buildApiHandler, SingleCompletionHandler } from "../api"
+import { ApiConfiguration } from '../shared/api';
+import { buildApiHandler, SingleCompletionHandler } from '../api';
 
 /**
  * Enhances a prompt using the configured API without creating a full Cline instance or task history.
@@ -7,18 +7,18 @@ import { buildApiHandler, SingleCompletionHandler } from "../api"
  */
 export async function singleCompletionHandler(apiConfiguration: ApiConfiguration, promptText: string): Promise<string> {
 	if (!promptText) {
-		throw new Error("No prompt text provided")
+		throw new Error('No prompt text provided');
 	}
 	if (!apiConfiguration || !apiConfiguration.apiProvider) {
-		throw new Error("No valid API configuration provided")
+		throw new Error('No valid API configuration provided');
 	}
 
-	const handler = buildApiHandler(apiConfiguration)
+	const handler = buildApiHandler(apiConfiguration);
 
 	// Check if handler supports single completions
-	if (!("completePrompt" in handler)) {
-		throw new Error("The selected API provider does not support prompt enhancement")
+	if (!('completePrompt' in handler)) {
+		throw new Error('The selected API provider does not support prompt enhancement');
 	}
 
-	return (handler as SingleCompletionHandler).completePrompt(promptText)
+	return (handler as SingleCompletionHandler).completePrompt(promptText);
 }

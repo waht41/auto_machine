@@ -14,5 +14,5 @@ Example: Requesting to switch to code mode
 <switch_mode>
 <mode_slug>code</mode_slug>
 <reason>Need to make code changes</reason>
-</switch_mode>`
+</switch_mode>`;
 }

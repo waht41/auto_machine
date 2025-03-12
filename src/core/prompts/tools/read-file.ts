@@ -1,4 +1,4 @@
-import { ToolArgs } from "./types"
+import { ToolArgs } from './types';
 
 export function getReadFileDescription(args: ToolArgs): string {
 	return `## read_file
@@ -13,5 +13,5 @@ Usage:
 Example: Requesting to read frontend-config.json
 <read_file>
 <path>frontend-config.json</path>
-</read_file>`
+</read_file>`;
 }

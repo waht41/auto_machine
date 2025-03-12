@@ -1,4 +1,4 @@
-import { ClineMessage } from "./ExtensionMessage"
+import { ClineMessage } from './ExtensionMessage';
 
 /**
  * Combines sequences of command and command_output messages in an array of ClineMessages.
@@ -21,53 +21,53 @@ import { ClineMessage } from "./ExtensionMessage"
  * // Result: [{ type: 'ask', ask: 'command', text: 'ls\nfile1.txt\nfile2.txt', ts: 1625097600000 }]
  */
 export function combineCommandSequences(messages: ClineMessage[]): ClineMessage[] {
-	const combinedCommands: ClineMessage[] = []
+	const combinedCommands: ClineMessage[] = [];
 
 	// First pass: combine commands with their outputs
 	for (let i = 0; i < messages.length; i++) {
-		if (messages[i].type === "ask" && messages[i].ask === "command") {
-			let combinedText = messages[i].text || ""
-			let didAddOutput = false
-			let j = i + 1
+		if (messages[i].type === 'ask' && messages[i].ask === 'command') {
+			let combinedText = messages[i].text || '';
+			let didAddOutput = false;
+			let j = i + 1;
 
 			while (j < messages.length) {
-				if (messages[j].type === "ask" && messages[j].ask === "command") {
+				if (messages[j].type === 'ask' && messages[j].ask === 'command') {
 					// Stop if we encounter the next command
-					break
+					break;
 				}
-				if (messages[j].ask === "command_output" || messages[j].say === "command_output") {
+				if (messages[j].ask === 'command_output' || messages[j].say === 'command_output') {
 					if (!didAddOutput) {
 						// Add a newline before the first output
-						combinedText += `\n${COMMAND_OUTPUT_STRING}`
-						didAddOutput = true
+						combinedText += `\n${COMMAND_OUTPUT_STRING}`;
+						didAddOutput = true;
 					}
 					// handle cases where we receive empty command_output (ie when extension is relinquishing control over exit command button)
-					const output = messages[j].text || ""
+					const output = messages[j].text || '';
 					if (output.length > 0) {
-						combinedText += "\n" + output
+						combinedText += '\n' + output;
 					}
 				}
-				j++
+				j++;
 			}
 
 			combinedCommands.push({
 				...messages[i],
 				text: combinedText,
-			})
+			});
 
-			i = j - 1 // Move to the index just before the next command or end of array
+			i = j - 1; // Move to the index just before the next command or end of array
 		}
 	}
 
 	// Second pass: remove command_outputs and replace original commands with combined ones
 	return messages
-		.filter((msg) => !(msg.ask === "command_output" || msg.say === "command_output"))
+		.filter((msg) => !(msg.ask === 'command_output' || msg.say === 'command_output'))
 		.map((msg) => {
-			if (msg.type === "ask" && msg.ask === "command") {
-				const combinedCommand = combinedCommands.find((cmd) => cmd.ts === msg.ts)
-				return combinedCommand || msg
+			if (msg.type === 'ask' && msg.ask === 'command') {
+				const combinedCommand = combinedCommands.find((cmd) => cmd.ts === msg.ts);
+				return combinedCommand || msg;
 			}
-			return msg
-		})
+			return msg;
+		});
 }
-export const COMMAND_OUTPUT_STRING = "Output:"
+export const COMMAND_OUTPUT_STRING = 'Output:';

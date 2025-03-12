@@ -1,4 +1,4 @@
-import { ToolArgs } from "./types"
+import { ToolArgs } from './types';
 
 export function getWriteToFileDescription(args: ToolArgs): string {
 	return `## write_to_file
@@ -36,5 +36,5 @@ Example: Requesting to write to frontend-config.json
 }
 </content>
 <line_count>14</line_count>
-</write_to_file>`
+</write_to_file>`;
 }

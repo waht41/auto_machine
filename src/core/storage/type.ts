@@ -1,5 +1,5 @@
-import { ApiConfiguration } from "@/shared/api";
-import { SecretKey } from "@core/webview/type";
+import { ApiConfiguration } from '@/shared/api';
+import { SecretKey } from '@core/webview/type';
 
 export type ISecret = {
   apiKey?: string;
@@ -16,9 +16,9 @@ export type ISecret = {
 }
 
 export const secretKeys: SecretKey[] = [
-  "apiKey", "glamaApiKey", "openRouterApiKey", "awsAccessKey",
-  "awsSecretKey", "awsSessionToken", "openAiApiKey", "geminiApiKey",
-  "openAiNativeApiKey", "deepSeekApiKey", "mistralApiKey"
+	'apiKey', 'glamaApiKey', 'openRouterApiKey', 'awsAccessKey',
+	'awsSecretKey', 'awsSessionToken', 'openAiApiKey', 'geminiApiKey',
+	'openAiNativeApiKey', 'deepSeekApiKey', 'mistralApiKey'
 ];
 
 export type IGlobalState = {

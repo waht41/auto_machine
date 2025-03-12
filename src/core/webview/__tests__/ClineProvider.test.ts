@@ -1,28 +1,28 @@
-import { ClineProvider } from "../ClineProvider"
-import * as vscode from "vscode"
-import { ExtensionMessage, ExtensionState } from "../../../shared/ExtensionMessage"
-import { setSoundEnabled } from "../../../utils/sound"
-import { defaultModeSlug, modes } from "../../../shared/modes"
-import { addCustomInstructions } from "../../prompts/sections/custom-instructions"
+import { ClineProvider } from '../ClineProvider';
+import * as vscode from 'vscode';
+import { ExtensionMessage, ExtensionState } from '../../../shared/ExtensionMessage';
+import { setSoundEnabled } from '../../../utils/sound';
+import { defaultModeSlug, modes } from '../../../shared/modes';
+import { addCustomInstructions } from '../../prompts/sections/custom-instructions';
 
 // Mock custom-instructions module
-const mockAddCustomInstructions = jest.fn()
-jest.mock("../../prompts/sections/custom-instructions", () => ({
+const mockAddCustomInstructions = jest.fn();
+jest.mock('../../prompts/sections/custom-instructions', () => ({
 	addCustomInstructions: mockAddCustomInstructions,
-}))
+}));
 
 // Mock delay module
-jest.mock("delay", () => {
-	const delayFn = (ms: number) => Promise.resolve()
-	delayFn.createDelay = () => delayFn
-	delayFn.reject = () => Promise.reject(new Error("Delay rejected"))
-	delayFn.range = () => Promise.resolve()
-	return delayFn
-})
+jest.mock('delay', () => {
+	const delayFn = (ms: number) => Promise.resolve();
+	delayFn.createDelay = () => delayFn;
+	delayFn.reject = () => Promise.reject(new Error('Delay rejected'));
+	delayFn.range = () => Promise.resolve();
+	return delayFn;
+});
 
 // Mock MCP-related modules
 jest.mock(
-	"@modelcontextprotocol/sdk/types.js",
+	'@modelcontextprotocol/sdk/types.js',
 	() => ({
 		CallToolResultSchema: {},
 		ListResourcesResultSchema: {},
@@ -30,24 +30,24 @@ jest.mock(
 		ListToolsResultSchema: {},
 		ReadResourceResultSchema: {},
 		ErrorCode: {
-			InvalidRequest: "InvalidRequest",
-			MethodNotFound: "MethodNotFound",
-			InternalError: "InternalError",
+			InvalidRequest: 'InvalidRequest',
+			MethodNotFound: 'MethodNotFound',
+			InternalError: 'InternalError',
 		},
 		McpError: class McpError extends Error {
-			code: string
+			code: string;
 			constructor(code: string, message: string) {
-				super(message)
-				this.code = code
-				this.name = "McpError"
+				super(message);
+				this.code = code;
+				this.name = 'McpError';
 			}
 		},
 	}),
 	{ virtual: true },
-)
+);
 
 jest.mock(
-	"@modelcontextprotocol/sdk/client/index.js",
+	'@modelcontextprotocol/sdk/client/index.js',
 	() => ({
 		Client: jest.fn().mockImplementation(() => ({
 			connect: jest.fn().mockResolvedValue(undefined),
@@ -57,10 +57,10 @@ jest.mock(
 		})),
 	}),
 	{ virtual: true },
-)
+);
 
 jest.mock(
-	"@modelcontextprotocol/sdk/client/stdio.js",
+	'@modelcontextprotocol/sdk/client/stdio.js',
 	() => ({
 		StdioClientTransport: jest.fn().mockImplementation(() => ({
 			connect: jest.fn().mockResolvedValue(undefined),
@@ -68,17 +68,17 @@ jest.mock(
 		})),
 	}),
 	{ virtual: true },
-)
+);
 
 // Mock DiffStrategy
-jest.mock("../../diff/DiffStrategy", () => ({
+jest.mock('../../diff/DiffStrategy', () => ({
 	getDiffStrategy: jest.fn().mockImplementation(() => ({
-		getToolDescription: jest.fn().mockReturnValue("apply_diff tool description"),
+		getToolDescription: jest.fn().mockReturnValue('apply_diff tool description'),
 	})),
-}))
+}));
 
 // Mock dependencies
-jest.mock("vscode", () => ({
+jest.mock('vscode', () => ({
 	ExtensionContext: jest.fn(),
 	OutputChannel: jest.fn(),
 	WebviewView: jest.fn(),
@@ -104,58 +104,58 @@ jest.mock("vscode", () => ({
 		onDidCloseTextDocument: jest.fn(() => ({ dispose: jest.fn() })),
 	},
 	env: {
-		uriScheme: "vscode",
-		language: "en",
+		uriScheme: 'vscode',
+		language: 'en',
 	},
-}))
+}));
 
 // Mock sound utility
-jest.mock("../../../utils/sound", () => ({
+jest.mock('../../../utils/sound', () => ({
 	setSoundEnabled: jest.fn(),
-}))
+}));
 
 // Mock ESM modules
-jest.mock("p-wait-for", () => ({
+jest.mock('p-wait-for', () => ({
 	__esModule: true,
 	default: jest.fn().mockResolvedValue(undefined),
-}))
+}));
 
 // Mock fs/promises
-jest.mock("fs/promises", () => ({
+jest.mock('fs/promises', () => ({
 	mkdir: jest.fn(),
 	writeFile: jest.fn(),
 	readFile: jest.fn(),
 	unlink: jest.fn(),
 	rmdir: jest.fn(),
-}))
+}));
 
 // Mock axios
-jest.mock("axios", () => ({
+jest.mock('axios', () => ({
 	get: jest.fn().mockResolvedValue({ data: { data: [] } }),
 	post: jest.fn(),
-}))
+}));
 
 // Mock buildApiHandler
-jest.mock("../../../api", () => ({
+jest.mock('../../../api', () => ({
 	buildApiHandler: jest.fn(),
-}))
+}));
 
 // Mock system prompt
-jest.mock("../../prompts/system", () => ({
-	SYSTEM_PROMPT: jest.fn().mockImplementation(async () => "mocked system prompt"),
-	codeMode: "code",
-}))
+jest.mock('../../prompts/system', () => ({
+	SYSTEM_PROMPT: jest.fn().mockImplementation(async () => 'mocked system prompt'),
+	codeMode: 'code',
+}));
 
 // Mock WorkspaceTracker
-jest.mock("../../../integrations/workspace/WorkspaceTracker", () => {
+jest.mock('../../../integrations/workspace/WorkspaceTracker', () => {
 	return jest.fn().mockImplementation(() => ({
 		initializeFilePaths: jest.fn(),
 		dispose: jest.fn(),
-	}))
-})
+	}));
+});
 
 // Mock Cline
-jest.mock("../../Cline", () => ({
+jest.mock('../../Cline', () => ({
 	Cline: jest
 		.fn()
 		.mockImplementation(
@@ -166,55 +166,55 @@ jest.mock("../../Cline", () => ({
 				apiConversationHistory: [],
 				overwriteClineMessages: jest.fn(),
 				overwriteApiConversationHistory: jest.fn(),
-				taskId: taskId || "test-task-id",
+				taskId: taskId || 'test-task-id',
 			}),
 		),
-}))
+}));
 
 // Mock extract-text
-jest.mock("../../../integrations/misc/extract-text", () => ({
+jest.mock('../../../integrations/misc/extract-text', () => ({
 	extractTextFromFile: jest.fn().mockImplementation(async (filePath: string) => {
-		const content = "const x = 1;\nconst y = 2;\nconst z = 3;"
-		const lines = content.split("\n")
-		return lines.map((line, index) => `${index + 1} | ${line}`).join("\n")
+		const content = 'const x = 1;\nconst y = 2;\nconst z = 3;';
+		const lines = content.split('\n');
+		return lines.map((line, index) => `${index + 1} | ${line}`).join('\n');
 	}),
-}))
+}));
 
 // Spy on console.error and console.log to suppress expected messages
 beforeAll(() => {
-	jest.spyOn(console, "error").mockImplementation(() => {})
-	jest.spyOn(console, "log").mockImplementation(() => {})
-})
+	jest.spyOn(console, 'error').mockImplementation(() => {});
+	jest.spyOn(console, 'log').mockImplementation(() => {});
+});
 
 afterAll(() => {
-	jest.restoreAllMocks()
-})
+	jest.restoreAllMocks();
+});
 
-describe("ClineProvider", () => {
-	let provider: ClineProvider
-	let mockContext: vscode.ExtensionContext
-	let mockOutputChannel: vscode.OutputChannel
-	let mockWebviewView: vscode.WebviewView
-	let mockPostMessage: jest.Mock
-	let visibilityChangeCallback: (e?: unknown) => void
+describe('ClineProvider', () => {
+	let provider: ClineProvider;
+	let mockContext: vscode.ExtensionContext;
+	let mockOutputChannel: vscode.OutputChannel;
+	let mockWebviewView: vscode.WebviewView;
+	let mockPostMessage: jest.Mock;
+	let visibilityChangeCallback: (e?: unknown) => void;
 
 	beforeEach(() => {
 		// Reset mocks
-		jest.clearAllMocks()
+		jest.clearAllMocks();
 
 		// Mock context
 		mockContext = {
-			extensionPath: "/test/path",
+			extensionPath: '/test/path',
 			extensionUri: {} as vscode.Uri,
 			globalState: {
 				get: jest.fn().mockImplementation((key: string) => {
 					switch (key) {
-						case "mode":
-							return "architect"
-						case "currentApiConfigName":
-							return "new-config"
+						case 'mode':
+							return 'architect';
+						case 'currentApiConfigName':
+							return 'new-config';
 						default:
-							return undefined
+							return undefined;
 					}
 				}),
 				update: jest.fn(),
@@ -227,82 +227,82 @@ describe("ClineProvider", () => {
 			},
 			subscriptions: [],
 			extension: {
-				packageJSON: { version: "1.0.0" },
+				packageJSON: { version: '1.0.0' },
 			},
 			globalStorageUri: {
-				fsPath: "/test/storage/path",
+				fsPath: '/test/storage/path',
 			},
-		} as unknown as vscode.ExtensionContext
+		} as unknown as vscode.ExtensionContext;
 
 		// Mock CustomModesManager
 		const mockCustomModesManager = {
 			updateCustomMode: jest.fn().mockResolvedValue(undefined),
 			getCustomModes: jest.fn().mockResolvedValue({}),
 			dispose: jest.fn(),
-		}
+		};
 
 		// Mock output channel
 		mockOutputChannel = {
 			appendLine: jest.fn(),
 			clear: jest.fn(),
 			dispose: jest.fn(),
-		} as unknown as vscode.OutputChannel
+		} as unknown as vscode.OutputChannel;
 
 		// Mock webview
-		mockPostMessage = jest.fn()
+		mockPostMessage = jest.fn();
 		mockWebviewView = {
 			webview: {
 				postMessage: mockPostMessage,
-				html: "",
+				html: '',
 				options: {},
 				onDidReceiveMessage: jest.fn(),
 				asWebviewUri: jest.fn(),
 			},
 			visible: true,
 			onDidDispose: jest.fn().mockImplementation((callback) => {
-				callback()
-				return { dispose: jest.fn() }
+				callback();
+				return { dispose: jest.fn() };
 			}),
 			onDidChangeVisibility: jest.fn().mockImplementation((callback) => {
-				visibilityChangeCallback = callback
-				return { dispose: jest.fn() }
+				visibilityChangeCallback = callback;
+				return { dispose: jest.fn() };
 			}),
-		} as unknown as vscode.WebviewView
+		} as unknown as vscode.WebviewView;
 
-		provider = new ClineProvider(mockContext, mockOutputChannel)
+		provider = new ClineProvider(mockContext, mockOutputChannel);
 		// @ts-ignore - accessing private property for testing
-		provider.customModesManager = mockCustomModesManager
-	})
+		provider.customModesManager = mockCustomModesManager;
+	});
 
-	test("constructor initializes correctly", () => {
-		expect(provider).toBeInstanceOf(ClineProvider)
+	test('constructor initializes correctly', () => {
+		expect(provider).toBeInstanceOf(ClineProvider);
 		// Since getVisibleInstance returns the last instance where view.visible is true
 		// @ts-ignore - accessing private property for testing
-		provider.view = mockWebviewView
-		expect(ClineProvider.getVisibleInstance()).toBe(provider)
-	})
+		provider.view = mockWebviewView;
+		expect(ClineProvider.getVisibleInstance()).toBe(provider);
+	});
 
-	test("resolveWebviewView sets up webview correctly", () => {
-		provider.resolveWebviewView(mockWebviewView)
+	test('resolveWebviewView sets up webview correctly', () => {
+		provider.resolveWebviewView(mockWebviewView);
 
 		expect(mockWebviewView.webview.options).toEqual({
 			enableScripts: true,
 			localResourceRoots: [mockContext.extensionUri],
-		})
-		expect(mockWebviewView.webview.html).toContain("<!DOCTYPE html>")
-	})
+		});
+		expect(mockWebviewView.webview.html).toContain('<!DOCTYPE html>');
+	});
 
-	test("postMessageToWebview sends message to webview", async () => {
-		provider.resolveWebviewView(mockWebviewView)
+	test('postMessageToWebview sends message to webview', async () => {
+		provider.resolveWebviewView(mockWebviewView);
 
 		const mockState: ExtensionState = {
-			version: "1.0.0",
-			preferredLanguage: "English",
+			version: '1.0.0',
+			preferredLanguage: 'English',
 			clineMessages: [],
 			taskHistory: [],
 			shouldShowAnnouncement: false,
 			apiConfiguration: {
-				apiProvider: "openrouter",
+				apiProvider: 'openrouter',
 			},
 			customInstructions: undefined,
 			alwaysAllowReadOnly: false,
@@ -310,321 +310,321 @@ describe("ClineProvider", () => {
 			alwaysAllowExecute: false,
 			alwaysAllowBrowser: false,
 			alwaysAllowMcp: false,
-			uriScheme: "vscode",
+			uriScheme: 'vscode',
 			soundEnabled: false,
 			diffEnabled: false,
 			writeDelayMs: 1000,
-			browserViewportSize: "900x600",
+			browserViewportSize: '900x600',
 			fuzzyMatchThreshold: 1.0,
 			mcpEnabled: true,
 			requestDelaySeconds: 5,
 			mode: defaultModeSlug,
 			customModes: [],
-		}
+		};
 
 		const message: ExtensionMessage = {
-			type: "state",
+			type: 'state',
 			state: mockState,
-		}
-		await provider.postMessageToWebview(message)
+		};
+		await provider.postMessageToWebview(message);
 
-		expect(mockPostMessage).toHaveBeenCalledWith(message)
-	})
+		expect(mockPostMessage).toHaveBeenCalledWith(message);
+	});
 
-	test("handles webviewDidLaunch message", async () => {
-		provider.resolveWebviewView(mockWebviewView)
+	test('handles webviewDidLaunch message', async () => {
+		provider.resolveWebviewView(mockWebviewView);
 
 		// Get the message handler from onDidReceiveMessage
-		const messageHandler = (mockWebviewView.webview.onDidReceiveMessage as jest.Mock).mock.calls[0][0]
+		const messageHandler = (mockWebviewView.webview.onDidReceiveMessage as jest.Mock).mock.calls[0][0];
 
 		// Simulate webviewDidLaunch message
-		await messageHandler({ type: "webviewDidLaunch" })
+		await messageHandler({ type: 'webviewDidLaunch' });
 
 		// Should post state and theme to webview
-		expect(mockPostMessage).toHaveBeenCalled()
-	})
+		expect(mockPostMessage).toHaveBeenCalled();
+	});
 
-	test("clearTask aborts current task", async () => {
-		const mockAbortTask = jest.fn()
+	test('clearTask aborts current task', async () => {
+		const mockAbortTask = jest.fn();
 		// @ts-ignore - accessing private property for testing
-		provider.cline = { abortTask: mockAbortTask }
+		provider.cline = { abortTask: mockAbortTask };
 
-		await provider.clearTask()
+		await provider.clearTask();
 
-		expect(mockAbortTask).toHaveBeenCalled()
+		expect(mockAbortTask).toHaveBeenCalled();
 		// @ts-ignore - accessing private property for testing
-		expect(provider.cline).toBeUndefined()
-	})
+		expect(provider.cline).toBeUndefined();
+	});
 
-	test("getState returns correct initial state", async () => {
-		const state = await provider.getState()
+	test('getState returns correct initial state', async () => {
+		const state = await provider.getState();
 
-		expect(state).toHaveProperty("apiConfiguration")
-		expect(state.apiConfiguration).toHaveProperty("apiProvider")
-		expect(state).toHaveProperty("customInstructions")
-		expect(state).toHaveProperty("alwaysAllowReadOnly")
-		expect(state).toHaveProperty("alwaysAllowWrite")
-		expect(state).toHaveProperty("alwaysAllowExecute")
-		expect(state).toHaveProperty("alwaysAllowBrowser")
-		expect(state).toHaveProperty("taskHistory")
-		expect(state).toHaveProperty("soundEnabled")
-		expect(state).toHaveProperty("diffEnabled")
-		expect(state).toHaveProperty("writeDelayMs")
-	})
+		expect(state).toHaveProperty('apiConfiguration');
+		expect(state.apiConfiguration).toHaveProperty('apiProvider');
+		expect(state).toHaveProperty('customInstructions');
+		expect(state).toHaveProperty('alwaysAllowReadOnly');
+		expect(state).toHaveProperty('alwaysAllowWrite');
+		expect(state).toHaveProperty('alwaysAllowExecute');
+		expect(state).toHaveProperty('alwaysAllowBrowser');
+		expect(state).toHaveProperty('taskHistory');
+		expect(state).toHaveProperty('soundEnabled');
+		expect(state).toHaveProperty('diffEnabled');
+		expect(state).toHaveProperty('writeDelayMs');
+	});
 
-	test("preferredLanguage defaults to VSCode language when not set", async () => {
+	test('preferredLanguage defaults to VSCode language when not set', async () => {
 		// Mock VSCode language as Spanish
-		;(vscode.env as any).language = "es-ES"
+		(vscode.env as any).language = 'es-ES';
 
-		const state = await provider.getState()
-		expect(state.preferredLanguage).toBe("Spanish")
-	})
+		const state = await provider.getState();
+		expect(state.preferredLanguage).toBe('Spanish');
+	});
 
-	test("preferredLanguage defaults to English for unsupported VSCode language", async () => {
+	test('preferredLanguage defaults to English for unsupported VSCode language', async () => {
 		// Mock VSCode language as an unsupported language
-		;(vscode.env as any).language = "unsupported-LANG"
+		(vscode.env as any).language = 'unsupported-LANG';
 
-		const state = await provider.getState()
-		expect(state.preferredLanguage).toBe("English")
-	})
+		const state = await provider.getState();
+		expect(state.preferredLanguage).toBe('English');
+	});
 
-	test("diffEnabled defaults to true when not set", async () => {
+	test('diffEnabled defaults to true when not set', async () => {
 		// Mock globalState.get to return undefined for diffEnabled
-		;(mockContext.globalState.get as jest.Mock).mockReturnValue(undefined)
+		(mockContext.globalState.get as jest.Mock).mockReturnValue(undefined);
 
-		const state = await provider.getState()
+		const state = await provider.getState();
 
-		expect(state.diffEnabled).toBe(true)
-	})
+		expect(state.diffEnabled).toBe(true);
+	});
 
-	test("writeDelayMs defaults to 1000ms", async () => {
+	test('writeDelayMs defaults to 1000ms', async () => {
 		// Mock globalState.get to return undefined for writeDelayMs
-		;(mockContext.globalState.get as jest.Mock).mockImplementation((key: string) => {
-			if (key === "writeDelayMs") {
-				return undefined
+		(mockContext.globalState.get as jest.Mock).mockImplementation((key: string) => {
+			if (key === 'writeDelayMs') {
+				return undefined;
 			}
-			return null
-		})
+			return null;
+		});
 
-		const state = await provider.getState()
-		expect(state.writeDelayMs).toBe(1000)
-	})
+		const state = await provider.getState();
+		expect(state.writeDelayMs).toBe(1000);
+	});
 
-	test("handles writeDelayMs message", async () => {
-		provider.resolveWebviewView(mockWebviewView)
-		const messageHandler = (mockWebviewView.webview.onDidReceiveMessage as jest.Mock).mock.calls[0][0]
+	test('handles writeDelayMs message', async () => {
+		provider.resolveWebviewView(mockWebviewView);
+		const messageHandler = (mockWebviewView.webview.onDidReceiveMessage as jest.Mock).mock.calls[0][0];
 
-		await messageHandler({ type: "writeDelayMs", value: 2000 })
+		await messageHandler({ type: 'writeDelayMs', value: 2000 });
 
-		expect(mockContext.globalState.update).toHaveBeenCalledWith("writeDelayMs", 2000)
-		expect(mockPostMessage).toHaveBeenCalled()
-	})
+		expect(mockContext.globalState.update).toHaveBeenCalledWith('writeDelayMs', 2000);
+		expect(mockPostMessage).toHaveBeenCalled();
+	});
 
-	test("updates sound utility when sound setting changes", async () => {
-		provider.resolveWebviewView(mockWebviewView)
+	test('updates sound utility when sound setting changes', async () => {
+		provider.resolveWebviewView(mockWebviewView);
 
 		// Get the message handler from onDidReceiveMessage
-		const messageHandler = (mockWebviewView.webview.onDidReceiveMessage as jest.Mock).mock.calls[0][0]
+		const messageHandler = (mockWebviewView.webview.onDidReceiveMessage as jest.Mock).mock.calls[0][0];
 
 		// Simulate setting sound to enabled
-		await messageHandler({ type: "soundEnabled", bool: true })
-		expect(setSoundEnabled).toHaveBeenCalledWith(true)
-		expect(mockContext.globalState.update).toHaveBeenCalledWith("soundEnabled", true)
-		expect(mockPostMessage).toHaveBeenCalled()
+		await messageHandler({ type: 'soundEnabled', bool: true });
+		expect(setSoundEnabled).toHaveBeenCalledWith(true);
+		expect(mockContext.globalState.update).toHaveBeenCalledWith('soundEnabled', true);
+		expect(mockPostMessage).toHaveBeenCalled();
 
 		// Simulate setting sound to disabled
-		await messageHandler({ type: "soundEnabled", bool: false })
-		expect(setSoundEnabled).toHaveBeenCalledWith(false)
-		expect(mockContext.globalState.update).toHaveBeenCalledWith("soundEnabled", false)
-		expect(mockPostMessage).toHaveBeenCalled()
-	})
+		await messageHandler({ type: 'soundEnabled', bool: false });
+		expect(setSoundEnabled).toHaveBeenCalledWith(false);
+		expect(mockContext.globalState.update).toHaveBeenCalledWith('soundEnabled', false);
+		expect(mockPostMessage).toHaveBeenCalled();
+	});
 
-	test("requestDelaySeconds defaults to 5 seconds", async () => {
+	test('requestDelaySeconds defaults to 5 seconds', async () => {
 		// Mock globalState.get to return undefined for requestDelaySeconds
-		;(mockContext.globalState.get as jest.Mock).mockImplementation((key: string) => {
-			if (key === "requestDelaySeconds") {
-				return undefined
+		(mockContext.globalState.get as jest.Mock).mockImplementation((key: string) => {
+			if (key === 'requestDelaySeconds') {
+				return undefined;
 			}
-			return null
-		})
+			return null;
+		});
 
-		const state = await provider.getState()
-		expect(state.requestDelaySeconds).toBe(10)
-	})
+		const state = await provider.getState();
+		expect(state.requestDelaySeconds).toBe(10);
+	});
 
-	test("alwaysApproveResubmit defaults to false", async () => {
+	test('alwaysApproveResubmit defaults to false', async () => {
 		// Mock globalState.get to return undefined for alwaysApproveResubmit
-		;(mockContext.globalState.get as jest.Mock).mockReturnValue(undefined)
+		(mockContext.globalState.get as jest.Mock).mockReturnValue(undefined);
 
-		const state = await provider.getState()
-		expect(state.alwaysApproveResubmit).toBe(false)
-	})
+		const state = await provider.getState();
+		expect(state.alwaysApproveResubmit).toBe(false);
+	});
 
-	test("loads saved API config when switching modes", async () => {
-		provider.resolveWebviewView(mockWebviewView)
-		const messageHandler = (mockWebviewView.webview.onDidReceiveMessage as jest.Mock).mock.calls[0][0]
+	test('loads saved API config when switching modes', async () => {
+		provider.resolveWebviewView(mockWebviewView);
+		const messageHandler = (mockWebviewView.webview.onDidReceiveMessage as jest.Mock).mock.calls[0][0];
 
 		// Mock ConfigManager methods
 		provider.configManager = {
-			getModeConfigId: jest.fn().mockResolvedValue("test-id"),
-			listConfig: jest.fn().mockResolvedValue([{ name: "test-config", id: "test-id", apiProvider: "anthropic" }]),
-			loadConfig: jest.fn().mockResolvedValue({ apiProvider: "anthropic" }),
+			getModeConfigId: jest.fn().mockResolvedValue('test-id'),
+			listConfig: jest.fn().mockResolvedValue([{ name: 'test-config', id: 'test-id', apiProvider: 'anthropic' }]),
+			loadConfig: jest.fn().mockResolvedValue({ apiProvider: 'anthropic' }),
 			setModeConfig: jest.fn(),
-		} as any
+		} as any;
 
 		// Switch to architect mode
-		await messageHandler({ type: "mode", text: "architect" })
+		await messageHandler({ type: 'mode', text: 'architect' });
 
 		// Should load the saved config for architect mode
-		expect(provider.configManager.getModeConfigId).toHaveBeenCalledWith("architect")
-		expect(provider.configManager.loadConfig).toHaveBeenCalledWith("test-config")
-		expect(mockContext.globalState.update).toHaveBeenCalledWith("currentApiConfigName", "test-config")
-	})
+		expect(provider.configManager.getModeConfigId).toHaveBeenCalledWith('architect');
+		expect(provider.configManager.loadConfig).toHaveBeenCalledWith('test-config');
+		expect(mockContext.globalState.update).toHaveBeenCalledWith('currentApiConfigName', 'test-config');
+	});
 
-	test("saves current config when switching to mode without config", async () => {
-		provider.resolveWebviewView(mockWebviewView)
-		const messageHandler = (mockWebviewView.webview.onDidReceiveMessage as jest.Mock).mock.calls[0][0]
+	test('saves current config when switching to mode without config', async () => {
+		provider.resolveWebviewView(mockWebviewView);
+		const messageHandler = (mockWebviewView.webview.onDidReceiveMessage as jest.Mock).mock.calls[0][0];
 
 		// Mock ConfigManager methods
 		provider.configManager = {
 			getModeConfigId: jest.fn().mockResolvedValue(undefined),
 			listConfig: jest
 				.fn()
-				.mockResolvedValue([{ name: "current-config", id: "current-id", apiProvider: "anthropic" }]),
+				.mockResolvedValue([{ name: 'current-config', id: 'current-id', apiProvider: 'anthropic' }]),
 			setModeConfig: jest.fn(),
 		} as any
 
 		// Mock current config name
 		;(mockContext.globalState.get as jest.Mock).mockImplementation((key: string) => {
-			if (key === "currentApiConfigName") {
-				return "current-config"
+			if (key === 'currentApiConfigName') {
+				return 'current-config';
 			}
-			return undefined
-		})
+			return undefined;
+		});
 
 		// Switch to architect mode
-		await messageHandler({ type: "mode", text: "architect" })
+		await messageHandler({ type: 'mode', text: 'architect' });
 
 		// Should save current config as default for architect mode
-		expect(provider.configManager.setModeConfig).toHaveBeenCalledWith("architect", "current-id")
-	})
+		expect(provider.configManager.setModeConfig).toHaveBeenCalledWith('architect', 'current-id');
+	});
 
-	test("saves config as default for current mode when loading config", async () => {
-		provider.resolveWebviewView(mockWebviewView)
-		const messageHandler = (mockWebviewView.webview.onDidReceiveMessage as jest.Mock).mock.calls[0][0]
+	test('saves config as default for current mode when loading config', async () => {
+		provider.resolveWebviewView(mockWebviewView);
+		const messageHandler = (mockWebviewView.webview.onDidReceiveMessage as jest.Mock).mock.calls[0][0];
 
 		provider.configManager = {
-			loadConfig: jest.fn().mockResolvedValue({ apiProvider: "anthropic", id: "new-id" }),
-			listConfig: jest.fn().mockResolvedValue([{ name: "new-config", id: "new-id", apiProvider: "anthropic" }]),
+			loadConfig: jest.fn().mockResolvedValue({ apiProvider: 'anthropic', id: 'new-id' }),
+			listConfig: jest.fn().mockResolvedValue([{ name: 'new-config', id: 'new-id', apiProvider: 'anthropic' }]),
 			setModeConfig: jest.fn(),
 			getModeConfigId: jest.fn().mockResolvedValue(undefined),
-		} as any
+		} as any;
 
 		// First set the mode
-		await messageHandler({ type: "mode", text: "architect" })
+		await messageHandler({ type: 'mode', text: 'architect' });
 
 		// Then load the config
-		await messageHandler({ type: "loadApiConfiguration", text: "new-config" })
+		await messageHandler({ type: 'loadApiConfiguration', text: 'new-config' });
 
 		// Should save new config as default for architect mode
-		expect(provider.configManager.setModeConfig).toHaveBeenCalledWith("architect", "new-id")
-	})
+		expect(provider.configManager.setModeConfig).toHaveBeenCalledWith('architect', 'new-id');
+	});
 
-	test("handles request delay settings messages", async () => {
-		provider.resolveWebviewView(mockWebviewView)
-		const messageHandler = (mockWebviewView.webview.onDidReceiveMessage as jest.Mock).mock.calls[0][0]
+	test('handles request delay settings messages', async () => {
+		provider.resolveWebviewView(mockWebviewView);
+		const messageHandler = (mockWebviewView.webview.onDidReceiveMessage as jest.Mock).mock.calls[0][0];
 
 		// Test alwaysApproveResubmit
-		await messageHandler({ type: "alwaysApproveResubmit", bool: true })
-		expect(mockContext.globalState.update).toHaveBeenCalledWith("alwaysApproveResubmit", true)
-		expect(mockPostMessage).toHaveBeenCalled()
+		await messageHandler({ type: 'alwaysApproveResubmit', bool: true });
+		expect(mockContext.globalState.update).toHaveBeenCalledWith('alwaysApproveResubmit', true);
+		expect(mockPostMessage).toHaveBeenCalled();
 
 		// Test requestDelaySeconds
-		await messageHandler({ type: "requestDelaySeconds", value: 10 })
-		expect(mockContext.globalState.update).toHaveBeenCalledWith("requestDelaySeconds", 10)
-		expect(mockPostMessage).toHaveBeenCalled()
-	})
+		await messageHandler({ type: 'requestDelaySeconds', value: 10 });
+		expect(mockContext.globalState.update).toHaveBeenCalledWith('requestDelaySeconds', 10);
+		expect(mockPostMessage).toHaveBeenCalled();
+	});
 
-	test("handles updatePrompt message correctly", async () => {
-		provider.resolveWebviewView(mockWebviewView)
-		const messageHandler = (mockWebviewView.webview.onDidReceiveMessage as jest.Mock).mock.calls[0][0]
+	test('handles updatePrompt message correctly', async () => {
+		provider.resolveWebviewView(mockWebviewView);
+		const messageHandler = (mockWebviewView.webview.onDidReceiveMessage as jest.Mock).mock.calls[0][0];
 
 		// Mock existing prompts
 		const existingPrompts = {
-			code: "existing code prompt",
-			architect: "existing architect prompt",
+			code: 'existing code prompt',
+			architect: 'existing architect prompt',
 		}
 		;(mockContext.globalState.get as jest.Mock).mockImplementation((key: string) => {
-			if (key === "customModePrompts") {
-				return existingPrompts
+			if (key === 'customModePrompts') {
+				return existingPrompts;
 			}
-			return undefined
-		})
+			return undefined;
+		});
 
 		// Test updating a prompt
 		await messageHandler({
-			type: "updatePrompt",
-			promptMode: "code",
-			customPrompt: "new code prompt",
-		})
+			type: 'updatePrompt',
+			promptMode: 'code',
+			customPrompt: 'new code prompt',
+		});
 
 		// Verify state was updated correctly
-		expect(mockContext.globalState.update).toHaveBeenCalledWith("customModePrompts", {
+		expect(mockContext.globalState.update).toHaveBeenCalledWith('customModePrompts', {
 			...existingPrompts,
-			code: "new code prompt",
-		})
+			code: 'new code prompt',
+		});
 
 		// Verify state was posted to webview
 		expect(mockPostMessage).toHaveBeenCalledWith(
 			expect.objectContaining({
-				type: "state",
+				type: 'state',
 				state: expect.objectContaining({
 					customModePrompts: {
 						...existingPrompts,
-						code: "new code prompt",
+						code: 'new code prompt',
 					},
 				}),
 			}),
-		)
-	})
+		);
+	});
 
-	test("customModePrompts defaults to empty object", async () => {
+	test('customModePrompts defaults to empty object', async () => {
 		// Mock globalState.get to return undefined for customModePrompts
-		;(mockContext.globalState.get as jest.Mock).mockImplementation((key: string) => {
-			if (key === "customModePrompts") {
-				return undefined
+		(mockContext.globalState.get as jest.Mock).mockImplementation((key: string) => {
+			if (key === 'customModePrompts') {
+				return undefined;
 			}
-			return null
-		})
+			return null;
+		});
 
-		const state = await provider.getState()
-		expect(state.customModePrompts).toEqual({})
-	})
+		const state = await provider.getState();
+		expect(state.customModePrompts).toEqual({});
+	});
 
-	test("uses mode-specific custom instructions in Cline initialization", async () => {
+	test('uses mode-specific custom instructions in Cline initialization', async () => {
 		// Setup mock state
-		const modeCustomInstructions = "Code mode instructions"
+		const modeCustomInstructions = 'Code mode instructions';
 		const mockApiConfig = {
-			apiProvider: "openrouter",
+			apiProvider: 'openrouter',
 			openRouterModelInfo: { supportsComputerUse: true },
-		}
+		};
 
-		jest.spyOn(provider, "getState").mockResolvedValue({
+		jest.spyOn(provider, 'getState').mockResolvedValue({
 			apiConfiguration: mockApiConfig,
 			customModePrompts: {
 				code: { customInstructions: modeCustomInstructions },
 			},
-			mode: "code",
+			mode: 'code',
 			diffEnabled: true,
 			fuzzyMatchThreshold: 1.0,
-		} as any)
+		} as any);
 
 		// Reset Cline mock
-		const { Cline } = require("../../Cline")
-		;(Cline as jest.Mock).mockClear()
+		const { Cline } = require('../../Cline')
+		;(Cline as jest.Mock).mockClear();
 
 		// Initialize Cline with a task
-		await provider.initClineWithTask("Test task")
+		await provider.initClineWithTask('Test task');
 
 		// Verify Cline was initialized with mode-specific instructions
 		expect(Cline).toHaveBeenCalledWith(
@@ -633,116 +633,116 @@ describe("ClineProvider", () => {
 			modeCustomInstructions,
 			true,
 			1.0,
-			"Test task",
+			'Test task',
 			undefined,
 			undefined,
 			undefined,
-		)
-	})
-	test("handles mode-specific custom instructions updates", async () => {
-		provider.resolveWebviewView(mockWebviewView)
-		const messageHandler = (mockWebviewView.webview.onDidReceiveMessage as jest.Mock).mock.calls[0][0]
+		);
+	});
+	test('handles mode-specific custom instructions updates', async () => {
+		provider.resolveWebviewView(mockWebviewView);
+		const messageHandler = (mockWebviewView.webview.onDidReceiveMessage as jest.Mock).mock.calls[0][0];
 
 		// Mock existing prompts
 		const existingPrompts = {
 			code: {
-				roleDefinition: "Code role",
-				customInstructions: "Old instructions",
+				roleDefinition: 'Code role',
+				customInstructions: 'Old instructions',
 			},
-		}
+		};
 		mockContext.globalState.get = jest.fn((key: string) => {
-			if (key === "customModePrompts") {
-				return existingPrompts
+			if (key === 'customModePrompts') {
+				return existingPrompts;
 			}
-			return undefined
-		})
+			return undefined;
+		});
 
 		// Update custom instructions for code mode
 		await messageHandler({
-			type: "updatePrompt",
-			promptMode: "code",
+			type: 'updatePrompt',
+			promptMode: 'code',
 			customPrompt: {
-				roleDefinition: "Code role",
-				customInstructions: "New instructions",
+				roleDefinition: 'Code role',
+				customInstructions: 'New instructions',
 			},
-		})
+		});
 
 		// Verify state was updated correctly
-		expect(mockContext.globalState.update).toHaveBeenCalledWith("customModePrompts", {
+		expect(mockContext.globalState.update).toHaveBeenCalledWith('customModePrompts', {
 			code: {
-				roleDefinition: "Code role",
-				customInstructions: "New instructions",
+				roleDefinition: 'Code role',
+				customInstructions: 'New instructions',
 			},
-		})
-	})
+		});
+	});
 
-	test("saves mode config when updating API configuration", async () => {
+	test('saves mode config when updating API configuration', async () => {
 		// Setup mock context with mode and config name
 		mockContext = {
 			...mockContext,
 			globalState: {
 				...mockContext.globalState,
 				get: jest.fn((key: string) => {
-					if (key === "mode") {
-						return "code"
-					} else if (key === "currentApiConfigName") {
-						return "test-config"
+					if (key === 'mode') {
+						return 'code';
+					} else if (key === 'currentApiConfigName') {
+						return 'test-config';
 					}
-					return undefined
+					return undefined;
 				}),
 				update: jest.fn(),
 				keys: jest.fn().mockReturnValue([]),
 			},
-		} as unknown as vscode.ExtensionContext
+		} as unknown as vscode.ExtensionContext;
 
 		// Create new provider with updated mock context
-		provider = new ClineProvider(mockContext, mockOutputChannel)
-		provider.resolveWebviewView(mockWebviewView)
-		const messageHandler = (mockWebviewView.webview.onDidReceiveMessage as jest.Mock).mock.calls[0][0]
+		provider = new ClineProvider(mockContext, mockOutputChannel);
+		provider.resolveWebviewView(mockWebviewView);
+		const messageHandler = (mockWebviewView.webview.onDidReceiveMessage as jest.Mock).mock.calls[0][0];
 
 		provider.configManager = {
-			listConfig: jest.fn().mockResolvedValue([{ name: "test-config", id: "test-id", apiProvider: "anthropic" }]),
+			listConfig: jest.fn().mockResolvedValue([{ name: 'test-config', id: 'test-id', apiProvider: 'anthropic' }]),
 			setModeConfig: jest.fn(),
-		} as any
+		} as any;
 
 		// Update API configuration
 		await messageHandler({
-			type: "apiConfiguration",
-			apiConfiguration: { apiProvider: "anthropic" },
-		})
+			type: 'apiConfiguration',
+			apiConfiguration: { apiProvider: 'anthropic' },
+		});
 
 		// Should save config as default for current mode
-		expect(provider.configManager.setModeConfig).toHaveBeenCalledWith("code", "test-id")
-	})
+		expect(provider.configManager.setModeConfig).toHaveBeenCalledWith('code', 'test-id');
+	});
 
-	test("file content includes line numbers", async () => {
-		const { extractTextFromFile } = require("../../../integrations/misc/extract-text")
-		const result = await extractTextFromFile("test.js")
-		expect(result).toBe("1 | const x = 1;\n2 | const y = 2;\n3 | const z = 3;")
-	})
+	test('file content includes line numbers', async () => {
+		const { extractTextFromFile } = require('../../../integrations/misc/extract-text');
+		const result = await extractTextFromFile('test.js');
+		expect(result).toBe('1 | const x = 1;\n2 | const y = 2;\n3 | const z = 3;');
+	});
 
-	describe("deleteMessage", () => {
+	describe('deleteMessage', () => {
 		beforeEach(() => {
 			// Mock window.showInformationMessage
-			;(vscode.window.showInformationMessage as jest.Mock) = jest.fn()
-			provider.resolveWebviewView(mockWebviewView)
-		})
+			(vscode.window.showInformationMessage as jest.Mock) = jest.fn();
+			provider.resolveWebviewView(mockWebviewView);
+		});
 
 		test('handles "Just this message" deletion correctly', async () => {
 			// Mock user selecting "Just this message"
-			;(vscode.window.showInformationMessage as jest.Mock).mockResolvedValue("Just this message")
+			(vscode.window.showInformationMessage as jest.Mock).mockResolvedValue('Just this message');
 
 			// Setup mock messages
 			const mockMessages = [
-				{ ts: 1000, type: "say", say: "user_feedback" }, // User message 1
-				{ ts: 2000, type: "say", say: "tool" }, // Tool message
-				{ ts: 3000, type: "say", say: "text", value: 4000 }, // Message to delete
-				{ ts: 4000, type: "say", say: "browser_action" }, // Response to delete
-				{ ts: 5000, type: "say", say: "user_feedback" }, // Next user message
-				{ ts: 6000, type: "say", say: "user_feedback" }, // Final message
-			]
+				{ ts: 1000, type: 'say', say: 'user_feedback' }, // User message 1
+				{ ts: 2000, type: 'say', say: 'tool' }, // Tool message
+				{ ts: 3000, type: 'say', say: 'text', value: 4000 }, // Message to delete
+				{ ts: 4000, type: 'say', say: 'browser_action' }, // Response to delete
+				{ ts: 5000, type: 'say', say: 'user_feedback' }, // Next user message
+				{ ts: 6000, type: 'say', say: 'user_feedback' }, // Final message
+			];
 
-			const mockApiHistory = [{ ts: 1000 }, { ts: 2000 }, { ts: 3000 }, { ts: 4000 }, { ts: 5000 }, { ts: 6000 }]
+			const mockApiHistory = [{ ts: 1000 }, { ts: 2000 }, { ts: 3000 }, { ts: 4000 }, { ts: 5000 }, { ts: 6000 }];
 
 			// Setup Cline instance with mock data
 			const mockCline = {
@@ -750,21 +750,21 @@ describe("ClineProvider", () => {
 				apiConversationHistory: mockApiHistory,
 				overwriteClineMessages: jest.fn(),
 				overwriteApiConversationHistory: jest.fn(),
-				taskId: "test-task-id",
+				taskId: 'test-task-id',
 				abortTask: jest.fn(),
 				handleWebviewAskResponse: jest.fn(),
-			}
+			};
 			// @ts-ignore - accessing private property for testing
 			provider.cline = mockCline
 
 			// Mock getTaskWithId
 			;(provider as any).getTaskWithId = jest.fn().mockResolvedValue({
-				historyItem: { id: "test-task-id" },
-			})
+				historyItem: { id: 'test-task-id' },
+			});
 
 			// Trigger message deletion
-			const messageHandler = (mockWebviewView.webview.onDidReceiveMessage as jest.Mock).mock.calls[0][0]
-			await messageHandler({ type: "deleteMessage", value: 4000 })
+			const messageHandler = (mockWebviewView.webview.onDidReceiveMessage as jest.Mock).mock.calls[0][0];
+			await messageHandler({ type: 'deleteMessage', value: 4000 });
 
 			// Verify correct messages were kept
 			expect(mockCline.overwriteClineMessages).toHaveBeenCalledWith([
@@ -772,7 +772,7 @@ describe("ClineProvider", () => {
 				mockMessages[1],
 				mockMessages[4],
 				mockMessages[5],
-			])
+			]);
 
 			// Verify correct API messages were kept
 			expect(mockCline.overwriteApiConversationHistory).toHaveBeenCalledWith([
@@ -780,22 +780,22 @@ describe("ClineProvider", () => {
 				mockApiHistory[1],
 				mockApiHistory[4],
 				mockApiHistory[5],
-			])
-		})
+			]);
+		});
 
 		test('handles "This and all subsequent messages" deletion correctly', async () => {
 			// Mock user selecting "This and all subsequent messages"
-			;(vscode.window.showInformationMessage as jest.Mock).mockResolvedValue("This and all subsequent messages")
+			(vscode.window.showInformationMessage as jest.Mock).mockResolvedValue('This and all subsequent messages');
 
 			// Setup mock messages
 			const mockMessages = [
-				{ ts: 1000, type: "say", say: "user_feedback" },
-				{ ts: 2000, type: "say", say: "text", value: 3000 }, // Message to delete
-				{ ts: 3000, type: "say", say: "user_feedback" },
-				{ ts: 4000, type: "say", say: "user_feedback" },
-			]
+				{ ts: 1000, type: 'say', say: 'user_feedback' },
+				{ ts: 2000, type: 'say', say: 'text', value: 3000 }, // Message to delete
+				{ ts: 3000, type: 'say', say: 'user_feedback' },
+				{ ts: 4000, type: 'say', say: 'user_feedback' },
+			];
 
-			const mockApiHistory = [{ ts: 1000 }, { ts: 2000 }, { ts: 3000 }, { ts: 4000 }]
+			const mockApiHistory = [{ ts: 1000 }, { ts: 2000 }, { ts: 3000 }, { ts: 4000 }];
 
 			// Setup Cline instance with mock data
 			const mockCline = {
@@ -803,77 +803,77 @@ describe("ClineProvider", () => {
 				apiConversationHistory: mockApiHistory,
 				overwriteClineMessages: jest.fn(),
 				overwriteApiConversationHistory: jest.fn(),
-				taskId: "test-task-id",
+				taskId: 'test-task-id',
 				abortTask: jest.fn(),
 				handleWebviewAskResponse: jest.fn(),
-			}
+			};
 			// @ts-ignore - accessing private property for testing
 			provider.cline = mockCline
 
 			// Mock getTaskWithId
 			;(provider as any).getTaskWithId = jest.fn().mockResolvedValue({
-				historyItem: { id: "test-task-id" },
-			})
+				historyItem: { id: 'test-task-id' },
+			});
 
 			// Trigger message deletion
-			const messageHandler = (mockWebviewView.webview.onDidReceiveMessage as jest.Mock).mock.calls[0][0]
-			await messageHandler({ type: "deleteMessage", value: 3000 })
+			const messageHandler = (mockWebviewView.webview.onDidReceiveMessage as jest.Mock).mock.calls[0][0];
+			await messageHandler({ type: 'deleteMessage', value: 3000 });
 
 			// Verify only messages before the deleted message were kept
-			expect(mockCline.overwriteClineMessages).toHaveBeenCalledWith([mockMessages[0]])
+			expect(mockCline.overwriteClineMessages).toHaveBeenCalledWith([mockMessages[0]]);
 
 			// Verify only API messages before the deleted message were kept
-			expect(mockCline.overwriteApiConversationHistory).toHaveBeenCalledWith([mockApiHistory[0]])
-		})
+			expect(mockCline.overwriteApiConversationHistory).toHaveBeenCalledWith([mockApiHistory[0]]);
+		});
 
-		test("handles Cancel correctly", async () => {
+		test('handles Cancel correctly', async () => {
 			// Mock user selecting "Cancel"
-			;(vscode.window.showInformationMessage as jest.Mock).mockResolvedValue("Cancel")
+			(vscode.window.showInformationMessage as jest.Mock).mockResolvedValue('Cancel');
 
 			const mockCline = {
 				clineMessages: [{ ts: 1000 }, { ts: 2000 }],
 				apiConversationHistory: [{ ts: 1000 }, { ts: 2000 }],
 				overwriteClineMessages: jest.fn(),
 				overwriteApiConversationHistory: jest.fn(),
-				taskId: "test-task-id",
-			}
+				taskId: 'test-task-id',
+			};
 			// @ts-ignore - accessing private property for testing
-			provider.cline = mockCline
+			provider.cline = mockCline;
 
 			// Trigger message deletion
-			const messageHandler = (mockWebviewView.webview.onDidReceiveMessage as jest.Mock).mock.calls[0][0]
-			await messageHandler({ type: "deleteMessage", value: 2000 })
+			const messageHandler = (mockWebviewView.webview.onDidReceiveMessage as jest.Mock).mock.calls[0][0];
+			await messageHandler({ type: 'deleteMessage', value: 2000 });
 
 			// Verify no messages were deleted
-			expect(mockCline.overwriteClineMessages).not.toHaveBeenCalled()
-			expect(mockCline.overwriteApiConversationHistory).not.toHaveBeenCalled()
-		})
-	})
+			expect(mockCline.overwriteClineMessages).not.toHaveBeenCalled();
+			expect(mockCline.overwriteApiConversationHistory).not.toHaveBeenCalled();
+		});
+	});
 
-	describe("getSystemPrompt", () => {
+	describe('getSystemPrompt', () => {
 		beforeEach(() => {
-			mockPostMessage.mockClear()
-			provider.resolveWebviewView(mockWebviewView)
+			mockPostMessage.mockClear();
+			provider.resolveWebviewView(mockWebviewView);
 			// Reset and setup mock
-			mockAddCustomInstructions.mockClear()
+			mockAddCustomInstructions.mockClear();
 			mockAddCustomInstructions.mockImplementation(
 				(modeInstructions: string, globalInstructions: string, cwd: string) => {
-					return Promise.resolve(modeInstructions || globalInstructions || "")
+					return Promise.resolve(modeInstructions || globalInstructions || '');
 				},
-			)
-		})
+			);
+		});
 
 		const getMessageHandler = () => {
-			const mockCalls = (mockWebviewView.webview.onDidReceiveMessage as jest.Mock).mock.calls
-			expect(mockCalls.length).toBeGreaterThan(0)
-			return mockCalls[0][0]
-		}
+			const mockCalls = (mockWebviewView.webview.onDidReceiveMessage as jest.Mock).mock.calls;
+			expect(mockCalls.length).toBeGreaterThan(0);
+			return mockCalls[0][0];
+		};
 
-		test("handles mcpEnabled setting correctly", async () => {
+		test('handles mcpEnabled setting correctly', async () => {
 			// Mock getState to return mcpEnabled: true
-			jest.spyOn(provider, "getState").mockResolvedValue({
+			jest.spyOn(provider, 'getState').mockResolvedValue({
 				apiConfiguration: {
-					apiProvider: "openrouter" as const,
+					apiProvider: 'openrouter' as const,
 					openRouterModelInfo: {
 						supportsComputerUse: true,
 						supportsPromptCache: false,
@@ -886,25 +886,25 @@ describe("ClineProvider", () => {
 					},
 				},
 				mcpEnabled: true,
-				mode: "code" as const,
-			} as any)
+				mode: 'code' as const,
+			} as any);
 
-			const handler1 = getMessageHandler()
-			expect(typeof handler1).toBe("function")
-			await handler1({ type: "getSystemPrompt", mode: "code" })
+			const handler1 = getMessageHandler();
+			expect(typeof handler1).toBe('function');
+			await handler1({ type: 'getSystemPrompt', mode: 'code' });
 
 			// Verify mcpHub is passed when mcpEnabled is true
 			expect(mockPostMessage).toHaveBeenCalledWith(
 				expect.objectContaining({
-					type: "systemPrompt",
+					type: 'systemPrompt',
 					text: expect.any(String),
 				}),
-			)
+			);
 
 			// Mock getState to return mcpEnabled: false
-			jest.spyOn(provider, "getState").mockResolvedValue({
+			jest.spyOn(provider, 'getState').mockResolvedValue({
 				apiConfiguration: {
-					apiProvider: "openrouter" as const,
+					apiProvider: 'openrouter' as const,
 					openRouterModelInfo: {
 						supportsComputerUse: true,
 						supportsPromptCache: false,
@@ -917,83 +917,83 @@ describe("ClineProvider", () => {
 					},
 				},
 				mcpEnabled: false,
-				mode: "code" as const,
-			} as any)
+				mode: 'code' as const,
+			} as any);
 
-			const handler2 = getMessageHandler()
-			await handler2({ type: "getSystemPrompt", mode: "code" })
+			const handler2 = getMessageHandler();
+			await handler2({ type: 'getSystemPrompt', mode: 'code' });
 
 			// Verify mcpHub is not passed when mcpEnabled is false
 			expect(mockPostMessage).toHaveBeenCalledWith(
 				expect.objectContaining({
-					type: "systemPrompt",
+					type: 'systemPrompt',
 					text: expect.any(String),
 				}),
-			)
-		})
+			);
+		});
 
-		test("handles errors gracefully", async () => {
+		test('handles errors gracefully', async () => {
 			// Mock SYSTEM_PROMPT to throw an error
-			const systemPrompt = require("../../prompts/system")
-			jest.spyOn(systemPrompt, "SYSTEM_PROMPT").mockRejectedValueOnce(new Error("Test error"))
+			const systemPrompt = require('../../prompts/system');
+			jest.spyOn(systemPrompt, 'SYSTEM_PROMPT').mockRejectedValueOnce(new Error('Test error'));
 
-			const messageHandler = (mockWebviewView.webview.onDidReceiveMessage as jest.Mock).mock.calls[0][0]
-			await messageHandler({ type: "getSystemPrompt", mode: "code" })
+			const messageHandler = (mockWebviewView.webview.onDidReceiveMessage as jest.Mock).mock.calls[0][0];
+			await messageHandler({ type: 'getSystemPrompt', mode: 'code' });
 
-			expect(vscode.window.showErrorMessage).toHaveBeenCalledWith("Failed to get system prompt")
-		})
+			expect(vscode.window.showErrorMessage).toHaveBeenCalledWith('Failed to get system prompt');
+		});
 
-		test("uses code mode custom instructions", async () => {
+		test('uses code mode custom instructions', async () => {
 			// Get the mock function
-			const mockAddCustomInstructions = (jest.requireMock("../../prompts/sections/custom-instructions") as any)
-				.addCustomInstructions
+			const mockAddCustomInstructions = (jest.requireMock('../../prompts/sections/custom-instructions') as any)
+				.addCustomInstructions;
 
 			// Clear any previous calls
-			mockAddCustomInstructions.mockClear()
+			mockAddCustomInstructions.mockClear();
 
 			// Mock SYSTEM_PROMPT
-			const systemPromptModule = require("../../prompts/system")
-			jest.spyOn(systemPromptModule, "SYSTEM_PROMPT").mockImplementation(async () => {
-				await mockAddCustomInstructions("Code mode specific instructions", "", "/mock/path")
-				return "mocked system prompt"
-			})
+			const systemPromptModule = require('../../prompts/system');
+			jest.spyOn(systemPromptModule, 'SYSTEM_PROMPT').mockImplementation(async () => {
+				await mockAddCustomInstructions('Code mode specific instructions', '', '/mock/path');
+				return 'mocked system prompt';
+			});
 
 			// Trigger getSystemPrompt
-			const promptHandler = (mockWebviewView.webview.onDidReceiveMessage as jest.Mock).mock.calls[0][0]
-			await promptHandler({ type: "getSystemPrompt" })
+			const promptHandler = (mockWebviewView.webview.onDidReceiveMessage as jest.Mock).mock.calls[0][0];
+			await promptHandler({ type: 'getSystemPrompt' });
 
 			// Verify mock was called with code mode instructions
 			expect(mockAddCustomInstructions).toHaveBeenCalledWith(
-				"Code mode specific instructions",
-				"",
+				'Code mode specific instructions',
+				'',
 				expect.any(String),
-			)
-		})
+			);
+		});
 
-		test("passes diffStrategy and diffEnabled to SYSTEM_PROMPT when previewing", async () => {
+		test('passes diffStrategy and diffEnabled to SYSTEM_PROMPT when previewing', async () => {
 			// Mock getState to return experimentalDiffStrategy, diffEnabled and fuzzyMatchThreshold
-			jest.spyOn(provider, "getState").mockResolvedValue({
+			jest.spyOn(provider, 'getState').mockResolvedValue({
 				apiConfiguration: {
-					apiProvider: "openrouter",
-					apiModelId: "test-model",
+					apiProvider: 'openrouter',
+					apiModelId: 'test-model',
 					openRouterModelInfo: { supportsComputerUse: true },
 				},
 				customModePrompts: {},
-				mode: "code",
+				mode: 'code',
 				mcpEnabled: false,
-				browserViewportSize: "900x600",
+				browserViewportSize: '900x600',
 				experimentalDiffStrategy: true,
 				diffEnabled: true,
 				fuzzyMatchThreshold: 0.8,
-			} as any)
+			} as any);
 
 			// Mock SYSTEM_PROMPT to verify diffStrategy and diffEnabled are passed
-			const systemPromptModule = require("../../prompts/system")
-			const systemPromptSpy = jest.spyOn(systemPromptModule, "SYSTEM_PROMPT")
+			const systemPromptModule = require('../../prompts/system');
+			const systemPromptSpy = jest.spyOn(systemPromptModule, 'SYSTEM_PROMPT');
 
 			// Trigger getSystemPrompt
-			const handler = getMessageHandler()
-			await handler({ type: "getSystemPrompt", mode: "code" })
+			const handler = getMessageHandler();
+			await handler({ type: 'getSystemPrompt', mode: 'code' });
 
 			// Verify SYSTEM_PROMPT was called with correct arguments
 			expect(systemPromptSpy).toHaveBeenCalledWith(
@@ -1005,44 +1005,44 @@ describe("ClineProvider", () => {
 					// diffStrategy
 					getToolDescription: expect.any(Function),
 				}),
-				"900x600", // browserViewportSize
-				"code", // mode
+				'900x600', // browserViewportSize
+				'code', // mode
 				{}, // customModePrompts
 				{}, // customModes
 				undefined, // effectiveInstructions
 				undefined, // preferredLanguage
 				true, // diffEnabled
-			)
+			);
 
 			// Run the test again to verify it's consistent
-			await handler({ type: "getSystemPrompt", mode: "code" })
-			expect(systemPromptSpy).toHaveBeenCalledTimes(2)
-		})
+			await handler({ type: 'getSystemPrompt', mode: 'code' });
+			expect(systemPromptSpy).toHaveBeenCalledTimes(2);
+		});
 
-		test("passes diffEnabled: false to SYSTEM_PROMPT when diff is disabled", async () => {
+		test('passes diffEnabled: false to SYSTEM_PROMPT when diff is disabled', async () => {
 			// Mock getState to return diffEnabled: false
-			jest.spyOn(provider, "getState").mockResolvedValue({
+			jest.spyOn(provider, 'getState').mockResolvedValue({
 				apiConfiguration: {
-					apiProvider: "openrouter",
-					apiModelId: "test-model",
+					apiProvider: 'openrouter',
+					apiModelId: 'test-model',
 					openRouterModelInfo: { supportsComputerUse: true },
 				},
 				customModePrompts: {},
-				mode: "code",
+				mode: 'code',
 				mcpEnabled: false,
-				browserViewportSize: "900x600",
+				browserViewportSize: '900x600',
 				experimentalDiffStrategy: true,
 				diffEnabled: false,
 				fuzzyMatchThreshold: 0.8,
-			} as any)
+			} as any);
 
 			// Mock SYSTEM_PROMPT to verify diffEnabled is passed as false
-			const systemPromptModule = require("../../prompts/system")
-			const systemPromptSpy = jest.spyOn(systemPromptModule, "SYSTEM_PROMPT")
+			const systemPromptModule = require('../../prompts/system');
+			const systemPromptSpy = jest.spyOn(systemPromptModule, 'SYSTEM_PROMPT');
 
 			// Trigger getSystemPrompt
-			const handler = getMessageHandler()
-			await handler({ type: "getSystemPrompt", mode: "code" })
+			const handler = getMessageHandler();
+			await handler({ type: 'getSystemPrompt', mode: 'code' });
 
 			// Verify SYSTEM_PROMPT was called with diffEnabled: false
 			expect(systemPromptSpy).toHaveBeenCalledWith(
@@ -1054,178 +1054,178 @@ describe("ClineProvider", () => {
 					// diffStrategy
 					getToolDescription: expect.any(Function),
 				}),
-				"900x600", // browserViewportSize
-				"code", // mode
+				'900x600', // browserViewportSize
+				'code', // mode
 				{}, // customModePrompts
 				{}, // customModes
 				undefined, // effectiveInstructions
 				undefined, // preferredLanguage
 				false, // diffEnabled
-			)
-		})
+			);
+		});
 
-		test("uses correct mode-specific instructions when mode is specified", async () => {
+		test('uses correct mode-specific instructions when mode is specified', async () => {
 			// Mock getState to return architect mode instructions
-			jest.spyOn(provider, "getState").mockResolvedValue({
+			jest.spyOn(provider, 'getState').mockResolvedValue({
 				apiConfiguration: {
-					apiProvider: "openrouter",
+					apiProvider: 'openrouter',
 					openRouterModelInfo: { supportsComputerUse: true },
 				},
 				customModePrompts: {
-					architect: { customInstructions: "Architect mode instructions" },
+					architect: { customInstructions: 'Architect mode instructions' },
 				},
-				mode: "architect",
+				mode: 'architect',
 				mcpEnabled: false,
-				browserViewportSize: "900x600",
-			} as any)
+				browserViewportSize: '900x600',
+			} as any);
 
 			// Mock SYSTEM_PROMPT to call addCustomInstructions
-			const systemPromptModule = require("../../prompts/system")
-			jest.spyOn(systemPromptModule, "SYSTEM_PROMPT").mockImplementation(async () => {
-				await mockAddCustomInstructions("Architect mode instructions", "", "/mock/path")
-				return "mocked system prompt"
-			})
+			const systemPromptModule = require('../../prompts/system');
+			jest.spyOn(systemPromptModule, 'SYSTEM_PROMPT').mockImplementation(async () => {
+				await mockAddCustomInstructions('Architect mode instructions', '', '/mock/path');
+				return 'mocked system prompt';
+			});
 
 			// Resolve webview and trigger getSystemPrompt
-			provider.resolveWebviewView(mockWebviewView)
-			const architectHandler = (mockWebviewView.webview.onDidReceiveMessage as jest.Mock).mock.calls[0][0]
-			await architectHandler({ type: "getSystemPrompt" })
+			provider.resolveWebviewView(mockWebviewView);
+			const architectHandler = (mockWebviewView.webview.onDidReceiveMessage as jest.Mock).mock.calls[0][0];
+			await architectHandler({ type: 'getSystemPrompt' });
 
 			// Verify architect mode instructions were used
 			expect(mockAddCustomInstructions).toHaveBeenCalledWith(
-				"Architect mode instructions",
-				"",
+				'Architect mode instructions',
+				'',
 				expect.any(String),
-			)
-		})
-	})
+			);
+		});
+	});
 
-	describe("handleModeSwitch", () => {
+	describe('handleModeSwitch', () => {
 		beforeEach(() => {
 			// Set up webview for each test
-			provider.resolveWebviewView(mockWebviewView)
-		})
+			provider.resolveWebviewView(mockWebviewView);
+		});
 
-		test("loads saved API config when switching modes", async () => {
+		test('loads saved API config when switching modes', async () => {
 			// Mock ConfigManager methods
 			provider.configManager = {
-				getModeConfigId: jest.fn().mockResolvedValue("saved-config-id"),
+				getModeConfigId: jest.fn().mockResolvedValue('saved-config-id'),
 				listConfig: jest
 					.fn()
-					.mockResolvedValue([{ name: "saved-config", id: "saved-config-id", apiProvider: "anthropic" }]),
-				loadConfig: jest.fn().mockResolvedValue({ apiProvider: "anthropic" }),
+					.mockResolvedValue([{ name: 'saved-config', id: 'saved-config-id', apiProvider: 'anthropic' }]),
+				loadConfig: jest.fn().mockResolvedValue({ apiProvider: 'anthropic' }),
 				setModeConfig: jest.fn(),
-			} as any
+			} as any;
 
 			// Switch to architect mode
-			await provider.handleModeSwitch("architect")
+			await provider.handleModeSwitch('architect');
 
 			// Verify mode was updated
-			expect(mockContext.globalState.update).toHaveBeenCalledWith("mode", "architect")
+			expect(mockContext.globalState.update).toHaveBeenCalledWith('mode', 'architect');
 
 			// Verify saved config was loaded
-			expect(provider.configManager.getModeConfigId).toHaveBeenCalledWith("architect")
-			expect(provider.configManager.loadConfig).toHaveBeenCalledWith("saved-config")
-			expect(mockContext.globalState.update).toHaveBeenCalledWith("currentApiConfigName", "saved-config")
+			expect(provider.configManager.getModeConfigId).toHaveBeenCalledWith('architect');
+			expect(provider.configManager.loadConfig).toHaveBeenCalledWith('saved-config');
+			expect(mockContext.globalState.update).toHaveBeenCalledWith('currentApiConfigName', 'saved-config');
 
 			// Verify state was posted to webview
-			expect(mockPostMessage).toHaveBeenCalledWith(expect.objectContaining({ type: "state" }))
-		})
+			expect(mockPostMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'state' }));
+		});
 
-		test("saves current config when switching to mode without config", async () => {
+		test('saves current config when switching to mode without config', async () => {
 			// Mock ConfigManager methods
 			provider.configManager = {
 				getModeConfigId: jest.fn().mockResolvedValue(undefined),
 				listConfig: jest
 					.fn()
-					.mockResolvedValue([{ name: "current-config", id: "current-id", apiProvider: "anthropic" }]),
+					.mockResolvedValue([{ name: 'current-config', id: 'current-id', apiProvider: 'anthropic' }]),
 				setModeConfig: jest.fn(),
-			} as any
+			} as any;
 
 			// Mock current config name
 			mockContext.globalState.get = jest.fn((key: string) => {
-				if (key === "currentApiConfigName") return "current-config"
-				return undefined
-			})
+				if (key === 'currentApiConfigName') return 'current-config';
+				return undefined;
+			});
 
 			// Switch to architect mode
-			await provider.handleModeSwitch("architect")
+			await provider.handleModeSwitch('architect');
 
 			// Verify mode was updated
-			expect(mockContext.globalState.update).toHaveBeenCalledWith("mode", "architect")
+			expect(mockContext.globalState.update).toHaveBeenCalledWith('mode', 'architect');
 
 			// Verify current config was saved as default for new mode
-			expect(provider.configManager.setModeConfig).toHaveBeenCalledWith("architect", "current-id")
+			expect(provider.configManager.setModeConfig).toHaveBeenCalledWith('architect', 'current-id');
 
 			// Verify state was posted to webview
-			expect(mockPostMessage).toHaveBeenCalledWith(expect.objectContaining({ type: "state" }))
-		})
-	})
+			expect(mockPostMessage).toHaveBeenCalledWith(expect.objectContaining({ type: 'state' }));
+		});
+	});
 
-	describe("updateCustomMode", () => {
-		test("updates both file and state when updating custom mode", async () => {
-			provider.resolveWebviewView(mockWebviewView)
-			const messageHandler = (mockWebviewView.webview.onDidReceiveMessage as jest.Mock).mock.calls[0][0]
+	describe('updateCustomMode', () => {
+		test('updates both file and state when updating custom mode', async () => {
+			provider.resolveWebviewView(mockWebviewView);
+			const messageHandler = (mockWebviewView.webview.onDidReceiveMessage as jest.Mock).mock.calls[0][0];
 
 			// Mock CustomModesManager methods
 			provider.customModesManager = {
 				updateCustomMode: jest.fn().mockResolvedValue(undefined),
 				getCustomModes: jest.fn().mockResolvedValue({
-					"test-mode": {
-						slug: "test-mode",
-						name: "Test Mode",
-						roleDefinition: "Updated role definition",
-						groups: ["read"] as const,
+					'test-mode': {
+						slug: 'test-mode',
+						name: 'Test Mode',
+						roleDefinition: 'Updated role definition',
+						groups: ['read'] as const,
 					},
 				}),
 				dispose: jest.fn(),
-			} as any
+			} as any;
 
 			// Test updating a custom mode
 			await messageHandler({
-				type: "updateCustomMode",
+				type: 'updateCustomMode',
 				modeConfig: {
-					slug: "test-mode",
-					name: "Test Mode",
-					roleDefinition: "Updated role definition",
-					groups: ["read"] as const,
+					slug: 'test-mode',
+					name: 'Test Mode',
+					roleDefinition: 'Updated role definition',
+					groups: ['read'] as const,
 				},
-			})
+			});
 
 			// Verify CustomModesManager.updateCustomMode was called
 			expect(provider.customModesManager.updateCustomMode).toHaveBeenCalledWith(
-				"test-mode",
+				'test-mode',
 				expect.objectContaining({
-					slug: "test-mode",
-					roleDefinition: "Updated role definition",
+					slug: 'test-mode',
+					roleDefinition: 'Updated role definition',
 				}),
-			)
+			);
 
 			// Verify state was updated
 			expect(mockContext.globalState.update).toHaveBeenCalledWith(
-				"customModes",
+				'customModes',
 				expect.objectContaining({
-					"test-mode": expect.objectContaining({
-						slug: "test-mode",
-						roleDefinition: "Updated role definition",
+					'test-mode': expect.objectContaining({
+						slug: 'test-mode',
+						roleDefinition: 'Updated role definition',
 					}),
 				}),
-			)
+			);
 
 			// Verify state was posted to webview
 			expect(mockPostMessage).toHaveBeenCalledWith(
 				expect.objectContaining({
-					type: "state",
+					type: 'state',
 					state: expect.objectContaining({
 						customModes: expect.objectContaining({
-							"test-mode": expect.objectContaining({
-								slug: "test-mode",
-								roleDefinition: "Updated role definition",
+							'test-mode': expect.objectContaining({
+								slug: 'test-mode',
+								roleDefinition: 'Updated role definition',
 							}),
 						}),
 					}),
 				}),
-			)
-		})
-	})
-})
+			);
+		});
+	});
+});

@@ -1,4 +1,4 @@
-import { ClineMessage } from "./ExtensionMessage"
+import { ClineMessage } from './ExtensionMessage';
 
 interface ApiMetrics {
 	totalTokensIn: number
@@ -34,55 +34,55 @@ export function getApiMetrics(messages: ClineMessage[]): ApiMetrics {
 		totalCacheReads: undefined,
 		totalCost: 0,
 		contextTokens: 0,
-	}
+	};
 
 	// Find the last api_req_started message that has valid token information
 	const lastApiReq = [...messages].reverse().find((message) => {
-		if (message.type === "say" && message.say === "api_req_started" && message.text) {
+		if (message.type === 'say' && message.say === 'api_req_started' && message.text) {
 			try {
-				const parsedData = JSON.parse(message.text)
-				return typeof parsedData.tokensIn === "number" && typeof parsedData.tokensOut === "number"
+				const parsedData = JSON.parse(message.text);
+				return typeof parsedData.tokensIn === 'number' && typeof parsedData.tokensOut === 'number';
 			} catch {
-				return false
+				return false;
 			}
 		}
-		return false
-	})
+		return false;
+	});
 
 	messages.forEach((message) => {
-		if (message.type === "say" && message.say === "api_req_started" && message.text) {
+		if (message.type === 'say' && message.say === 'api_req_started' && message.text) {
 			try {
-				const parsedData = JSON.parse(message.text)
-				const { tokensIn, tokensOut, cacheWrites, cacheReads, cost } = parsedData
+				const parsedData = JSON.parse(message.text);
+				const { tokensIn, tokensOut, cacheWrites, cacheReads, cost } = parsedData;
 
-				if (typeof tokensIn === "number") {
-					result.totalTokensIn += tokensIn
+				if (typeof tokensIn === 'number') {
+					result.totalTokensIn += tokensIn;
 				}
-				if (typeof tokensOut === "number") {
-					result.totalTokensOut += tokensOut
+				if (typeof tokensOut === 'number') {
+					result.totalTokensOut += tokensOut;
 				}
-				if (typeof cacheWrites === "number") {
-					result.totalCacheWrites = (result.totalCacheWrites ?? 0) + cacheWrites
+				if (typeof cacheWrites === 'number') {
+					result.totalCacheWrites = (result.totalCacheWrites ?? 0) + cacheWrites;
 				}
-				if (typeof cacheReads === "number") {
-					result.totalCacheReads = (result.totalCacheReads ?? 0) + cacheReads
+				if (typeof cacheReads === 'number') {
+					result.totalCacheReads = (result.totalCacheReads ?? 0) + cacheReads;
 				}
-				if (typeof cost === "number") {
-					result.totalCost += cost
+				if (typeof cost === 'number') {
+					result.totalCost += cost;
 				}
 
 				// If this is the last api request, use its tokens for context size
 				if (message === lastApiReq) {
 					// Only update context tokens if both input and output tokens are non-zero
 					if (tokensIn > 0 && tokensOut > 0) {
-						result.contextTokens = tokensIn + tokensOut
+						result.contextTokens = tokensIn + tokensOut;
 					}
 				}
 			} catch (error) {
-				console.error("Error parsing JSON:", error)
+				console.error('Error parsing JSON:', error);
 			}
 		}
-	})
+	});
 
-	return result
+	return result;
 }

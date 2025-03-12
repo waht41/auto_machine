@@ -1,4 +1,4 @@
-import { ToolArgs } from "./types"
+import { ToolArgs } from './types';
 
 export function getExecuteCommandDescription(args: ToolArgs): string | undefined {
 	return `## execute_command
@@ -13,5 +13,5 @@ Usage:
 Example: Requesting to execute npm run dev
 <execute_command>
 <command>npm run dev</command>
-</execute_command>`
+</execute_command>`;
 }

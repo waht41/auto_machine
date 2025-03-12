@@ -1,5 +1,5 @@
 export type Change = {
-	type: "context" | "add" | "remove"
+	type: 'context' | 'add' | 'remove'
 	content: string
 	indent: string
 	originalLine?: string

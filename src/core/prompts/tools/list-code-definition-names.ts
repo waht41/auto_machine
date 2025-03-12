@@ -1,4 +1,4 @@
-import { ToolArgs } from "./types"
+import { ToolArgs } from './types';
 
 export function getListCodeDefinitionNamesDescription(args: ToolArgs): string {
 	return `## list_code_definition_names
@@ -13,5 +13,5 @@ Usage:
 Example: Requesting to list all top level source code definitions in the current directory
 <list_code_definition_names>
 <path>.</path>
-</list_code_definition_names>`
+</list_code_definition_names>`;
 }
