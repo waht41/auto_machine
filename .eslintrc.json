@@ -37,7 +37,8 @@
 			"always"
 		],
 		"no-unused-vars": "warn",
-		"no-console": "off"
+		"no-console": "off",
+		"no-case-declarations": "off"
 	},
 	"ignorePatterns": [
 		"node_modules/**",

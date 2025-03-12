@@ -20,7 +20,7 @@ export class GlobalState {
 	}
 
 	async get<T>(key: string): Promise<T | undefined> {
-		return this.memento.get(key);
+		return this.memento.get(key) as Promise<T | undefined>;
 	}
 
 	async set<T>(key: string, value: T): Promise<void> {
@@ -28,7 +28,7 @@ export class GlobalState {
 	}
 
 	async getAll(): Promise<IGlobalState> {
-		return this.memento.getAll();
+		return this.memento.getAll() as Promise<IGlobalState>;
 	}
 
 	async setAll(state: IGlobalState): Promise<void> {
