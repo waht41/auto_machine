@@ -152,14 +152,6 @@ export class Cline {
 		this.updateDiffStrategy(experimentalDiffStrategy);
 	}
 
-	get apiConversationHistory(): IApiConversationHistory {
-		return this.streamChatManager.apiConversationHistory;
-	}
-
-	private set apiConversationHistory(value: IApiConversationHistory) {
-		this.streamChatManager.apiConversationHistory = value;
-	}
-
 	async start({task, images}: { task?: string, images?: string[] }) {
 		if (!task && !images) {
 			throw new Error('Either historyItem or task/images must be provided');
@@ -198,34 +190,24 @@ export class Cline {
 		return this.taskDir;
 	}
 
+	get apiConversationHistory(): IApiConversationHistory {
+		return this.streamChatManager.apiConversationHistory;
+	}
+
+	private set apiConversationHistory(value: IApiConversationHistory) {
+		this.streamChatManager.apiConversationHistory = value;
+	}
+
 	private async getSavedApiConversationHistory(): Promise<Anthropic.MessageParam[]> {
-		const filePath = path.join(await this.getTaskDirectory(), GlobalFileNames.apiConversationHistory);
-		const fileExists = await fileExistsAtPath(filePath);
-		if (fileExists) {
-			return JSON.parse(await fs.readFile(filePath, 'utf8'));
-		}
-		return [];
+		return this.streamChatManager.getSavedApiConversationHistory();
 	}
 
 	private async addToApiConversationHistory(message: Anthropic.MessageParam) {
-		const messageWithTs = {...message, ts: Date.now()};
-		this.apiConversationHistory.push(messageWithTs);
-		await this.saveApiConversationHistory();
+		await this.streamChatManager.addToApiConversationHistory(message);
 	}
 
 	async overwriteApiConversationHistory(newHistory: Anthropic.MessageParam[]) {
-		this.apiConversationHistory = newHistory;
-		await this.saveApiConversationHistory();
-	}
-
-	private async saveApiConversationHistory() {
-		try {
-			const filePath = path.join(await this.getTaskDirectory(), GlobalFileNames.apiConversationHistory);
-			await fs.writeFile(filePath, JSON.stringify(this.apiConversationHistory));
-		} catch (error) {
-			// in the off chance this fails, we don't want to stop the task
-			console.error('Failed to save API conversation history:', error);
-		}
+		await this.streamChatManager.overwriteApiConversationHistory(newHistory);
 	}
 
 	async getSavedClineMessages(): Promise<ClineMessage[]> {

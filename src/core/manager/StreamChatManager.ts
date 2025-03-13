@@ -2,6 +2,11 @@ import { ApiHandler } from '@/api';
 import { ApiStream } from '@/api/transform/stream';
 import { SYSTEM_PROMPT } from '@core/prompts/system';
 import { IApiConversationHistory } from '@core/manager/type';
+import fs from 'fs/promises';
+import { Anthropic } from '@anthropic-ai/sdk';
+import path from 'path';
+import { GlobalFileNames } from '@core/webview/ClineProvider';
+import { fileExistsAtPath } from '@/utils/fs';
 
 export class StreamChatManager{
 	apiConversationHistory: IApiConversationHistory = [];
@@ -11,6 +16,41 @@ export class StreamChatManager{
 
 	public resetStream(){
 		this.didCompleteReadingStream = false;
+	}
+
+	private async getTaskDirectory(): Promise<string> {
+		await fs.mkdir(this.taskDir, {recursive: true});
+		return this.taskDir;
+	}
+
+	async getSavedApiConversationHistory(): Promise<Anthropic.MessageParam[]> {
+		const filePath = path.join(await this.getTaskDirectory(), GlobalFileNames.apiConversationHistory);
+		const fileExists = await fileExistsAtPath(filePath);
+		if (fileExists) {
+			return JSON.parse(await fs.readFile(filePath, 'utf8'));
+		}
+		return [];
+	}
+
+	async addToApiConversationHistory(message: Anthropic.MessageParam) {
+		const messageWithTs = {...message, ts: Date.now()};
+		this.apiConversationHistory.push(messageWithTs);
+		await this.saveApiConversationHistory();
+	}
+
+	private async saveApiConversationHistory() {
+		try {
+			const filePath = path.join(await this.getTaskDirectory(), GlobalFileNames.apiConversationHistory);
+			await fs.writeFile(filePath, JSON.stringify(this.apiConversationHistory));
+		} catch (error) {
+			// in the off chance this fails, we don't want to stop the task
+			console.error('Failed to save API conversation history:', error);
+		}
+	}
+
+	async overwriteApiConversationHistory(newHistory: Anthropic.MessageParam[]) {
+		this.apiConversationHistory = newHistory;
+		await this.saveApiConversationHistory();
 	}
 
 	async *attemptApiRequest(): ApiStream {
