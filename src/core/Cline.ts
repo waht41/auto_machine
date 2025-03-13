@@ -90,7 +90,6 @@ export class Cline {
 	private askResponseImages?: string[];
 	private lastMessageTs?: number;
 	private consecutiveMistakeCount: number = 0;
-	private consecutiveMistakeCountForApplyDiff: Map<string, number> = new Map();
 	private providerRef: WeakRef<ClineProvider>;
 	private abort: boolean = false;
 	didFinishAborting = false;
@@ -107,7 +106,6 @@ export class Cline {
 	private userMessageContentReady = false;
 	private didRejectTool = false;
 	private didGetNewMessage = false;
-	private didCompleteReadingStream = false;
 
 	private executor = new CommandRunner();
 	private asking = false;
@@ -142,8 +140,8 @@ export class Cline {
 		this.providerRef = new WeakRef(provider);
 		this.diffViewProvider = new DiffViewProvider(cwd);
 		this.mcpHub = mcpHub;
-		this.streamChatManager = new StreamChatManager(this.api);
 		this.taskDir = path.join(taskParentDir, this.taskId);
+		this.streamChatManager = new StreamChatManager(this.api, this.taskDir);
 		registerInternalImplementation(this.executor);
 		for (const middleware of middleWares) {
 			this.executor.use(middleware);
@@ -690,7 +688,7 @@ export class Cline {
 
 		if (this.currentStreamingContentIndex >= this.assistantMessageContent.length) {
 			// this may happen if the last content block was completed before streaming could finish. if streaming is finished, and we're out of bounds then this means we already presented/executed the last content block and are ready to continue to next request
-			if (this.didCompleteReadingStream) {
+			if (this.streamChatManager.isStreamComplete()) {
 				this.userMessageContentReady = true;
 			}
 			// console.log("no more content blocks to stream! this shouldn't happen?")
@@ -996,7 +994,7 @@ export class Cline {
 		// reset streaming state
 		this.currentStreamingContentIndex = 0;
 		this.assistantMessageContent = [];
-		this.didCompleteReadingStream = false;
+		this.streamChatManager.resetStream();
 		this.userMessageContent = [];
 		this.userMessageContentReady = false;
 		this.didRejectTool = false;
@@ -1101,7 +1099,7 @@ export class Cline {
 	}
 
 	private async finalizeProcessing(state: ProcessingState, index: number) {
-		this.didCompleteReadingStream = true;
+		this.streamChatManager.endStream();
 
 		this.assistantMessageContent
 			.filter(block => block.partial)

@@ -36,7 +36,8 @@
 			"error",
 			"always"
 		],
-		"no-unused-vars": "warn",
+		"no-unused-vars": "off", // 关闭 ESLint 默认规则
+		"@typescript-eslint/no-unused-vars": "error", // 启用 TypeScript 规则
 		"no-console": "off",
 		"no-case-declarations": "off",
 		"@typescript-eslint/no-explicit-any": "warn",
