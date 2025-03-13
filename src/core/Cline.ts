@@ -1,8 +1,6 @@
 import { Anthropic } from '@anthropic-ai/sdk';
 import cloneDeep from 'clone-deep';
 import { DiffStrategy, getDiffStrategy } from './diff/DiffStrategy';
-import { ToolName, validateToolUse } from './mode-validator';
-import delay from 'delay';
 import fs from 'fs/promises';
 import pWaitFor from 'p-wait-for';
 import * as path from 'path';
@@ -10,8 +8,7 @@ import { serializeError } from 'serialize-error';
 import { ApiHandler, buildApiHandler } from '@/api';
 import { ApiStream, ApiStreamChunk } from '@/api/transform/stream';
 import { DiffViewProvider } from '@/integrations/editor/DiffViewProvider';
-import { findToolName, formatContentBlockToMarkdown } from '@/integrations/misc/export-markdown';
-import { truncateOutput, } from '@/integrations/misc/extract-text';
+import { formatContentBlockToMarkdown } from '@/integrations/misc/export-markdown';
 import { TerminalManager } from '@/integrations/terminal/TerminalManager';
 import { UrlContentFetcher } from '@/services/browser/UrlContentFetcher';
 import { ApiConfiguration } from '@/shared/api';
@@ -34,7 +31,6 @@ import { fileExistsAtPath } from '@/utils/fs';
 import { parseMentions } from './mentions';
 import { AssistantMessageContent, ToolUse, ToolUseName } from './assistant-message';
 import { formatResponse } from './prompts/responses';
-import { defaultModeSlug } from '@/shared/modes';
 import { truncateHalfConversation } from './sliding-window';
 import { ClineProvider, GlobalFileNames } from './webview/ClineProvider';
 import { BrowserSession } from '@/services/browser/BrowserSession';
@@ -49,6 +45,7 @@ import { Command, Middleware } from '@executors/types';
 import { StreamChatManager } from '@core/manager/StreamChatManager';
 import { IApiConversationHistory } from '@core/manager/type';
 import { IInternalContext } from '@core/internal-implementation/type';
+import { ProcessingState } from '@core/handlers/type';
 
 const cwd = process.cwd();
 
@@ -134,7 +131,7 @@ export class Cline {
 			taskParentDir
 		} = prop;
 		this.postMessageToWebview = postMessageToWebview;
-		this.taskId = historyItem? historyItem.id : crypto.randomUUID();
+		this.taskId = historyItem ? historyItem.id : crypto.randomUUID();
 		this.api = buildApiHandler(apiConfiguration);
 		this.terminalManager = new TerminalManager();
 		this.urlContentFetcher = new UrlContentFetcher(provider.context);
@@ -440,8 +437,8 @@ export class Cline {
 		const lastMessage = this.clineMessages.at(-1);
 		const isUpdatingPreviousPartial =
 			lastMessage && lastMessage.partial && (lastMessage.say === sayType || replacing);
-		
-		const updateLastMessage = () =>{
+
+		const updateLastMessage = () => {
 			const lastMessage = this.clineMessages.at(-1);
 			if (!lastMessage) return;
 			lastMessage.type = 'say';
@@ -531,7 +528,7 @@ export class Cline {
 		this.initiateTaskLoop(userContent);
 	}
 
-	async receiveAnswer({ uuid, result, images }: { uuid: string; result: string; images?: string[] }) {
+	async receiveAnswer({uuid, result, images}: { uuid: string; result: string; images?: string[] }) {
 		if (!uuid) {
 			throw new Error('No uuid provided for answer');
 		}
@@ -592,7 +589,7 @@ export class Cline {
 		}
 	}
 
-	private getInternalContext(replacing: boolean = false) : IInternalContext {
+	private getInternalContext(replacing: boolean = false): IInternalContext {
 		return {
 			cline: this,
 			mcpHub: this.mcpHub,
@@ -899,10 +896,6 @@ export class Cline {
 			// if the model did not tool use, then we need to tell it to either use a tool or attempt_completion
 			// const didToolUse = this.assistantMessageContent.some((block) => block.type === "tool_use")
 			if (!this.didGetNewMessage) {
-				// this.userMessageContent.push({
-				// 	type: "text",
-				// 	text: formatResponse.noToolsUsed(),
-				// })
 				await this.askP({
 					askType: 'followup',
 					text: endHint,
@@ -911,12 +904,10 @@ export class Cline {
 					noReturn: true,
 				});
 				this.consecutiveMistakeCount++;
-				console.log('[waht] no new message get');
 				return true;
 			} else if (this.asking) {
-				console.log('[waht] asking');
 				this.asking = false;
-				return true;
+				return true; // 不管asking，直接返回
 			} else {
 				didEndLoop = await this.recursivelyMakeClineRequests(this.userMessageContent);
 			}
@@ -1015,22 +1006,34 @@ export class Cline {
 		await this.diffViewProvider.reset();
 	}
 
-	async handleChunk(chunk: ApiStreamChunk, apiReq: ClineApiReqInfo, reasoningMessage: string, assistantMessage: string) {
+	async handleChunk(
+		chunk: ApiStreamChunk,
+		state: ProcessingState,
+	): Promise<ProcessingState> {
 		switch (chunk.type) {
 			case 'reasoning':
-				reasoningMessage += chunk.text;
+				const reasoningMessage = state.reasoningMessage + chunk.text;
 				await this.say('reasoning', reasoningMessage, undefined, true);
-				break;
-			case 'usage':  //todo waht 不确定其它api回的是不是最终结果（腾讯云是）
+				return {...state, reasoningMessage};
 
-				apiReq.tokensIn = chunk.inputTokens;
-				apiReq.tokensOut = chunk.outputTokens;
-				apiReq.cacheWrites = chunk.cacheWriteTokens ?? 0;
-				apiReq.cacheReads = chunk.cacheReadTokens ?? 0;
-				apiReq.cost = chunk.totalCost;
-				break;
+			case 'usage':
+				const apiReq = {
+					...state.apiReq,
+					tokensIn: chunk.inputTokens,
+					tokensOut: chunk.outputTokens,
+					cacheWrites: chunk.cacheWriteTokens ?? 0,
+					cacheReads: chunk.cacheReadTokens ?? 0,
+					cost: chunk.totalCost
+				};
+				apiReq.cost = apiReq.cost ??
+					calculateApiCost(this.api.getModel().info, apiReq.tokensIn, apiReq.tokensOut, apiReq.cacheWrites, apiReq.cacheReads);
+				return {
+					...state,
+					apiReq
+				};
+
 			case 'text':
-				assistantMessage += chunk.text;
+				const assistantMessage = state.assistantMessage + chunk.text;
 				console.log('返回的信息: ', chunk.text);
 				// parse raw assistant message into content blocks
 				const prevLength = this.assistantMessageContent.length;
@@ -1041,76 +1044,76 @@ export class Cline {
 				}
 				// present content to user
 				this.handleAssistantMessage(replacing);
-				break;
+				return {...state, assistantMessage: assistantMessage};
+
+			default:
+				return state;
 		}
-		return {reasoningMessage, assistantMessage};
 	}
 
 	async handleStreamingMessage(previousApiReqIndex: number, lastApiReqIndex: number) {
-
-		const apiReq: ClineApiReqInfo = JSON.parse(this.clineMessages[lastApiReqIndex].text || '{}');
-		apiReq.tokensIn = 0;
-		apiReq.tokensOut = 0;
-		apiReq.cacheWrites = 0;
-		apiReq.cacheReads = 0;
+		let streamState: ProcessingState = {
+			reasoningMessage: '',
+			assistantMessage: '',
+			apiReq: this.initializeApiReq(lastApiReqIndex)
+		};
 
 		await this.resetStream();
 
-		const stream = await this.attemptApiRequest(previousApiReqIndex); // yields only if the first chunk is successful, otherwise will allow the user to retry the request (most likely due to rate limit error, which gets thrown on the first chunk)
-		let assistantMessage = '';
-		let reasoningMessage = '';
 		try {
+			const stream = await this.attemptApiRequest(previousApiReqIndex);
+
 			for await (const chunk of stream) {
-				const prop = await this.handleChunk(chunk, apiReq, reasoningMessage, assistantMessage);
-				reasoningMessage = prop.reasoningMessage;
-				assistantMessage = prop.assistantMessage;
+				streamState = await this.handleChunk(chunk, streamState);
 
-				apiReq.cost = apiReq.cost ??
-					calculateApiCost(this.api.getModel().info, apiReq.tokensIn, apiReq.tokensOut, apiReq.cacheWrites, apiReq.cacheReads);
-
+				// 处理终止条件
 				if (this.abort) {
 					console.log('aborting stream...');
 					if (!this.abandoned) {
 						// only need to gracefully abort if this instance isn't abandoned (sometimes openrouter stream hangs, in which case this would affect future instances of cline)
-						await this.abortStream('user_cancelled', assistantMessage, apiReq, lastApiReqIndex);
+						await this.abortStream('user_cancelled', streamState.assistantMessage, streamState.apiReq, lastApiReqIndex);
 					}
-					break; // aborts the stream
-				}
-
-				if (this.didRejectTool) {
-					// userContent has a tool rejection, so interrupt the assistant's response to present the user's feedback
-					assistantMessage += '\n\n[Response interrupted by user feedback]';
-					// this.userMessageContentReady = true // instead of setting this premptively, we allow the present iterator to finish and set userMessageContentReady when its ready
 					break;
 				}
 
+				if (this.didRejectTool) {
+					streamState.assistantMessage += '\n\n[Response interrupted by user feedback]';
+					break;
+				}
 			}
 		} catch (error) {
-			await this.handleStreamError(error, assistantMessage, apiReq, lastApiReqIndex);
+			await this.handleStreamError(error, streamState.assistantMessage, streamState.apiReq, lastApiReqIndex);
 		}
 
-		// need to call here in case the stream was aborted
-		if (this.abort) {
-			throw new Error('Roo Code instance aborted');
-		}
+		await this.finalizeProcessing(streamState, lastApiReqIndex);
+		return this.handleAssistantMessageComplete(streamState.assistantMessage);
+	}
 
+	private initializeApiReq(index: number): ClineApiReqInfo {
+		const apiReq = JSON.parse(this.clineMessages[index].text || '{}');
+		return {
+			...apiReq,
+			tokensIn: 0,
+			tokensOut: 0,
+			cacheWrites: 0,
+			cacheReads: 0
+		};
+	}
+
+	private async finalizeProcessing(state: ProcessingState, index: number) {
 		this.didCompleteReadingStream = true;
 
-		// set any blocks to be complete to allow presentAssistantMessage to finish and set userMessageContentReady to true
-		// (could be a text block that had no subsequent tool uses, or a text block at the very end, or an invalid tool use, etc. whatever the case, presentAssistantMessage relies on these blocks either to be completed or the user to reject a block in order to proceed and eventually set userMessageContentReady to true)
-		const partialBlocks = this.assistantMessageContent.filter((block) => block.partial);
-		partialBlocks.forEach((block) => {
-			block.partial = false;
-		});
-		if (partialBlocks.length > 0) {
-			await this.handleAssistantMessage(); // if there is content to update then it will complete and update this.userMessageContentReady to true, which we pwaitfor before making the next request. all this is really doing is presenting the last partial message that we just set to complete
+		this.assistantMessageContent
+			.filter(block => block.partial)
+			.forEach(block => block.partial = false);
+
+		if (this.assistantMessageContent.some(block => !block.partial)) {
+			await this.handleAssistantMessage();
 		}
 
-		this.updateApiReq(apiReq, lastApiReqIndex);
+		this.updateApiReq(state.apiReq, index);
 		await this.saveClineMessages();
 		await this.providerRef.deref()?.postStateToWebview();
-
-		return this.handleAssistantMessageComplete(assistantMessage);
 	}
 
 	async recursivelyMakeClineRequests(
