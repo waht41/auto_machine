@@ -38,7 +38,9 @@
 		],
 		"no-unused-vars": "warn",
 		"no-console": "off",
-		"no-case-declarations": "off"
+		"no-case-declarations": "off",
+		"@typescript-eslint/no-explicit-any": "warn",
+		"@typescript-eslint/ban-ts-comment": "warn"
 	},
 	"ignorePatterns": [
 		"node_modules/**",
