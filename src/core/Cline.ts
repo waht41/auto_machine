@@ -440,15 +440,21 @@ export class Cline {
 		const lastMessage = this.clineMessages.at(-1);
 		const isUpdatingPreviousPartial =
 			lastMessage && lastMessage.partial && (lastMessage.say === sayType || replacing);
+		
+		const updateLastMessage = () =>{
+			const lastMessage = this.clineMessages.at(-1);
+			if (!lastMessage) return;
+			lastMessage.type = 'say';
+			lastMessage.say = sayType;
+			lastMessage.text = text;
+			lastMessage.images = images;
+			lastMessage.partial = partial;
+		};
 
 		const handlePartialUpdate = async () => {
 			if (isUpdatingPreviousPartial) {
 				// existing partial message, so update it
-				lastMessage.type = 'say';
-				lastMessage.say = sayType;
-				lastMessage.text = text;
-				lastMessage.images = images;
-				lastMessage.partial = true;
+				updateLastMessage();
 				await this.postMessageToWebview({type: 'partialMessage', partialMessage: lastMessage});
 			} else {
 				await addMessage(partial);
@@ -458,12 +464,7 @@ export class Cline {
 		const handleCompletion = async () => {
 			if (isUpdatingPreviousPartial) {
 				// this is the complete version of a previously partial message, so replace the partial with the complete version
-				this.lastMessageTs = lastMessage.ts;
-				lastMessage.type = 'say';
-				lastMessage.say = sayType;
-				lastMessage.text = text;
-				lastMessage.images = images;
-				lastMessage.partial = false;
+				updateLastMessage();
 
 				// instead of streaming partialMessage events, we do a save and post like normal to persist to disk
 				await this.saveClineMessages();
@@ -530,39 +531,65 @@ export class Cline {
 		this.initiateTaskLoop(userContent);
 	}
 
-	async receiveAnswer({uuid, result, images}:
-	{ uuid: string, result: string, images?: string[] }) {
+	async receiveAnswer({ uuid, result, images }: { uuid: string; result: string; images?: string[] }) {
 		if (!uuid) {
 			throw new Error('No uuid provided for answer');
 		}
-		this.clineMessages = await this.getSavedClineMessages();
-		this.apiConversationHistory = await this.getSavedApiConversationHistory();
-		const length = this.clineMessages.length - 1;
-		for (let i = length; i >= 0; i--) {
-			const clineMessage = this.clineMessages[i];
-			if (clineMessage.type !== 'ask') {
-				continue;
-			}
-			if (clineMessage.text === endHint) {
-				this.clineMessages.splice(i, 1);
-				continue;
-			}
-			if (clineMessage.text) {
-				try {
-					const command = JSON.parse(clineMessage.text);
-					if (command.uuid === uuid) {
-						command.result = result;
-						clineMessage.text = JSON.stringify(command);
-						// await this.overwriteClineMessages(this.clineMessages);
-						break;
-					}
-				} catch (error) {
-					console.error('Failed to parse command from text:', error);
-				}
-			}
+		[this.clineMessages, this.apiConversationHistory] = await Promise.all([
+			this.getSavedClineMessages(),
+			this.getSavedApiConversationHistory()
+		]);
+		this.removeEndHintMessages();
+		await this.updateAskMessageByUuid(uuid, result);
+		this.initiateTaskLoop(toUserContent(result, images));
+	}
+
+	private removeEndHintMessages() {
+		this.clineMessages = this.clineMessages.filter(message =>
+			!(message.type === 'ask' && message.text === endHint)
+		);
+	}
+
+	private async updateAskMessageByUuid(uuid: string, result: string): Promise<boolean> {
+		const targetIndex = this.findLastAskMessageIndex(uuid);
+
+		if (targetIndex === -1) {
+			console.warn(`No matching message for UUID: ${uuid}`);
+			return false;
 		}
-		const userContent: UserContent = toUserContent(result, images);
-		this.initiateTaskLoop(userContent);
+
+		const message = this.clineMessages[targetIndex];
+		const command = this.parseMessageCommand(message.text) as { uuid: string; result?: string };
+
+		if (!command) {
+			console.error(`Invalid command format in message: ${message.text}`);
+			return false;
+		}
+
+		command.result = result;
+		message.text = JSON.stringify(command);
+		// await this.overwriteClineMessages(this.clineMessages);  // 按需启用持久化
+		return true;
+	}
+
+	private findLastAskMessageIndex(uuid: string): number {
+		for (let i = this.clineMessages.length - 1; i >= 0; i--) {
+			const message = this.clineMessages[i];
+			if (message.type !== 'ask') continue;
+
+			const command = this.parseMessageCommand(message.text) as { uuid: string };
+			if (command?.uuid === uuid) return i;
+		}
+		return -1;
+	}
+
+	private parseMessageCommand(text?: string): unknown | null {
+		try {
+			return text ? JSON.parse(text) : null;
+		} catch (error) {
+			console.error('Failed to parse message text:', text?.substring(0, 50), error);
+			return null;
+		}
 	}
 
 	private getInternalContext(replacing: boolean = false) : IInternalContext {
