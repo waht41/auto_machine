@@ -70,6 +70,7 @@ interface IProp {
 	experimentalDiffStrategy: boolean,
 	middleWares?: Middleware[],
 	mcpHub?: McpHub
+	taskParentDir: string
 }
 
 export class Cline {
@@ -85,6 +86,8 @@ export class Cline {
 	fuzzyMatchThreshold: number = 1.0;
 
 	clineMessages: ClineMessage[] = [];
+	private readonly taskDir: string;
+
 	private askResponse?: ClineAskResponse;
 	private askResponseText?: string;
 	private askResponseImages?: string[];
@@ -127,10 +130,11 @@ export class Cline {
 			historyItem,
 			experimentalDiffStrategy,
 			middleWares = [],
-			mcpHub
+			mcpHub,
+			taskParentDir
 		} = prop;
 		this.postMessageToWebview = postMessageToWebview;
-		this.taskId = crypto.randomUUID();
+		this.taskId = historyItem? historyItem.id : crypto.randomUUID();
 		this.api = buildApiHandler(apiConfiguration);
 		this.terminalManager = new TerminalManager();
 		this.urlContentFetcher = new UrlContentFetcher(provider.context);
@@ -142,14 +146,13 @@ export class Cline {
 		this.diffViewProvider = new DiffViewProvider(cwd);
 		this.mcpHub = mcpHub;
 		this.streamChatManager = new StreamChatManager(this.api);
+		this.taskDir = path.join(taskParentDir, this.taskId);
 		registerInternalImplementation(this.executor);
 		for (const middleware of middleWares) {
 			this.executor.use(middleware);
 		}
 
-		if (historyItem) {
-			this.taskId = historyItem.id;
-		}
+
 		// Initialize diffStrategy based on current state
 		this.updateDiffStrategy(experimentalDiffStrategy);
 	}
@@ -195,18 +198,13 @@ export class Cline {
 
 	// Storing task to disk for history
 
-	private async ensureTaskDirectoryExists(): Promise<string> {
-		const globalStoragePath = this.providerRef.deref()?.context.globalStorageUri.fsPath;
-		if (!globalStoragePath) {
-			throw new Error('Global storage uri is invalid');
-		}
-		const taskDir = path.join(globalStoragePath, 'tasks', this.taskId);
-		await fs.mkdir(taskDir, {recursive: true});
-		return taskDir;
+	private async getTaskDirectory(): Promise<string> {
+		await fs.mkdir(this.taskDir, {recursive: true});
+		return this.taskDir;
 	}
 
 	private async getSavedApiConversationHistory(): Promise<Anthropic.MessageParam[]> {
-		const filePath = path.join(await this.ensureTaskDirectoryExists(), GlobalFileNames.apiConversationHistory);
+		const filePath = path.join(await this.getTaskDirectory(), GlobalFileNames.apiConversationHistory);
 		const fileExists = await fileExistsAtPath(filePath);
 		if (fileExists) {
 			return JSON.parse(await fs.readFile(filePath, 'utf8'));
@@ -227,7 +225,7 @@ export class Cline {
 
 	private async saveApiConversationHistory() {
 		try {
-			const filePath = path.join(await this.ensureTaskDirectoryExists(), GlobalFileNames.apiConversationHistory);
+			const filePath = path.join(await this.getTaskDirectory(), GlobalFileNames.apiConversationHistory);
 			await fs.writeFile(filePath, JSON.stringify(this.apiConversationHistory));
 		} catch (error) {
 			// in the off chance this fails, we don't want to stop the task
@@ -236,17 +234,9 @@ export class Cline {
 	}
 
 	async getSavedClineMessages(): Promise<ClineMessage[]> {
-		const filePath = path.join(await this.ensureTaskDirectoryExists(), GlobalFileNames.uiMessages);
+		const filePath = path.join(await this.getTaskDirectory(), GlobalFileNames.uiMessages);
 		if (await fileExistsAtPath(filePath)) {
 			return JSON.parse(await fs.readFile(filePath, 'utf8'));
-		} else {
-			// check old location
-			const oldPath = path.join(await this.ensureTaskDirectoryExists(), 'claude_messages.json');
-			if (await fileExistsAtPath(oldPath)) {
-				const data = JSON.parse(await fs.readFile(oldPath, 'utf8'));
-				await fs.unlink(oldPath); // remove old file
-				return data;
-			}
 		}
 		return [];
 	}
@@ -263,7 +253,7 @@ export class Cline {
 
 	private async saveClineMessages() {
 		try {
-			const filePath = path.join(await this.ensureTaskDirectoryExists(), GlobalFileNames.uiMessages);
+			const filePath = path.join(await this.getTaskDirectory(), GlobalFileNames.uiMessages);
 			await fs.writeFile(filePath, JSON.stringify(this.clineMessages));
 			// combined as they are in ChatView
 			const apiMetrics = getApiMetrics(combineApiRequests(combineCommandSequences(this.clineMessages.slice(1))));

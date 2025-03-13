@@ -34,8 +34,8 @@ export async function createDirectoriesForFile(filePath: string): Promise<string
 /**
  * Helper function to check if a path exists.
  *
- * @param path - The path to check.
  * @returns A promise that resolves to true if the path exists, false otherwise.
+ * @param filePath
  */
 export async function fileExistsAtPath(filePath: string): Promise<boolean> {
 	try {

@@ -189,6 +189,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 				experimentalDiffStrategy,
 				middleWares: [ApprovalMiddleWrapper(this.allowedToolTree)],
 				mcpHub: this.mcpHub,
+				taskParentDir: path.join(this.context.globalStorageUri.fsPath,'tasks')
 			}
 		);
 		if (historyItem){
