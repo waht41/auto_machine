@@ -34,16 +34,14 @@ const defaultApiConfig = {
 
 export class ConfigService {
 	private static _instance: ConfigService;
-	private _state = new GlobalState(path.join(configPath, 'auto_machine_global_state.json'));
 	private _secrets = new SecretStorage(path.join(configPath, 'auto_machine_secrets.json'));
 
-	private constructor() {
-
+	private constructor(private _state: GlobalState) {
 	}
 
-	public static get instance(): ConfigService {
+	public static getInstance(state: GlobalState): ConfigService {
 		if (!ConfigService._instance) {
-			ConfigService._instance = new ConfigService();
+			ConfigService._instance = new ConfigService(state);
 		}
 		return ConfigService._instance;
 	}
@@ -94,7 +92,15 @@ export class ConfigService {
 		await this._secrets.remove(key);
 	}
 
-	public async updateGlobalState(key: GlobalStateKey, value: any) {
+	public async setGlobalState(key: GlobalStateKey, value: unknown) {
 		await this._state.set(key, value);
+	}
+
+	public async getGlobalState(key: GlobalStateKey) {
+		return this._state.get(key);
+	}
+
+	public getState() {
+		return this._state;
 	}
 }

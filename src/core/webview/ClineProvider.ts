@@ -64,13 +64,11 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 	private latestAnnouncementId = 'jan-21-2025-custom-modes'; // update to some unique identifier when we add a new announcement
 	configManager: ConfigManager;
 	customModesManager: CustomModesManager;
-	private globalState: GlobalState;
 	private toolCategories = getToolCategory(path.join(getAssetPath(),'external-prompt'));
 	private allowedToolTree = new AllowedToolTree([],this.toolCategories);
 	private apiManager : ApiProviderManager;
 	private readonly messageService : MessageService;
-	private configService = ConfigService.instance;
-
+	private configService : ConfigService;
 
 	constructor(
 		readonly context: vscode.ExtensionContext,
@@ -79,7 +77,6 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		createIfNotExists(configPath);
 		this.messageService = MessageService.getInstance(this.sendToMainProcess);
 		this.apiManager = ApiProviderManager.getInstance(configPath, this.messageService);
-		this.globalState = new GlobalState(path.join(configPath, 'auto_machine_global_state.json'));
 		ClineProvider.activeInstances.add(this);
 		this.workspaceTracker = new WorkspaceTracker(this);
 		this.mcpHub = new McpHub('.',this.postMessageToWebview.bind(this));
@@ -88,6 +85,11 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		this.customModesManager = new CustomModesManager(this.context, async () => {
 			await this.postStateToWebview();
 		});
+		this.configService = ConfigService.getInstance(new GlobalState(path.join(configPath, 'auto_machine_global_state.json')));
+	}
+
+	public get globalState(): GlobalState{ // todo waht 临时方案，待删
+		return this.configService.getState();
 	}
 
 	/*
@@ -613,7 +615,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 							}
 
 							const existingPrompts = ((await this.getGlobalState('customSupportPrompts')) ||
-								{}) as Record<string, any>;
+								{}) as Record<string, unknown>;
 
 							const updatedPrompts = {
 								...existingPrompts,
@@ -1247,7 +1249,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 
 	// global
 
-	async updateGlobalState(key: GlobalStateKey, value: any) {
+	async updateGlobalState(key: GlobalStateKey, value: unknown) {
 		await this.globalState.set(key, value);
 	}
 
