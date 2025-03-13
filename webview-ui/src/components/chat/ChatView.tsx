@@ -49,7 +49,6 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 		writeDelayMs,
 		mode,
 		setMode,
-		autoApprovalEnabled,
 		toolCategories,
 		allowedTools
 	} = useExtensionState();

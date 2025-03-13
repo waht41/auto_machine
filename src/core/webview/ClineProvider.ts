@@ -191,6 +191,9 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 				mcpHub: this.mcpHub,
 			}
 		);
+		if (historyItem){
+			this.cline.clineMessages = await this.cline.getSavedClineMessages() || [];
+		}
 	}
 
 	public async initClineWithTask(task?: string, images?: string[]) {
@@ -1137,8 +1140,10 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 	async showTaskWithId(id: string) {
 		if (id !== this.cline?.taskId) {
 			// non-current task
+			await this.clearTask();
 			const { historyItem } = await this.getTaskWithId(id);
-			await this.initClineWithHistoryItem(historyItem); // clears existing task
+			await this.createCline({historyItem});
+			await this.postStateToWebview();
 		}
 		await this.postMessageToWebview({ type: 'action', action: 'chatButtonClicked' });
 	}

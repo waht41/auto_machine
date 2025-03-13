@@ -178,7 +178,7 @@ export class Cline {
 		if (text || images) {
 			this.resumeTaskWithNewMessage(text, images);
 		} else {
-			this.resumeTaskFromHistory();
+			// this.resumeTaskFromHistory();
 		}
 	}
 
@@ -235,7 +235,7 @@ export class Cline {
 		}
 	}
 
-	private async getSavedClineMessages(): Promise<ClineMessage[]> {
+	async getSavedClineMessages(): Promise<ClineMessage[]> {
 		const filePath = path.join(await this.ensureTaskDirectoryExists(), GlobalFileNames.uiMessages);
 		if (await fileExistsAtPath(filePath)) {
 			return JSON.parse(await fs.readFile(filePath, 'utf8'));
