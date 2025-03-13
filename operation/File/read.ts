@@ -7,19 +7,19 @@ import { ReadOptions } from './type';
  * @returns File content as string
  */
 export async function read(options: ReadOptions): Promise<string> {
-    const { path: filePath } = options;
+	const { path: filePath } = options;
 
-    // Ensure file exists
-    if (!fs.existsSync(filePath)) {
-        throw new Error(`File does not exist: ${filePath}`);
-    }
+	// Ensure file exists
+	if (!fs.existsSync(filePath)) {
+		throw new Error(`File does not exist: ${filePath}`);
+	}
 
-    // Ensure path points to a file
-    const stats = fs.statSync(filePath);
-    if (!stats.isFile()) {
-        throw new Error(`Path is not a file: ${filePath}`);
-    }
+	// Ensure path points to a file
+	const stats = fs.statSync(filePath);
+	if (!stats.isFile()) {
+		throw new Error(`Path is not a file: ${filePath}`);
+	}
 
-    // Read file content
-    return fs.readFileSync(filePath, 'utf-8');
+	// Read file content
+	return fs.readFileSync(filePath, 'utf-8');
 }

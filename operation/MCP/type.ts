@@ -1,7 +1,7 @@
 export type McpServer = {
   name: string
   config: string
-  status: "connected" | "connecting" | "disconnected"
+  status: 'connected' | 'connecting' | 'disconnected'
   error?: string
   tools?: McpTool[]
   resources?: McpResource[]
@@ -45,16 +45,16 @@ export type McpToolCallResponse = {
   _meta?: Record<string, any>
   content: Array<
     | {
-    type: "text"
+    type: 'text'
     text: string
   }
     | {
-    type: "image"
+    type: 'image'
     data: string
     mimeType: string
   }
     | {
-    type: "resource"
+    type: 'resource'
     resource: {
       uri: string
       mimeType?: string

@@ -57,80 +57,80 @@ export interface DiffOptions {
  * @returns A similarity score between 0 and 1
  */
 export function calculateSimilarity(
-  obj1: Record<string, any>,
-  obj2: Record<string, any>,
-  options: DiffOptions = {}
+	obj1: Record<string, any>,
+	obj2: Record<string, any>,
+	options: DiffOptions = {}
 ): number {
-  const keyFields = options.keyFields || [];
-  const allKeys = new Set([...Object.keys(obj1), ...Object.keys(obj2)]);
+	const keyFields = options.keyFields || [];
+	const allKeys = new Set([...Object.keys(obj1), ...Object.keys(obj2)]);
   
-  let totalScore = 0;
-  let totalWeight = 0;
+	let totalScore = 0;
+	let totalWeight = 0;
   
-  for (const key of allKeys) {
-    // Skip undefined or null values on both sides
-    if (obj1[key] == null && obj2[key] == null) continue;
+	for (const key of allKeys) {
+		// Skip undefined or null values on both sides
+		if (obj1[key] == null && obj2[key] == null) continue;
     
-    // Assign a weight to the field
-    const weight = keyFields.includes(key) ? 3 : 1;
-    totalWeight += weight;
+		// Assign a weight to the field
+		const weight = keyFields.includes(key) ? 3 : 1;
+		totalWeight += weight;
     
-    // If key doesn't exist in one of the objects
-    if (obj1[key] === undefined || obj2[key] === undefined) {
-      // Score 0 for this field
-      continue;
-    }
+		// If key doesn't exist in one of the objects
+		if (obj1[key] === undefined || obj2[key] === undefined) {
+			// Score 0 for this field
+			continue;
+		}
     
-    const val1 = obj1[key];
-    const val2 = obj2[key];
+		const val1 = obj1[key];
+		const val2 = obj2[key];
     
-    // Calculate similarity based on value type
-    let fieldScore = 0;
+		// Calculate similarity based on value type
+		let fieldScore = 0;
     
-    if (typeof val1 === 'string' && typeof val2 === 'string') {
-      // For text fields, use string similarity
-      const maxDistance = options.maxTextDistance || 10;
-      const stringDist = distance(val1, val2);
+		if (typeof val1 === 'string' && typeof val2 === 'string') {
+			// For text fields, use string similarity
+			const maxDistance = options.maxTextDistance || 10;
+			const stringDist = distance(val1, val2);
       
-      if (stringDist === 0) {
-        fieldScore = 1; // Exact match
-      } else if (stringDist <= maxDistance) {
-        fieldScore = 1 - (stringDist / maxDistance);
-      } else {
-        // Fall back to string similarity for longer texts
-        fieldScore = compareTwoStrings(val1, val2);
-      }
-    } else if (typeof val1 === 'number' && typeof val2 === 'number') {
-      // For numbers, calculate relative similarity
-      const maxVal = Math.max(Math.abs(val1), Math.abs(val2));
-      if (maxVal === 0) {
-        fieldScore = 1; // Both values are 0
-      } else {
-        const diff = Math.abs(val1 - val2);
-        fieldScore = 1 - Math.min(diff / maxVal, 1);
-      }
-    } else if (Array.isArray(val1) && Array.isArray(val2)) {
-      // For arrays, compare length and content
-      if (val1.length === 0 && val2.length === 0) {
-        fieldScore = 1;
-      } else if (val1.length === 0 || val2.length === 0) {
-        fieldScore = 0;
-      } else {
-        // Simple array similarity based on common elements
-        const set1 = new Set(val1.map(String));
-        const set2 = new Set(val2.map(String));
-        const intersection = new Set([...set1].filter(x => set2.has(x)));
-        fieldScore = (2 * intersection.size) / (set1.size + set2.size);
-      }
-    } else if (val1 === val2) {
-      // Direct equality for other types
-      fieldScore = 1;
-    }
+			if (stringDist === 0) {
+				fieldScore = 1; // Exact match
+			} else if (stringDist <= maxDistance) {
+				fieldScore = 1 - (stringDist / maxDistance);
+			} else {
+				// Fall back to string similarity for longer texts
+				fieldScore = compareTwoStrings(val1, val2);
+			}
+		} else if (typeof val1 === 'number' && typeof val2 === 'number') {
+			// For numbers, calculate relative similarity
+			const maxVal = Math.max(Math.abs(val1), Math.abs(val2));
+			if (maxVal === 0) {
+				fieldScore = 1; // Both values are 0
+			} else {
+				const diff = Math.abs(val1 - val2);
+				fieldScore = 1 - Math.min(diff / maxVal, 1);
+			}
+		} else if (Array.isArray(val1) && Array.isArray(val2)) {
+			// For arrays, compare length and content
+			if (val1.length === 0 && val2.length === 0) {
+				fieldScore = 1;
+			} else if (val1.length === 0 || val2.length === 0) {
+				fieldScore = 0;
+			} else {
+				// Simple array similarity based on common elements
+				const set1 = new Set(val1.map(String));
+				const set2 = new Set(val2.map(String));
+				const intersection = new Set([...set1].filter(x => set2.has(x)));
+				fieldScore = (2 * intersection.size) / (set1.size + set2.size);
+			}
+		} else if (val1 === val2) {
+			// Direct equality for other types
+			fieldScore = 1;
+		}
     
-    totalScore += fieldScore * weight;
-  }
+		totalScore += fieldScore * weight;
+	}
   
-  return totalWeight > 0 ? totalScore / totalWeight : 0;
+	return totalWeight > 0 ? totalScore / totalWeight : 0;
 }
 
 /**
@@ -143,49 +143,49 @@ export function calculateSimilarity(
  * @returns An array of pairs of indices [i, j] representing matches
  */
 export function findLongestCommonSubsequence<T>(
-  arr1: T[],
-  arr2: T[],
-  similarityFn: (a: T, b: T) => number,
-  threshold: number
+	arr1: T[],
+	arr2: T[],
+	similarityFn: (a: T, b: T) => number,
+	threshold: number
 ): [number, number][] {
-  // Create a matrix of similarity scores
-  const scores: number[][] = [];
-  for (let i = 0; i <= arr1.length; i++) {
-    scores[i] = Array(arr2.length + 1).fill(0);
-  }
+	// Create a matrix of similarity scores
+	const scores: number[][] = [];
+	for (let i = 0; i <= arr1.length; i++) {
+		scores[i] = Array(arr2.length + 1).fill(0);
+	}
   
-  // Fill the matrix
-  for (let i = 1; i <= arr1.length; i++) {
-    for (let j = 1; j <= arr2.length; j++) {
-      const similarity = similarityFn(arr1[i-1], arr2[j-1]);
-      if (similarity >= threshold) {
-        scores[i][j] = scores[i-1][j-1] + 1;
-      } else {
-        scores[i][j] = Math.max(scores[i-1][j], scores[i][j-1]);
-      }
-    }
-  }
+	// Fill the matrix
+	for (let i = 1; i <= arr1.length; i++) {
+		for (let j = 1; j <= arr2.length; j++) {
+			const similarity = similarityFn(arr1[i-1], arr2[j-1]);
+			if (similarity >= threshold) {
+				scores[i][j] = scores[i-1][j-1] + 1;
+			} else {
+				scores[i][j] = Math.max(scores[i-1][j], scores[i][j-1]);
+			}
+		}
+	}
   
-  // Backtrack to find matched pairs
-  const matches: [number, number][] = [];
-  let i = arr1.length;
-  let j = arr2.length;
+	// Backtrack to find matched pairs
+	const matches: [number, number][] = [];
+	let i = arr1.length;
+	let j = arr2.length;
   
-  while (i > 0 && j > 0) {
-    const similarity = similarityFn(arr1[i-1], arr2[j-1]);
+	while (i > 0 && j > 0) {
+		const similarity = similarityFn(arr1[i-1], arr2[j-1]);
     
-    if (similarity >= threshold && scores[i][j] === scores[i-1][j-1] + 1) {
-      matches.unshift([i-1, j-1]);
-      i--;
-      j--;
-    } else if (scores[i-1][j] >= scores[i][j-1]) {
-      i--;
-    } else {
-      j--;
-    }
-  }
+		if (similarity >= threshold && scores[i][j] === scores[i-1][j-1] + 1) {
+			matches.unshift([i-1, j-1]);
+			i--;
+			j--;
+		} else if (scores[i-1][j] >= scores[i][j-1]) {
+			i--;
+		} else {
+			j--;
+		}
+	}
   
-  return matches;
+	return matches;
 }
 
 /**
@@ -196,26 +196,26 @@ export function findLongestCommonSubsequence<T>(
  * @returns An object containing the changes between the objects
  */
 export function compareObjects(
-  oldObj: Record<string, any>,
-  newObj: Record<string, any>
+	oldObj: Record<string, any>,
+	newObj: Record<string, any>
 ): Record<string, PropertyChange> | null {
-  const changes: Record<string, PropertyChange> = {};
-  let hasChanges = false;
+	const changes: Record<string, PropertyChange> = {};
+	let hasChanges = false;
   
-  // Find all keys from both objects
-  const allKeys = new Set([...Object.keys(oldObj), ...Object.keys(newObj)]);
+	// Find all keys from both objects
+	const allKeys = new Set([...Object.keys(oldObj), ...Object.keys(newObj)]);
   
-  for (const key of allKeys) {
-    if (!isEqual(oldObj[key], newObj[key])) {
-      changes[key] = {
-        oldValue: oldObj[key],
-        newValue: newObj[key]
-      };
-      hasChanges = true;
-    }
-  }
+	for (const key of allKeys) {
+		if (!isEqual(oldObj[key], newObj[key])) {
+			changes[key] = {
+				oldValue: oldObj[key],
+				newValue: newObj[key]
+			};
+			hasChanges = true;
+		}
+	}
   
-  return hasChanges ? changes : null;
+	return hasChanges ? changes : null;
 }
 
 /**
@@ -229,68 +229,68 @@ export function compareObjects(
  * @returns An array of differences (additions, deletions, and changes)
  */
 export function diffArrays<T extends Record<string, any>>(
-  oldList: T[],
-  newList: T[],
-  options: DiffOptions = {}
+	oldList: T[],
+	newList: T[],
+	options: DiffOptions = {}
 ): Diff<T>[] {
-  const result: Diff<T>[] = [];
-  const similarityThreshold = options.similarityThreshold || 0.7;
+	const result: Diff<T>[] = [];
+	const similarityThreshold = options.similarityThreshold || 0.7;
   
-  // Handle empty arrays
-  if (oldList.length === 0) {
-    return newList.map(item => ({ type: DiffType.ADDED, item }));
-  }
-  if (newList.length === 0) {
-    return oldList.map(item => ({ type: DiffType.DELETED, item }));
-  }
+	// Handle empty arrays
+	if (oldList.length === 0) {
+		return newList.map(item => ({ type: DiffType.ADDED, item }));
+	}
+	if (newList.length === 0) {
+		return oldList.map(item => ({ type: DiffType.DELETED, item }));
+	}
   
-  // Create a similarity function using our calculateSimilarity function
-  const similarityFn = (a: T, b: T) => calculateSimilarity(a, b, options);
+	// Create a similarity function using our calculateSimilarity function
+	const similarityFn = (a: T, b: T) => calculateSimilarity(a, b, options);
   
-  // Find the longest common subsequence
-  const matches = findLongestCommonSubsequence(oldList, newList, similarityFn, similarityThreshold);
+	// Find the longest common subsequence
+	const matches = findLongestCommonSubsequence(oldList, newList, similarityFn, similarityThreshold);
   
-  // Create sets to track which indices have been matched
-  const matchedOldIndices = new Set(matches.map(([i, _]) => i));
-  const matchedNewIndices = new Set(matches.map(([_, j]) => j));
+	// Create sets to track which indices have been matched
+	const matchedOldIndices = new Set(matches.map(([i, _]) => i));
+	const matchedNewIndices = new Set(matches.map(([_, j]) => j));
   
-  // Process matches (changed items)
-  for (const [oldIndex, newIndex] of matches) {
-    const oldItem = oldList[oldIndex];
-    const newItem = newList[newIndex];
+	// Process matches (changed items)
+	for (const [oldIndex, newIndex] of matches) {
+		const oldItem = oldList[oldIndex];
+		const newItem = newList[newIndex];
     
-    const changes = compareObjects(oldItem, newItem);
-    if (changes) {
-      result.push({
-        type: DiffType.CHANGED,
-        item: newItem,
-        changes,
-        oldItem
-      });
-    }
-  }
+		const changes = compareObjects(oldItem, newItem);
+		if (changes) {
+			result.push({
+				type: DiffType.CHANGED,
+				item: newItem,
+				changes,
+				oldItem
+			});
+		}
+	}
   
-  // Process deleted items (in old but not matched)
-  for (let i = 0; i < oldList.length; i++) {
-    if (!matchedOldIndices.has(i)) {
-      result.push({
-        type: DiffType.DELETED,
-        item: oldList[i]
-      });
-    }
-  }
+	// Process deleted items (in old but not matched)
+	for (let i = 0; i < oldList.length; i++) {
+		if (!matchedOldIndices.has(i)) {
+			result.push({
+				type: DiffType.DELETED,
+				item: oldList[i]
+			});
+		}
+	}
   
-  // Process added items (in new but not matched)
-  for (let j = 0; j < newList.length; j++) {
-    if (!matchedNewIndices.has(j)) {
-      result.push({
-        type: DiffType.ADDED,
-        item: newList[j]
-      });
-    }
-  }
+	// Process added items (in new but not matched)
+	for (let j = 0; j < newList.length; j++) {
+		if (!matchedNewIndices.has(j)) {
+			result.push({
+				type: DiffType.ADDED,
+				item: newList[j]
+			});
+		}
+	}
   
-  return result;
+	return result;
 }
 
 /**
@@ -337,101 +337,101 @@ export function diffObjects<T extends Record<string, any>>(
 ): Diff<T>[];
 
 export function diffObjects<T extends Record<string, any>, K extends keyof T | any>(
-  oldList: T[],
-  newList: T[],
-  idFieldOrExtractorOrOptions?: K | IdExtractor<T, any> | DiffOptions
+	oldList: T[],
+	newList: T[],
+	idFieldOrExtractorOrOptions?: K | IdExtractor<T, any> | DiffOptions
 ): DiffWithKey<T>[] | Diff<T>[] {
-  // If no parameter is provided or it's a DiffOptions object, use diffArrays
-  if (idFieldOrExtractorOrOptions === undefined ||
+	// If no parameter is provided or it's a DiffOptions object, use diffArrays
+	if (idFieldOrExtractorOrOptions === undefined ||
       (typeof idFieldOrExtractorOrOptions === 'object' && 
        !Array.isArray(idFieldOrExtractorOrOptions) && 
        typeof (idFieldOrExtractorOrOptions as Function) !== 'function')) {
-    return diffArrays(oldList, newList, idFieldOrExtractorOrOptions as DiffOptions);
-  }
+		return diffArrays(oldList, newList, idFieldOrExtractorOrOptions as DiffOptions);
+	}
   
-  // Legacy key-based comparison
-  const result: DiffWithKey<T>[] = [];
+	// Legacy key-based comparison
+	const result: DiffWithKey<T>[] = [];
   
-  // Create maps for faster lookups
-  const oldMap = new Map<any, T>();
-  const newMap = new Map<any, T>();
+	// Create maps for faster lookups
+	const oldMap = new Map<any, T>();
+	const newMap = new Map<any, T>();
   
-  // Determine if we're using a field name or an extractor function
-  const getItemId = typeof idFieldOrExtractorOrOptions === 'function'
-    ? idFieldOrExtractorOrOptions as IdExtractor<T, any>
-    : (item: T) => item[idFieldOrExtractorOrOptions as keyof T];
+	// Determine if we're using a field name or an extractor function
+	const getItemId = typeof idFieldOrExtractorOrOptions === 'function'
+		? idFieldOrExtractorOrOptions as IdExtractor<T, any>
+		: (item: T) => item[idFieldOrExtractorOrOptions as keyof T];
   
-  // Populate the maps
-  oldList.forEach(item => oldMap.set(getItemId(item), item));
-  newList.forEach(item => newMap.set(getItemId(item), item));
+	// Populate the maps
+	oldList.forEach(item => oldMap.set(getItemId(item), item));
+	newList.forEach(item => newMap.set(getItemId(item), item));
   
-  // Find deleted items (in old but not in new)
-  oldList.forEach(oldItem => {
-    const id = getItemId(oldItem);
-    if (!newMap.has(id)) {
-      result.push({
-        type: DiffType.DELETED,
-        item: oldItem
-      });
-    }
-  });
+	// Find deleted items (in old but not in new)
+	oldList.forEach(oldItem => {
+		const id = getItemId(oldItem);
+		if (!newMap.has(id)) {
+			result.push({
+				type: DiffType.DELETED,
+				item: oldItem
+			});
+		}
+	});
   
-  // Find added and changed items
-  newList.forEach(newItem => {
-    const id = getItemId(newItem);
+	// Find added and changed items
+	newList.forEach(newItem => {
+		const id = getItemId(newItem);
     
-    // Item is added (in new but not in old)
-    if (!oldMap.has(id)) {
-      result.push({
-        type: DiffType.ADDED,
-        item: newItem
-      });
-      return;
-    }
+		// Item is added (in new but not in old)
+		if (!oldMap.has(id)) {
+			result.push({
+				type: DiffType.ADDED,
+				item: newItem
+			});
+			return;
+		}
     
-    // Item exists in both, check for changes
-    const oldItem = oldMap.get(id)!;
-    const changes: Record<string, PropertyChange> = {};
-    let hasChanges = false;
+		// Item exists in both, check for changes
+		const oldItem = oldMap.get(id)!;
+		const changes: Record<string, PropertyChange> = {};
+		let hasChanges = false;
     
-    // Compare all properties
-    Object.keys(newItem).forEach(key => {
-      // Skip the id field if it's a string key
-      if (typeof idFieldOrExtractorOrOptions === 'string' && key === idFieldOrExtractorOrOptions) return;
+		// Compare all properties
+		Object.keys(newItem).forEach(key => {
+			// Skip the id field if it's a string key
+			if (typeof idFieldOrExtractorOrOptions === 'string' && key === idFieldOrExtractorOrOptions) return;
       
-      // Check if the property values are different
-      if (!isEqual(oldItem[key], newItem[key])) {
-        changes[key] = {
-          oldValue: oldItem[key],
-          newValue: newItem[key]
-        };
-        hasChanges = true;
-      }
-    });
+			// Check if the property values are different
+			if (!isEqual(oldItem[key], newItem[key])) {
+				changes[key] = {
+					oldValue: oldItem[key],
+					newValue: newItem[key]
+				};
+				hasChanges = true;
+			}
+		});
     
-    // Check for properties in old object that are not in new object
-    Object.keys(oldItem).forEach(key => {
-      // Skip the id field if it's a string key
-      if (typeof idFieldOrExtractorOrOptions === 'string' && key === idFieldOrExtractorOrOptions) return;
+		// Check for properties in old object that are not in new object
+		Object.keys(oldItem).forEach(key => {
+			// Skip the id field if it's a string key
+			if (typeof idFieldOrExtractorOrOptions === 'string' && key === idFieldOrExtractorOrOptions) return;
       
-      if (!(key in newItem)) {
-        changes[key] = {
-          oldValue: oldItem[key],
-          newValue: undefined
-        };
-        hasChanges = true;
-      }
-    });
+			if (!(key in newItem)) {
+				changes[key] = {
+					oldValue: oldItem[key],
+					newValue: undefined
+				};
+				hasChanges = true;
+			}
+		});
     
-    // If there are changes, add to result
-    if (hasChanges) {
-      result.push({
-        type: DiffType.CHANGED,
-        item: newItem,
-        changes
-      });
-    }
-  });
+		// If there are changes, add to result
+		if (hasChanges) {
+			result.push({
+				type: DiffType.CHANGED,
+				item: newItem,
+				changes
+			});
+		}
+	});
   
-  return result;
+	return result;
 }

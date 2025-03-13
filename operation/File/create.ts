@@ -8,21 +8,21 @@ import { CreateOptions } from './type';
  * @param options.content Optional content to write to the file
  */
 export async function create(options: CreateOptions): Promise<string> {
-    const { path: filePath, content = '' } = options;
+	const { path: filePath, content = '' } = options;
 
-    // Ensure parent directory exists
-    const parentDir = path.dirname(filePath);
-    if (!fs.existsSync(parentDir)) {
-        fs.mkdirSync(parentDir, { recursive: true });
-    }
+	// Ensure parent directory exists
+	const parentDir = path.dirname(filePath);
+	if (!fs.existsSync(parentDir)) {
+		fs.mkdirSync(parentDir, { recursive: true });
+	}
 
-    // Check if file already exists
-    if (fs.existsSync(filePath)) {
-        throw new Error(`File already exists: ${filePath}`);
-    }
+	// Check if file already exists
+	if (fs.existsSync(filePath)) {
+		throw new Error(`File already exists: ${filePath}`);
+	}
 
-    // Create file with optional content
-    fs.writeFileSync(filePath, content, 'utf-8');
+	// Create file with optional content
+	fs.writeFileSync(filePath, content, 'utf-8');
 
-    return 'success';
+	return 'success';
 }

@@ -12,8 +12,8 @@ import { DiffType } from '../utils/objectDiff';
 jest.setTimeout(30000);
 
 describe('DOM 变化检测测试', () => {
-  let page: Page;
-  const content = `
+	let page: Page;
+	const content = `
     <!DOCTYPE html>
       <html>
       <head>
@@ -78,140 +78,140 @@ describe('DOM 变化检测测试', () => {
         </script>
       </body>
       </html>
-  `
+  `;
   
-  // 辅助函数，获取元素信息
-  async function getElementsInfo(page: Page): Promise<AnalyzeResult[]> {
-    return await page.evaluate(() => {
-      const elements = Array.from(document.querySelectorAll('p'));
-      return elements.map(el => ({
-        tag: el.tagName.toLowerCase(),
-        id: el.id,
-        text: el.textContent,
-        selector: `#${el.id}`
-      }));
-    });
-  }
+	// 辅助函数，获取元素信息
+	async function getElementsInfo(page: Page): Promise<AnalyzeResult[]> {
+		return await page.evaluate(() => {
+			const elements = Array.from(document.querySelectorAll('p'));
+			return elements.map(el => ({
+				tag: el.tagName.toLowerCase(),
+				id: el.id,
+				text: el.textContent,
+				selector: `#${el.id}`
+			}));
+		});
+	}
 
-  beforeAll(async () => {
-    // 创建一个测试页面
-    page = await getPage({ createNew: true });
-  });
-  beforeEach(async () => {
-    await page.reload()
-    await page.setContent(content)
-  })
+	beforeAll(async () => {
+		// 创建一个测试页面
+		page = await getPage({ createNew: true });
+	});
+	beforeEach(async () => {
+		await page.reload();
+		await page.setContent(content);
+	});
 
-  afterAll(async () => {
-    await page.close();
-  });
+	afterAll(async () => {
+		await page.close();
+	});
 
-  // 测试元素添加
-  test('应该正确检测元素添加', async () => {
-    // 重置页面内容
-    await page.waitForSelector('#addBtn');
+	// 测试元素添加
+	test('应该正确检测元素添加', async () => {
+		// 重置页面内容
+		await page.waitForSelector('#addBtn');
     
-    // 提取初始元素
-    const beforeElements = await getElementsInfo(page);
+		// 提取初始元素
+		const beforeElements = await getElementsInfo(page);
 
-    // 添加新元素
-    await page.click('#addBtn');
-    await page.waitForTimeout(500); // 等待元素添加完成
+		// 添加新元素
+		await page.click('#addBtn');
+		await page.waitForTimeout(500); // 等待元素添加完成
 
-    // 提取修改后的元素
-    const afterElements = await getElementsInfo(page);
+		// 提取修改后的元素
+		const afterElements = await getElementsInfo(page);
 
-    // 检测变化
-    const changes = await detectDomChanges(page, beforeElements, afterElements);
-    const diffs = convertToDiff(changes);
+		// 检测变化
+		const changes = await detectDomChanges(page, beforeElements, afterElements);
+		const diffs = convertToDiff(changes);
 
-    // 验证结果
-    expect(diffs.length).toBe(1);
-    expect(diffs[0].type).toBe(DiffType.ADDED);
-    expect(diffs[0].item.id).toBe('element2');
-  });
+		// 验证结果
+		expect(diffs.length).toBe(1);
+		expect(diffs[0].type).toBe(DiffType.ADDED);
+		expect(diffs[0].item.id).toBe('element2');
+	});
 
-  // 测试元素删除
-  test('应该正确检测元素删除', async () => {
-    // 重置页面内容
-    await page.waitForSelector('#removeBtn');
+	// 测试元素删除
+	test('应该正确检测元素删除', async () => {
+		// 重置页面内容
+		await page.waitForSelector('#removeBtn');
     
-    // 提取初始元素
-    const beforeElements = await getElementsInfo(page);
+		// 提取初始元素
+		const beforeElements = await getElementsInfo(page);
 
-    // 删除元素
-    await page.click('#removeBtn');
-    await page.waitForTimeout(500); // 等待元素删除完成
+		// 删除元素
+		await page.click('#removeBtn');
+		await page.waitForTimeout(500); // 等待元素删除完成
 
-    // 提取修改后的元素
-    const afterElements = await getElementsInfo(page);
+		// 提取修改后的元素
+		const afterElements = await getElementsInfo(page);
 
-    // 检测变化
-    const changes = await detectDomChanges(page, beforeElements, afterElements);
-    const diffs = convertToDiff(changes);
+		// 检测变化
+		const changes = await detectDomChanges(page, beforeElements, afterElements);
+		const diffs = convertToDiff(changes);
 
-    // 验证结果
-    expect(diffs.length).toBe(1);
-    expect(diffs[0].type).toBe(DiffType.DELETED);
-    expect(diffs[0].item.id).toBe('element1');
-  });
+		// 验证结果
+		expect(diffs.length).toBe(1);
+		expect(diffs[0].type).toBe(DiffType.DELETED);
+		expect(diffs[0].item.id).toBe('element1');
+	});
 
-  // 测试元素修改
-  test('应该正确检测元素修改', async () => {
-    // 重置页面内容
-    await page.waitForSelector('#modifyBtn');
+	// 测试元素修改
+	test('应该正确检测元素修改', async () => {
+		// 重置页面内容
+		await page.waitForSelector('#modifyBtn');
     
-    // 提取初始元素
-    const beforeElements = await getElementsInfo(page);
+		// 提取初始元素
+		const beforeElements = await getElementsInfo(page);
 
-    // 修改元素
-    await page.click('#modifyBtn');
-    await page.waitForTimeout(500); // 等待元素修改完成
+		// 修改元素
+		await page.click('#modifyBtn');
+		await page.waitForTimeout(500); // 等待元素修改完成
 
-    // 提取修改后的元素
-    const afterElements = await getElementsInfo(page);
+		// 提取修改后的元素
+		const afterElements = await getElementsInfo(page);
 
-    // 检测变化
-    const changes = await detectDomChanges(page, beforeElements, afterElements);
-    const diffs = convertToDiff(changes);
+		// 检测变化
+		const changes = await detectDomChanges(page, beforeElements, afterElements);
+		const diffs = convertToDiff(changes);
 
-    // 验证结果
-    expect(diffs.length).toBe(1);
-    expect(diffs[0].type).toBe(DiffType.CHANGED);
-    expect(diffs[0].item.id).toBe('element1');
-    expect(diffs[0].changes?.text).toBeDefined();
-  });
+		// 验证结果
+		expect(diffs.length).toBe(1);
+		expect(diffs[0].type).toBe(DiffType.CHANGED);
+		expect(diffs[0].item.id).toBe('element1');
+		expect(diffs[0].changes?.text).toBeDefined();
+	});
 
-  // 测试模态框检测
-  test('应该正确检测模态框', async () => {
-    // 重置页面内容
-    await page.waitForSelector('#showModalBtn');
+	// 测试模态框检测
+	test('应该正确检测模态框', async () => {
+		// 重置页面内容
+		await page.waitForSelector('#showModalBtn');
 
-    // 检查初始状态
-    let hasModal = await detectModalChanges(page);
-    expect(hasModal).toBe(false);
+		// 检查初始状态
+		let hasModal = await detectModalChanges(page);
+		expect(hasModal).toBe(false);
 
-    // 显示模态框
-    await page.click('#showModalBtn');
-    await page.waitForTimeout(500); // 等待模态框显示
+		// 显示模态框
+		await page.click('#showModalBtn');
+		await page.waitForTimeout(500); // 等待模态框显示
 
-    // 检查模态框是否显示
-    hasModal = await detectModalChanges(page);
-    expect(hasModal).toBe(true);
+		// 检查模态框是否显示
+		hasModal = await detectModalChanges(page);
+		expect(hasModal).toBe(true);
 
-    // 关闭模态框
-    await page.click('#closeModalBtn');
-    await page.waitForTimeout(500); // 等待模态框关闭
+		// 关闭模态框
+		await page.click('#closeModalBtn');
+		await page.waitForTimeout(500); // 等待模态框关闭
 
-    // 检查模态框是否关闭
-    hasModal = await detectModalChanges(page);
-    expect(hasModal).toBe(false);
-  });
+		// 检查模态框是否关闭
+		hasModal = await detectModalChanges(page);
+		expect(hasModal).toBe(false);
+	});
 
-  // 测试文本清理功能
-  test('应该正确清理包含HTML和CSS的文本内容', async () => {
-    // 创建一个包含HTML和CSS的测试页面
-    const testHtml = `
+	// 测试文本清理功能
+	test('应该正确清理包含HTML和CSS的文本内容', async () => {
+		// 创建一个包含HTML和CSS的测试页面
+		const testHtml = `
       <!DOCTYPE html>
       <html>
       <head>
@@ -246,40 +246,40 @@ describe('DOM 变化检测测试', () => {
       </html>
     `;
 
-    // 设置页面内容
-    await page.setContent(testHtml);
+		// 设置页面内容
+		await page.setContent(testHtml);
     
-    // 开始监听DOM变化
-    await observeDOMChanges(page);
+		// 开始监听DOM变化
+		await observeDOMChanges(page);
     
-    // 点击按钮添加带有样式的内容
-    await page.click('#testBtn');
+		// 点击按钮添加带有样式的内容
+		await page.click('#testBtn');
     
-    // 获取变化
-    const changes = await detectPageChanges(page);
+		// 获取变化
+		const changes = await detectPageChanges(page);
     
-    // 验证结果
-    expect(changes.length).toBeGreaterThan(0);
+		// 验证结果
+		expect(changes.length).toBeGreaterThan(0);
     
-    // 查找动态添加的内容
-    const addedContent = changes.find(change => 
-      change.type === 'added' && 
+		// 查找动态添加的内容
+		const addedContent = changes.find(change => 
+			change.type === 'added' && 
       change.item.id === 'dynamicContent'
-    );
+		);
     
-    expect(addedContent).toBeDefined();
-    if (addedContent) {
-      // 验证文本内容不包含样式代码
-      expect(addedContent.item.text).toBe('动态添加的内容');
-      expect(addedContent.item.text).not.toContain('style');
-      expect(addedContent.item.text).not.toContain('color:blue');
-    }
-  });
+		expect(addedContent).toBeDefined();
+		if (addedContent) {
+			// 验证文本内容不包含样式代码
+			expect(addedContent.item.text).toBe('动态添加的内容');
+			expect(addedContent.item.text).not.toContain('style');
+			expect(addedContent.item.text).not.toContain('color:blue');
+		}
+	});
 
-  // 测试JavaScript链接处理
-  test('应该正确处理JavaScript链接', async () => {
-    // 创建一个包含JavaScript链接的测试页面
-    const testHtml = `
+	// 测试JavaScript链接处理
+	test('应该正确处理JavaScript链接', async () => {
+		// 创建一个包含JavaScript链接的测试页面
+		const testHtml = `
       <!DOCTYPE html>
       <html>
       <head>
@@ -303,32 +303,32 @@ describe('DOM 变化检测测试', () => {
       </html>
     `;
 
-    // 设置页面内容
-    await page.setContent(testHtml);
+		// 设置页面内容
+		await page.setContent(testHtml);
     
-    // 开始监听DOM变化
-    await observeDOMChanges(page);
+		// 开始监听DOM变化
+		await observeDOMChanges(page);
     
-    // 点击按钮添加JavaScript链接
-    await page.click('#addLinkBtn');
+		// 点击按钮添加JavaScript链接
+		await page.click('#addLinkBtn');
     
-    // 获取变化
-    const changes = await detectPageChanges(page);
+		// 获取变化
+		const changes = await detectPageChanges(page);
     
-    // 验证结果
-    expect(changes.length).toBeGreaterThan(0);
+		// 验证结果
+		expect(changes.length).toBeGreaterThan(0);
     
-    // 查找动态添加的链接
-    const addedLink = changes.find(change => 
-      change.type === 'added' && 
+		// 查找动态添加的链接
+		const addedLink = changes.find(change => 
+			change.type === 'added' && 
       change.item.id === 'dynamicLink'
-    );
+		);
     
-    expect(addedLink).toBeDefined();
-    if (addedLink) {
-      // 验证href属性已被简化
-      expect(addedLink.item.href).toBe('javascript:void(0)');
-      expect(addedLink.item.text).toBe('动态JavaScript链接');
-    }
-  });
+		expect(addedLink).toBeDefined();
+		if (addedLink) {
+			// 验证href属性已被简化
+			expect(addedLink.item.href).toBe('javascript:void(0)');
+			expect(addedLink.item.text).toBe('动态JavaScript链接');
+		}
+	});
 });

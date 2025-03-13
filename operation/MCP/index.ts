@@ -1,2 +1,2 @@
-export * from './type'
-export * from './MCPHub'
+export * from './type';
+export * from './MCPHub';

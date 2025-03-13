@@ -10,8 +10,8 @@ import { interact } from '../interact';
 jest.setTimeout(30000);
 
 describe('交互功能测试', () => {
-  let page: Page;
-  const testHtml = `
+	let page: Page;
+	const testHtml = `
     <!DOCTYPE html>
     <html>
     <head>
@@ -77,93 +77,93 @@ describe('交互功能测试', () => {
     </html>
   `;
 
-  beforeAll(async () => {
-    // 创建一个测试页面
-    page = await getPage({ createNew: true });
-  });
+	beforeAll(async () => {
+		// 创建一个测试页面
+		page = await getPage({ createNew: true });
+	});
 
-  beforeEach(async () => {
-    await page.reload();
-    await page.setContent(testHtml);
-  });
+	beforeEach(async () => {
+		await page.reload();
+		await page.setContent(testHtml);
+	});
 
-  afterAll(async () => {
-    await page.close();
-  });
+	afterAll(async () => {
+		await page.close();
+	});
 
-  // 测试点击交互
-  test('点击按钮应该检测到 DOM 变化', async () => {
-    // 模拟页面标题
-    jest.spyOn(page, 'title').mockResolvedValue('交互测试');
+	// 测试点击交互
+	test('点击按钮应该检测到 DOM 变化', async () => {
+		// 模拟页面标题
+		jest.spyOn(page, 'title').mockResolvedValue('交互测试');
     
-    // 执行交互
-    const result = await interact({
-      title: '交互测试',
-      selector: '#addBtn',
-      action: 'click'
-    });
+		// 执行交互
+		const result = await interact({
+			title: '交互测试',
+			selector: '#addBtn',
+			action: 'click'
+		});
 
-    // 验证结果
-    expect(result.success).toBe(true);
-    expect(result.data.changes.length).toBeGreaterThan(0);
+		// 验证结果
+		expect(result.success).toBe(true);
+		expect(result.data.changes.length).toBeGreaterThan(0);
     
-    // 至少应该有一个添加的元素
-    const addedElements = result.data.changes.filter(change => change.type === 'added');
-    expect(addedElements.length).toBeGreaterThan(0);
+		// 至少应该有一个添加的元素
+		const addedElements = result.data.changes.filter(change => change.type === 'added');
+		expect(addedElements.length).toBeGreaterThan(0);
     
-    // 验证页面上的实际变化
-    const dynamicElement = await page.$('#dynamicElement');
-    expect(dynamicElement).not.toBeNull();
-  });
+		// 验证页面上的实际变化
+		const dynamicElement = await page.$('#dynamicElement');
+		expect(dynamicElement).not.toBeNull();
+	});
 
-  // 测试输入交互
-  test('输入文本应该检测到 DOM 变化', async () => {
-    // 模拟页面标题
-    jest.spyOn(page, 'title').mockResolvedValue('交互测试');
+	// 测试输入交互
+	test('输入文本应该检测到 DOM 变化', async () => {
+		// 模拟页面标题
+		jest.spyOn(page, 'title').mockResolvedValue('交互测试');
     
-    // 执行交互
-    const result = await interact({
-      title: '交互测试',
-      selector: '#textInput',
-      action: 'input',
-      text: '测试文本',
-      enter: false
-    });
+		// 执行交互
+		const result = await interact({
+			title: '交互测试',
+			selector: '#textInput',
+			action: 'input',
+			text: '测试文本',
+			enter: false
+		});
 
-    // 验证结果
-    expect(result.success).toBe(true);
-    expect(result.data.changes.length).toBeGreaterThan(0);
+		// 验证结果
+		expect(result.success).toBe(true);
+		expect(result.data.changes.length).toBeGreaterThan(0);
     
-    // 验证页面上的实际变化
-    const resultText = await page.$eval('#result', el => el.textContent);
-    expect(resultText).toContain('测试文本');
-  });
+		// 验证页面上的实际变化
+		const resultText = await page.$eval('#result', el => el.textContent);
+		expect(resultText).toContain('测试文本');
+	});
 
-  // 测试模态框交互
-  test('显示模态框应该检测到模态框变化', async () => {
-    // 模拟页面标题
-    jest.spyOn(page, 'title').mockResolvedValue('交互测试');
+	// 测试模态框交互
+	test('显示模态框应该检测到模态框变化', async () => {
+		// 模拟页面标题
+		jest.spyOn(page, 'title').mockResolvedValue('交互测试');
     
-    // 执行交互
-    const result = await interact({
-      title: '交互测试',
-      selector: '#showModalBtn',
-      action: 'click'
-    });
+		// 执行交互
+		const result = await interact({
+			title: '交互测试',
+			selector: '#showModalBtn',
+			action: 'click'
+		});
 
-    // 验证结果
-    expect(result.success).toBe(true);
-    expect(result.data.changes.length).toBeGreaterThan(0);
+		// 验证结果
+		expect(result.success).toBe(true);
+		expect(result.data.changes.length).toBeGreaterThan(0);
     
-    // 应该检测到模态框
-    const modalElements = result.data.changes.filter(change => 
-      change.item.selector?.includes('modal') || 
+		// 应该检测到模态框
+		const modalElements = result.data.changes.filter(change => 
+			change.item.selector?.includes('modal') || 
       (change.item as any).isModal
-    );
-    expect(modalElements.length).toBeGreaterThan(0);
+		);
+		expect(modalElements.length).toBeGreaterThan(0);
     
-    // 验证页面上的实际变化
-    const modalStyle = await page.$eval('#modal', el => (el as HTMLElement).style.display);
-    expect(modalStyle).toBe('block');
-  });
+		// 验证页面上的实际变化
+		const modalStyle = await page.$eval('#modal', el => (el as HTMLElement).style.display);
+		expect(modalStyle).toBe('block');
+	});
 });

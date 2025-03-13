@@ -1,6 +1,6 @@
 // Browser操作的类型定义
 
-import { Diff } from "@operation/Browser/utils/objectDiff";
+import { Diff } from '@operation/Browser/utils/objectDiff';
 
 export interface BrowserOptions {
     headless?: boolean;
