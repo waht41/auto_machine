@@ -162,8 +162,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		this.clearTask();
 	}
 
-	public async initClineWithTask(task?: string, images?: string[]) {
-		await this.clearTask();
+	private async createCline({task,images,historyItem}: { task?:string,images?:string[],historyItem?:HistoryItem }){
 		const {
 			apiConfiguration,
 			customModePrompts,
@@ -173,40 +172,6 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 			customInstructions: globalInstructions,
 			experimentalDiffStrategy,
 		} = await this.getState();
-
-		const modePrompt = customModePrompts?.[mode] as PromptComponent;
-		const effectiveInstructions = [globalInstructions, modePrompt?.customInstructions].filter(Boolean).join('\n\n');
-
-		this.cline = new Cline(
-			{
-				provider:this,
-				apiConfiguration,
-				postMessageToWebview: this.postMessageToWebview.bind(this),
-				customInstructions: effectiveInstructions,
-				enableDiff: diffEnabled,
-				fuzzyMatchThreshold,
-				task,
-				images,
-				experimentalDiffStrategy,
-				middleWares: [ApprovalMiddleWrapper(this.allowedToolTree)],
-				mcpHub: this.mcpHub,
-			}
-		);
-		this.cline.start({task,images});
-	}
-
-	public async initClineWithHistoryItem(historyItem: HistoryItem) {
-		await this.clearTask();
-		const {
-			apiConfiguration,
-			customModePrompts,
-			diffEnabled,
-			fuzzyMatchThreshold,
-			mode,
-			customInstructions: globalInstructions,
-			experimentalDiffStrategy,
-		} = await this.getState();
-
 		const modePrompt = customModePrompts?.[mode] as PromptComponent;
 		const effectiveInstructions = [globalInstructions, modePrompt?.customInstructions].filter(Boolean).join('\n\n');
 
@@ -214,17 +179,30 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 			{
 				provider: this,
 				apiConfiguration,
-				postMessageToWebview:this.postMessageToWebview.bind(this),
-				customInstructions:effectiveInstructions,
-				enableDiff:diffEnabled,
+				postMessageToWebview: this.postMessageToWebview.bind(this),
+				customInstructions: effectiveInstructions,
+				enableDiff: diffEnabled,
 				fuzzyMatchThreshold,
+				task,
+				images,
 				historyItem,
 				experimentalDiffStrategy,
 				middleWares: [ApprovalMiddleWrapper(this.allowedToolTree)],
 				mcpHub: this.mcpHub,
 			}
 		);
-		this.cline.resume({text:historyItem.newMessage,images:historyItem.newImages});
+	}
+
+	public async initClineWithTask(task?: string, images?: string[]) {
+		await this.clearTask();
+		await this.createCline({task, images});
+		this.cline?.start({task,images});
+	}
+
+	public async initClineWithHistoryItem(historyItem: HistoryItem) {
+		await this.clearTask();
+		await this.createCline({historyItem});
+		this.cline?.resume({text:historyItem.newMessage,images:historyItem.newImages});
 	}
 
 	public async postMessageToWebview(message: ExtensionMessage) {
