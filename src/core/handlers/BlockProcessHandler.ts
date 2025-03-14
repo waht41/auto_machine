@@ -1,29 +1,45 @@
 import { AssistantMessageContent } from '@core/assistant-message';
 import cloneDeep from 'clone-deep';
+import { parseBlocks } from '@core/assistant-message/parse-assistant-message';
 
 export interface BlockState {
 	remaining?: boolean,
 	last?: boolean,
 	overLimit?: boolean
 }
-export class BlockProcessHandler{
-	currentStreamingContentIndex = 0;
-	presentAssistantMessageLocked = false;
-	presentAssistantMessageHasPendingUpdates = false;
-	assistantMessageContent: AssistantMessageContent[] = [];
 
-	public reset(){
+export class BlockProcessHandler {
+	private currentStreamingContentIndex = 0;
+	private presentAssistantMessageLocked = false;
+	private presentAssistantMessageHasPendingUpdates = false;
+	private assistantMessageContent: AssistantMessageContent[] = [];
+	private prevLength = 0;
+
+	public reset() {
 		this.currentStreamingContentIndex = 0;
 		this.assistantMessageContent = [];
 		this.presentAssistantMessageHasPendingUpdates = false;
 		this.presentAssistantMessageLocked = false;
 	}
 
+	public setAssistantMessage(assistantMessage: string): void {
+		this.prevLength = this.assistantMessageContent.length;
+		this.assistantMessageContent = parseBlocks(assistantMessage);
+	}
+
+	public hasNewBlock(): boolean {
+		return this.assistantMessageContent.length > this.prevLength;
+	}
+
+	public hasPartialBlock(): boolean {
+		return this.assistantMessageContent.some(block => block.partial);
+	}
+
 	public getCurrentBlock(): AssistantMessageContent {
 		return cloneDeep(this.assistantMessageContent[this.currentStreamingContentIndex]);
 	}
 
-	checkProcessingLock(): boolean{
+	checkProcessingLock(): boolean {
 		if (this.presentAssistantMessageLocked) {
 			this.presentAssistantMessageHasPendingUpdates = true;
 			return true;
@@ -31,7 +47,7 @@ export class BlockProcessHandler{
 		return false;
 	}
 
-	lockProcessing(): void{
+	lockProcessing(): void {
 		this.presentAssistantMessageLocked = true;
 		this.presentAssistantMessageHasPendingUpdates = false;
 	}

@@ -25,7 +25,7 @@ import { getApiMetrics } from '@/shared/getApiMetrics';
 import { HistoryItem } from '@/shared/HistoryItem';
 import { ClineAskResponse } from '@/shared/WebviewMessage';
 import { parseMentions } from './mentions';
-import { AssistantMessageContent, ToolUse, ToolUseName } from './assistant-message';
+import { ToolUse, ToolUseName } from './assistant-message';
 import { formatResponse } from './prompts/responses';
 import { truncateHalfConversation } from './sliding-window';
 import { ClineProvider } from './webview/ClineProvider';
@@ -33,7 +33,6 @@ import { BrowserSession } from '@/services/browser/BrowserSession';
 import { McpHub } from '@operation/MCP';
 import crypto from 'crypto';
 import { CommandRunner } from '@executors/runner';
-import { parseBlocks } from '@core/assistant-message/parse-assistant-message';
 import { registerInternalImplementation } from '@core/internal-implementation';
 import process from 'node:process';
 import { toUserContent, UserContent } from '@core/prompts/utils';
@@ -189,14 +188,6 @@ export class Cline {
 		await this.streamChatManager.overwriteApiConversationHistory(newHistory);
 	}
 
-	private get assistantMessageContent(): AssistantMessageContent[] {
-		return this.blockProcessHandler.assistantMessageContent;
-	}
-
-	private set assistantMessageContent(value: AssistantMessageContent[]) {
-		this.blockProcessHandler.assistantMessageContent = value;
-	}
-	
 	public get clineMessages(): ClineMessage[] {
 		return this.streamChatManager.clineMessages;
 	}
@@ -227,7 +218,7 @@ export class Cline {
 			console.error('Failed to save cline messages:', error);
 		}
 	}
-	
+
 	private async postTaskHistory() {
 		// combined as they are in ChatView
 		const apiMetrics = getApiMetrics(combineApiRequests(combineCommandSequences(this.clineMessages.slice(1))));
@@ -641,13 +632,13 @@ export class Cline {
 			throw new Error('Roo Code instance aborted');
 		}
 
-		if (this.blockProcessHandler.checkProcessingLock()){
+		if (this.blockProcessHandler.checkProcessingLock()) {
 			return;
 		}
 		this.blockProcessHandler.lockProcessing();
 		const blockPositionState = this.blockProcessHandler.getBlockPositionState();
 
-		if (blockPositionState.overLimit){
+		if (blockPositionState.overLimit) {
 			// this may happen if the last content block was completed before streaming could finish.
 			// if streaming is finished, and we're out of bounds then this means
 			// we already presented/executed the last content block and are ready to continue to next request
@@ -955,10 +946,9 @@ export class Cline {
 			case 'text':
 				const assistantMessage = newState.assistantMessage;
 				// parse raw assistant message into content blocks
-				const prevLength = this.assistantMessageContent.length;
-				this.assistantMessageContent = parseBlocks(assistantMessage);
-				const replacing = this.assistantMessageContent.length <= prevLength;
-				if (this.assistantMessageContent.length > prevLength) {
+				this.blockProcessHandler.setAssistantMessage(assistantMessage);
+				const replacing = !this.blockProcessHandler.hasNewBlock();
+				if (this.blockProcessHandler.hasNewBlock()) { // has new block
 					this.isThisStreamEnd = false; // new content we need to present, reset to false in case previous content set this to true
 				}
 				// present content to user
@@ -1019,11 +1009,7 @@ export class Cline {
 	private async finalizeProcessing(state: ProcessingState, index: number) {
 		this.streamChatManager.endStream();
 
-		this.assistantMessageContent
-			.filter(block => block.partial)
-			.forEach(block => block.partial = false);
-
-		if (this.assistantMessageContent.some(block => !block.partial)) {
+		if (this.blockProcessHandler.hasPartialBlock()) {
 			await this.handleAssistantMessage();
 		}
 
