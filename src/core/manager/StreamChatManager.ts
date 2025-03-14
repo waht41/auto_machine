@@ -10,12 +10,16 @@ import { fileExistsAtPath } from '@/utils/fs';
 import { AssistantMessageContent } from '@core/assistant-message';
 import { ProcessingState } from '@core/handlers/type';
 import { calculateApiCost } from '@/utils/cost';
-import { parseBlocks } from '@core/assistant-message/parse-assistant-message';
+import { ClineMessage } from '@/shared/ExtensionMessage';
+
 
 export class StreamChatManager{
 	apiConversationHistory: IApiConversationHistory = [];
 	didCompleteReadingStream = false;
 	assistantMessageContent: AssistantMessageContent[] = [];
+	clineMessages: ClineMessage[] = [];
+	readonly endHint = 'roo stop the conversion, should resume?';
+
 	constructor(private api: ApiHandler, private taskDir: string) {
 	}
 
@@ -142,5 +146,37 @@ export class StreamChatManager{
 			default:
 				return state;
 		}
+	}
+	
+	public async getSavedClineMessages(): Promise<ClineMessage[]> {
+		const filePath = path.join(await this.getTaskDirectory(), GlobalFileNames.uiMessages);
+		if (await fileExistsAtPath(filePath)) {
+			return JSON.parse(await fs.readFile(filePath, 'utf8'));
+		}
+		return [];
+	}
+
+	public async saveClineMessages() {
+		const filePath = path.join(await this.getTaskDirectory(), GlobalFileNames.uiMessages);
+		await fs.writeFile(filePath, JSON.stringify(this.clineMessages));
+	}
+
+	private async addToClineMessages(message: ClineMessage) {
+		this.clineMessages.push(message);
+		await this.saveClineMessages();
+	}
+
+	public async resumeHistory(){
+		[this.clineMessages, this.apiConversationHistory] = await Promise.all([
+			this.getSavedClineMessages(),
+			this.getSavedApiConversationHistory()
+		]);
+		this.removeEndHintMessages();
+	}
+
+	private removeEndHintMessages() {
+		this.clineMessages = this.clineMessages.filter(message =>
+			!(message.type === 'ask' && message.text === this.endHint)
+		);
 	}
 }

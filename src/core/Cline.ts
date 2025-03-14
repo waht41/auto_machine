@@ -26,13 +26,11 @@ import {
 import { getApiMetrics } from '@/shared/getApiMetrics';
 import { HistoryItem } from '@/shared/HistoryItem';
 import { ClineAskResponse } from '@/shared/WebviewMessage';
-import { calculateApiCost } from '@/utils/cost';
-import { fileExistsAtPath } from '@/utils/fs';
 import { parseMentions } from './mentions';
 import { AssistantMessageContent, ToolUse, ToolUseName } from './assistant-message';
 import { formatResponse } from './prompts/responses';
 import { truncateHalfConversation } from './sliding-window';
-import { ClineProvider, GlobalFileNames } from './webview/ClineProvider';
+import { ClineProvider } from './webview/ClineProvider';
 import { BrowserSession } from '@/services/browser/BrowserSession';
 import { McpHub } from '@operation/MCP';
 import crypto from 'crypto';
@@ -50,9 +48,6 @@ import { ProcessingState } from '@core/handlers/type';
 const cwd = process.cwd();
 
 type ToolResponse = string | Array<Anthropic.TextBlockParam | Anthropic.ImageBlockParam>
-
-
-const endHint = 'roo stop the conversion, should resume?';
 
 interface IProp {
 	provider: ClineProvider,
@@ -82,7 +77,6 @@ export class Cline {
 	diffEnabled: boolean = false;
 	fuzzyMatchThreshold: number = 1.0;
 
-	clineMessages: ClineMessage[] = [];
 	private readonly taskDir: string;
 
 	private askResponse?: ClineAskResponse;
@@ -217,13 +211,17 @@ export class Cline {
 	private set assistantMessageContent(value: AssistantMessageContent[]) {
 		this.streamChatManager.assistantMessageContent = value;
 	}
+	
+	public get clineMessages(): ClineMessage[] {
+		return this.streamChatManager.clineMessages;
+	}
+
+	public set clineMessages(value: ClineMessage[]) {
+		this.streamChatManager.clineMessages = value;
+	}
 
 	async getSavedClineMessages(): Promise<ClineMessage[]> {
-		const filePath = path.join(await this.getTaskDirectory(), GlobalFileNames.uiMessages);
-		if (await fileExistsAtPath(filePath)) {
-			return JSON.parse(await fs.readFile(filePath, 'utf8'));
-		}
-		return [];
+		return await this.streamChatManager.getSavedClineMessages();
 	}
 
 	private async addToClineMessages(message: ClineMessage) {
@@ -238,31 +236,34 @@ export class Cline {
 
 	private async saveClineMessages() {
 		try {
-			const filePath = path.join(await this.getTaskDirectory(), GlobalFileNames.uiMessages);
-			await fs.writeFile(filePath, JSON.stringify(this.clineMessages));
-			// combined as they are in ChatView
-			const apiMetrics = getApiMetrics(combineApiRequests(combineCommandSequences(this.clineMessages.slice(1))));
-			const taskMessage = this.clineMessages[0]; // first message is always the task say
-			const lastRelevantMessage =
-				this.clineMessages[
-					findLastIndex(
-						this.clineMessages,
-						(m) => !(m.ask === 'resume_task' || m.ask === 'resume_completed_task'),
-					)
-				];
-			await this.providerRef.deref()?.updateTaskHistory({
-				id: this.taskId,
-				ts: lastRelevantMessage.ts,
-				task: taskMessage.text ?? '',
-				tokensIn: apiMetrics.totalTokensIn,
-				tokensOut: apiMetrics.totalTokensOut,
-				cacheWrites: apiMetrics.totalCacheWrites,
-				cacheReads: apiMetrics.totalCacheReads,
-				totalCost: apiMetrics.totalCost,
-			});
+			await this.streamChatManager.saveClineMessages();
+			await this.postTaskHistory();
 		} catch (error) {
 			console.error('Failed to save cline messages:', error);
 		}
+	}
+	
+	private async postTaskHistory() {
+		// combined as they are in ChatView
+		const apiMetrics = getApiMetrics(combineApiRequests(combineCommandSequences(this.clineMessages.slice(1))));
+		const taskMessage = this.clineMessages[0]; // first message is always the task say
+		const lastRelevantMessage =
+			this.clineMessages[
+				findLastIndex(
+					this.clineMessages,
+					(m) => !(m.ask === 'resume_task' || m.ask === 'resume_completed_task'),
+				)
+			];
+		await this.providerRef.deref()?.updateTaskHistory({
+			id: this.taskId,
+			ts: lastRelevantMessage.ts,
+			task: taskMessage.text ?? '',
+			tokensIn: apiMetrics.totalTokensIn,
+			tokensOut: apiMetrics.totalTokensOut,
+			cacheWrites: apiMetrics.totalCacheWrites,
+			cacheReads: apiMetrics.totalCacheReads,
+			totalCost: apiMetrics.totalCost,
+		});
 	}
 
 	// Communicate with webview
@@ -506,11 +507,7 @@ export class Cline {
 	}
 
 	private async resumeTaskWithNewMessage(text?: string, images?: string[]) {
-		this.clineMessages = await this.getSavedClineMessages();
-		this.apiConversationHistory = await this.getSavedApiConversationHistory();
-		if (this.clineMessages.at(-1)?.text === endHint) {
-			this.clineMessages.pop();
-		}
+		await this.streamChatManager.resumeHistory();
 		await this.say('user_feedback', text, images, true);
 		const userContent: UserContent = toUserContent(text, images);
 		this.initiateTaskLoop(userContent);
@@ -520,19 +517,9 @@ export class Cline {
 		if (!uuid) {
 			throw new Error('No uuid provided for answer');
 		}
-		[this.clineMessages, this.apiConversationHistory] = await Promise.all([
-			this.getSavedClineMessages(),
-			this.getSavedApiConversationHistory()
-		]);
-		this.removeEndHintMessages();
+		await this.streamChatManager.resumeHistory();
 		await this.updateAskMessageByUuid(uuid, result);
 		this.initiateTaskLoop(toUserContent(result, images));
-	}
-
-	private removeEndHintMessages() {
-		this.clineMessages = this.clineMessages.filter(message =>
-			!(message.type === 'ask' && message.text === endHint)
-		);
 	}
 
 	private async updateAskMessageByUuid(uuid: string, result: string): Promise<boolean> {
@@ -886,7 +873,7 @@ export class Cline {
 			if (!this.didGetNewMessage) {
 				await this.askP({
 					askType: 'followup',
-					text: endHint,
+					text: this.streamChatManager.endHint,
 					partial: false,
 					replacing: false,
 					noReturn: true,
