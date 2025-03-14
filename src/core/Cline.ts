@@ -1,7 +1,5 @@
 import { Anthropic } from '@anthropic-ai/sdk';
-import cloneDeep from 'clone-deep';
 import { DiffStrategy, getDiffStrategy } from './diff/DiffStrategy';
-import fs from 'fs/promises';
 import pWaitFor from 'p-wait-for';
 import * as path from 'path';
 import { serializeError } from 'serialize-error';
@@ -44,6 +42,7 @@ import { StreamChatManager } from '@core/manager/StreamChatManager';
 import { IApiConversationHistory } from '@core/manager/type';
 import { IInternalContext } from '@core/internal-implementation/type';
 import { ProcessingState } from '@core/handlers/type';
+import { BlockProcessHandler } from '@core/handlers/BlockProcessHandler';
 
 const cwd = process.cwd();
 
@@ -92,10 +91,7 @@ export class Cline {
 	private postMessageToWebview: (message: ExtensionMessage) => Promise<void>;
 
 	// streaming
-	private currentStreamingContentIndex = 0;
-
-	private presentAssistantMessageLocked = false;
-	private presentAssistantMessageHasPendingUpdates = false;
+	private blockProcessHandler = new BlockProcessHandler();
 	private userMessageContent: (Anthropic.TextBlockParam | Anthropic.ImageBlockParam)[] = [];
 	private isThisStreamEnd = false;
 	private didRejectTool = false;
@@ -177,23 +173,12 @@ export class Cline {
 		this.diffStrategy = getDiffStrategy(this.api.getModel().id, this.fuzzyMatchThreshold, experimentalDiffStrategy);
 	}
 
-	// Storing task to disk for history
-
-	private async getTaskDirectory(): Promise<string> {
-		await fs.mkdir(this.taskDir, {recursive: true});
-		return this.taskDir;
-	}
-
 	get apiConversationHistory(): IApiConversationHistory {
 		return this.streamChatManager.apiConversationHistory;
 	}
 
 	private set apiConversationHistory(value: IApiConversationHistory) {
 		this.streamChatManager.apiConversationHistory = value;
-	}
-
-	private async getSavedApiConversationHistory(): Promise<Anthropic.MessageParam[]> {
-		return this.streamChatManager.getSavedApiConversationHistory();
 	}
 
 	private async addToApiConversationHistory(message: Anthropic.MessageParam) {
@@ -205,11 +190,11 @@ export class Cline {
 	}
 
 	private get assistantMessageContent(): AssistantMessageContent[] {
-		return this.streamChatManager.assistantMessageContent;
+		return this.blockProcessHandler.assistantMessageContent;
 	}
 
 	private set assistantMessageContent(value: AssistantMessageContent[]) {
-		this.streamChatManager.assistantMessageContent = value;
+		this.blockProcessHandler.assistantMessageContent = value;
 	}
 	
 	public get clineMessages(): ClineMessage[] {
@@ -651,51 +636,30 @@ export class Cline {
 		return this.streamChatManager.attemptApiRequest();
 	}
 
-	private checkProcessingLock(): boolean{
-		if (this.presentAssistantMessageLocked) {
-			this.presentAssistantMessageHasPendingUpdates = true;
-			return true;
+	async handleAssistantMessage(replacing = false) {
+		if (this.abort) {
+			throw new Error('Roo Code instance aborted');
 		}
-		return false;
-	}
 
-	private lockProcessing(): void {
-		this.presentAssistantMessageLocked = true;
-		this.presentAssistantMessageHasPendingUpdates = false;
-	}
+		if (this.blockProcessHandler.checkProcessingLock()){
+			return;
+		}
+		this.blockProcessHandler.lockProcessing();
+		const blockPositionState = this.blockProcessHandler.getBlockPositionState();
 
-	private checkIsLastBlock(): boolean {
-		if (this.currentStreamingContentIndex >= this.assistantMessageContent.length) {
+		if (blockPositionState.overLimit){
 			// this may happen if the last content block was completed before streaming could finish.
 			// if streaming is finished, and we're out of bounds then this means
 			// we already presented/executed the last content block and are ready to continue to next request
 			if (this.streamChatManager.isStreamComplete()) {
 				this.isThisStreamEnd = true;
 			}
-
-			return false;
-		}
-		return true;
-	}
-
-	async handleAssistantMessage(replacing = false) {
-		if (this.abort) {
-			throw new Error('Roo Code instance aborted');
-		}
-
-		if (this.checkProcessingLock()){
-			return;
-		}
-
-		this.lockProcessing();
-
-		if (!this.checkIsLastBlock()){
-			this.presentAssistantMessageLocked = false;
+			this.blockProcessHandler.unlockPresentAssistantMessage();
 			return;
 		}
 
 		// need to create copy bc while stream is updating the array, it could be updating the reference block properties too
-		const block = cloneDeep(this.assistantMessageContent[this.currentStreamingContentIndex]);
+		const block = this.blockProcessHandler.getCurrentBlock();
 		switch (block.type) {
 			case 'text': {
 				const content = block.content;
@@ -783,27 +747,17 @@ export class Cline {
 		}
 
 		const isThisBlockFinished = !block.partial || this.didRejectTool;
-		this.unlockProcessing(isThisBlockFinished);
+		this.blockProcessHandler.unlockProcessing(isThisBlockFinished);
 
-		const isLastBlock = this.currentStreamingContentIndex >= this.assistantMessageContent.length;
-		const shouldContinue = this.presentAssistantMessageHasPendingUpdates || (!isLastBlock && isThisBlockFinished);
+		if (isThisBlockFinished && blockPositionState.last) {
+			// its okay that we increment if !didCompleteReadingStream, it'll just return bc out of bounds and as streaming continues it will call presentAssitantMessage if a new block is ready. if streaming is finished then we set isThisStreamEnd to true when out of bounds. This gracefully allows the stream to continue on and all potential content blocks be presented.
+			// last block is complete and it is finished executing
+			this.isThisStreamEnd = true; // will allow pwaitfor to continue
+		}
+
+		const shouldContinue = this.blockProcessHandler.shouldContinueProcessing(isThisBlockFinished);
 		if (shouldContinue) {
 			this.handleAssistantMessage();
-		}
-	}
-
-	private unlockProcessing(isThisBlockFinished: boolean): void {
-		this.presentAssistantMessageLocked = false;
-		if (isThisBlockFinished) {
-			// block is finished streaming and executing
-			if (this.currentStreamingContentIndex === this.assistantMessageContent.length - 1) {
-				// its okay that we increment if !didCompleteReadingStream, it'll just return bc out of bounds and as streaming continues it will call presentAssitantMessage if a new block is ready. if streaming is finished then we set isThisStreamEnd to true when out of bounds. This gracefully allows the stream to continue on and all potential content blocks be presented.
-				// last block is complete and it is finished executing
-				this.isThisStreamEnd = true; // will allow pwaitfor to continue
-			}
-
-			// call next block if it exists (if not then read stream will call it when its ready)
-			this.currentStreamingContentIndex++; // need to increment regardless, so when read stream calls this function again it will be streaming the next block
 		}
 	}
 
@@ -977,15 +931,14 @@ export class Cline {
 
 	private async resetStream() {
 		// reset streaming state
-		this.currentStreamingContentIndex = 0;
-
+		this.blockProcessHandler.reset();
 		this.streamChatManager.resetStream();
+
 		this.userMessageContent = [];
 		this.isThisStreamEnd = false;
 		this.didRejectTool = false;
 		this.didGetNewMessage = false;
-		this.presentAssistantMessageLocked = false;
-		this.presentAssistantMessageHasPendingUpdates = false;
+
 		await this.diffViewProvider.reset();
 	}
 

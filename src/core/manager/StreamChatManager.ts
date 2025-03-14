@@ -16,7 +16,7 @@ import { ClineMessage } from '@/shared/ExtensionMessage';
 export class StreamChatManager{
 	apiConversationHistory: IApiConversationHistory = [];
 	didCompleteReadingStream = false;
-	assistantMessageContent: AssistantMessageContent[] = [];
+
 	clineMessages: ClineMessage[] = [];
 	readonly endHint = 'roo stop the conversion, should resume?';
 
@@ -25,7 +25,7 @@ export class StreamChatManager{
 
 	public resetStream(){
 		this.didCompleteReadingStream = false;
-		this.assistantMessageContent = [];
+
 	}
 
 	private async getTaskDirectory(): Promise<string> {
