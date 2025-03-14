@@ -99,7 +99,7 @@ export class Cline {
 
 	// streaming
 	private currentStreamingContentIndex = 0;
-	private assistantMessageContent: AssistantMessageContent[] = [];
+
 	private presentAssistantMessageLocked = false;
 	private presentAssistantMessageHasPendingUpdates = false;
 	private userMessageContent: (Anthropic.TextBlockParam | Anthropic.ImageBlockParam)[] = [];
@@ -208,6 +208,14 @@ export class Cline {
 
 	async overwriteApiConversationHistory(newHistory: Anthropic.MessageParam[]) {
 		await this.streamChatManager.overwriteApiConversationHistory(newHistory);
+	}
+
+	private get assistantMessageContent(): AssistantMessageContent[] {
+		return this.streamChatManager.assistantMessageContent;
+	}
+
+	private set assistantMessageContent(value: AssistantMessageContent[]) {
+		this.streamChatManager.assistantMessageContent = value;
 	}
 
 	async getSavedClineMessages(): Promise<ClineMessage[]> {
@@ -975,7 +983,7 @@ export class Cline {
 	private async resetStream() {
 		// reset streaming state
 		this.currentStreamingContentIndex = 0;
-		this.assistantMessageContent = [];
+
 		this.streamChatManager.resetStream();
 		this.userMessageContent = [];
 		this.userMessageContentReady = false;
@@ -990,31 +998,14 @@ export class Cline {
 		chunk: ApiStreamChunk,
 		state: ProcessingState,
 	): Promise<ProcessingState> {
+		const newState = this.streamChatManager.handleChunk(chunk, state);
 		switch (chunk.type) {
 			case 'reasoning':
-				const reasoningMessage = state.reasoningMessage + chunk.text;
+				const reasoningMessage = newState.reasoningMessage;
 				await this.say('reasoning', reasoningMessage, undefined, true);
-				return {...state, reasoningMessage};
-
-			case 'usage':
-				const apiReq = {
-					...state.apiReq,
-					tokensIn: chunk.inputTokens,
-					tokensOut: chunk.outputTokens,
-					cacheWrites: chunk.cacheWriteTokens ?? 0,
-					cacheReads: chunk.cacheReadTokens ?? 0,
-					cost: chunk.totalCost
-				};
-				apiReq.cost = apiReq.cost ??
-					calculateApiCost(this.api.getModel().info, apiReq.tokensIn, apiReq.tokensOut, apiReq.cacheWrites, apiReq.cacheReads);
-				return {
-					...state,
-					apiReq
-				};
-
+				break;
 			case 'text':
-				const assistantMessage = state.assistantMessage + chunk.text;
-				console.log('返回的信息: ', chunk.text);
+				const assistantMessage = newState.assistantMessage;
 				// parse raw assistant message into content blocks
 				const prevLength = this.assistantMessageContent.length;
 				this.assistantMessageContent = parseBlocks(assistantMessage);
@@ -1024,11 +1015,8 @@ export class Cline {
 				}
 				// present content to user
 				this.handleAssistantMessage(replacing);
-				return {...state, assistantMessage: assistantMessage};
-
-			default:
-				return state;
 		}
+		return newState;
 	}
 
 	async handleStreamingMessage(previousApiReqIndex: number, lastApiReqIndex: number) {

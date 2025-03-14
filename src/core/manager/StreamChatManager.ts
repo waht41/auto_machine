@@ -1,5 +1,5 @@
 import { ApiHandler } from '@/api';
-import { ApiStream } from '@/api/transform/stream';
+import { ApiStream, ApiStreamChunk } from '@/api/transform/stream';
 import { SYSTEM_PROMPT } from '@core/prompts/system';
 import { IApiConversationHistory } from '@core/manager/type';
 import fs from 'fs/promises';
@@ -7,15 +7,21 @@ import { Anthropic } from '@anthropic-ai/sdk';
 import path from 'path';
 import { GlobalFileNames } from '@core/webview/ClineProvider';
 import { fileExistsAtPath } from '@/utils/fs';
+import { AssistantMessageContent } from '@core/assistant-message';
+import { ProcessingState } from '@core/handlers/type';
+import { calculateApiCost } from '@/utils/cost';
+import { parseBlocks } from '@core/assistant-message/parse-assistant-message';
 
 export class StreamChatManager{
 	apiConversationHistory: IApiConversationHistory = [];
 	didCompleteReadingStream = false;
+	assistantMessageContent: AssistantMessageContent[] = [];
 	constructor(private api: ApiHandler, private taskDir: string) {
 	}
 
 	public resetStream(){
 		this.didCompleteReadingStream = false;
+		this.assistantMessageContent = [];
 	}
 
 	private async getTaskDirectory(): Promise<string> {
@@ -105,5 +111,36 @@ export class StreamChatManager{
 
 	public isStreamComplete(){
 		return this.didCompleteReadingStream;
+	}
+
+	public handleChunk(chunk: ApiStreamChunk,state: ProcessingState,) {
+		switch (chunk.type) {
+			case 'reasoning':
+				const reasoningMessage = state.reasoningMessage + chunk.text;
+				return {...state, reasoningMessage};
+
+			case 'usage':
+				const apiReq = {
+					...state.apiReq,
+					tokensIn: chunk.inputTokens,
+					tokensOut: chunk.outputTokens,
+					cacheWrites: chunk.cacheWriteTokens ?? 0,
+					cacheReads: chunk.cacheReadTokens ?? 0,
+					cost: chunk.totalCost
+				};
+				apiReq.cost = apiReq.cost ??
+					calculateApiCost(this.api.getModel().info, apiReq.tokensIn, apiReq.tokensOut, apiReq.cacheWrites, apiReq.cacheReads);
+				return {
+					...state,
+					apiReq
+				};
+
+			case 'text':
+				const assistantMessage = state.assistantMessage + chunk.text;
+				return {...state, assistantMessage: assistantMessage};
+
+			default:
+				return state;
+		}
 	}
 }
