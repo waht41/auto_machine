@@ -12,31 +12,31 @@ export class BlockProcessHandler {
 	private currentStreamingContentIndex = 0;
 	private presentAssistantMessageLocked = false;
 	private presentAssistantMessageHasPendingUpdates = false;
-	private assistantMessageContent: AssistantMessageContent[] = [];
+	private assistantMessageBlocks: AssistantMessageContent[] = [];
 	private prevLength = 0;
 
 	public reset() {
 		this.currentStreamingContentIndex = 0;
-		this.assistantMessageContent = [];
+		this.assistantMessageBlocks = [];
 		this.presentAssistantMessageHasPendingUpdates = false;
 		this.presentAssistantMessageLocked = false;
 	}
 
-	public setAssistantMessage(assistantMessage: string): void {
-		this.prevLength = this.assistantMessageContent.length;
-		this.assistantMessageContent = parseBlocks(assistantMessage);
+	public setAssistantMessageBlocks(assistantMessage: string): void {
+		this.prevLength = this.assistantMessageBlocks.length;
+		this.assistantMessageBlocks = parseBlocks(assistantMessage);
 	}
 
 	public hasNewBlock(): boolean {
-		return this.assistantMessageContent.length > this.prevLength;
+		return this.assistantMessageBlocks.length > this.prevLength;
 	}
 
 	public hasPartialBlock(): boolean {
-		return this.assistantMessageContent.some(block => block.partial);
+		return this.assistantMessageBlocks.some(block => block.partial);
 	}
 
 	public getCurrentBlock(): AssistantMessageContent {
-		return cloneDeep(this.assistantMessageContent[this.currentStreamingContentIndex]);
+		return cloneDeep(this.assistantMessageBlocks[this.currentStreamingContentIndex]);
 	}
 
 	checkProcessingLock(): boolean {
@@ -65,9 +65,9 @@ export class BlockProcessHandler {
 
 	getBlockPositionState(): BlockState {
 		return {
-			remaining: this.currentStreamingContentIndex < this.assistantMessageContent.length,
-			last: this.currentStreamingContentIndex === this.assistantMessageContent.length - 1,
-			overLimit: this.currentStreamingContentIndex > this.assistantMessageContent.length - 1
+			remaining: this.currentStreamingContentIndex < this.assistantMessageBlocks.length,
+			last: this.currentStreamingContentIndex === this.assistantMessageBlocks.length - 1,
+			overLimit: this.currentStreamingContentIndex > this.assistantMessageBlocks.length - 1
 		};
 	}
 

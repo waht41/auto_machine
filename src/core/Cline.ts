@@ -946,12 +946,12 @@ export class Cline {
 			case 'text':
 				const assistantMessage = newState.assistantMessage;
 				// parse raw assistant message into content blocks
-				this.blockProcessHandler.setAssistantMessage(assistantMessage);
-				const replacing = !this.blockProcessHandler.hasNewBlock();
+				this.blockProcessHandler.setAssistantMessageBlocks(assistantMessage);
 				if (this.blockProcessHandler.hasNewBlock()) { // has new block
 					this.isThisStreamEnd = false; // new content we need to present, reset to false in case previous content set this to true
 				}
-				// present content to user
+				// present content to user and apply tool
+				const replacing = !this.blockProcessHandler.hasNewBlock();
 				this.handleAssistantMessage(replacing);
 		}
 		return newState;
