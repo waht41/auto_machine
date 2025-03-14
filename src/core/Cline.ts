@@ -97,7 +97,7 @@ export class Cline {
 	private presentAssistantMessageLocked = false;
 	private presentAssistantMessageHasPendingUpdates = false;
 	private userMessageContent: (Anthropic.TextBlockParam | Anthropic.ImageBlockParam)[] = [];
-	private userMessageContentReady = false;
+	private isThisStreamEnd = false;
 	private didRejectTool = false;
 	private didGetNewMessage = false;
 
@@ -651,38 +651,54 @@ export class Cline {
 		return this.streamChatManager.attemptApiRequest();
 	}
 
+	private checkProcessingLock(): boolean{
+		if (this.presentAssistantMessageLocked) {
+			this.presentAssistantMessageHasPendingUpdates = true;
+			return true;
+		}
+		return false;
+	}
+
+	private lockProcessing(): void {
+		this.presentAssistantMessageLocked = true;
+		this.presentAssistantMessageHasPendingUpdates = false;
+	}
+
+	private checkIsLastBlock(): boolean {
+		if (this.currentStreamingContentIndex >= this.assistantMessageContent.length) {
+			// this may happen if the last content block was completed before streaming could finish.
+			// if streaming is finished, and we're out of bounds then this means
+			// we already presented/executed the last content block and are ready to continue to next request
+			if (this.streamChatManager.isStreamComplete()) {
+				this.isThisStreamEnd = true;
+			}
+
+			return false;
+		}
+		return true;
+	}
+
 	async handleAssistantMessage(replacing = false) {
 		if (this.abort) {
 			throw new Error('Roo Code instance aborted');
 		}
 
-		if (this.presentAssistantMessageLocked) {
-			this.presentAssistantMessageHasPendingUpdates = true;
+		if (this.checkProcessingLock()){
 			return;
 		}
-		this.presentAssistantMessageLocked = true;
-		this.presentAssistantMessageHasPendingUpdates = false;
 
-		if (this.currentStreamingContentIndex >= this.assistantMessageContent.length) {
-			// this may happen if the last content block was completed before streaming could finish. if streaming is finished, and we're out of bounds then this means we already presented/executed the last content block and are ready to continue to next request
-			if (this.streamChatManager.isStreamComplete()) {
-				this.userMessageContentReady = true;
-			}
-			// console.log("no more content blocks to stream! this shouldn't happen?")
+		this.lockProcessing();
+
+		if (!this.checkIsLastBlock()){
 			this.presentAssistantMessageLocked = false;
 			return;
-			//throw new Error("No more content blocks to stream! This shouldn't happen...") // remove and just return after testing
 		}
 
-		const block = cloneDeep(this.assistantMessageContent[this.currentStreamingContentIndex]); // need to create copy bc while stream is updating the array, it could be updating the reference block properties too
-		// console.log('[waht] present', block)
+		// need to create copy bc while stream is updating the array, it could be updating the reference block properties too
+		const block = cloneDeep(this.assistantMessageContent[this.currentStreamingContentIndex]);
 		switch (block.type) {
 			case 'text': {
 				const content = block.content;
-				if (content) {
-					// content = content.replace(/<thinking>\s?/g, "")
-					// content = content.replace(/\s?<\/thinking>/g, "")
-				}
 				await this.say('text', content, undefined, block.partial, replacing);
 				break;
 			}
@@ -766,34 +782,28 @@ export class Cline {
 				}
 		}
 
-		/*
-		Seeing out of bounds is fine, it means that the next too call is being built up and ready to add to assistantMessageContent to present.
-		When you see the UI inactive during this, it means that a tool is breaking without presenting any UI. For example the write_to_file tool was breaking when relpath was undefined, and for invalid relpath it never presented UI.
-		*/
-		this.presentAssistantMessageLocked = false; // this needs to be placed here, if not then calling this.presentAssistantMessage below would fail (sometimes) since it's locked
-		// NOTE: when tool is rejected, iterator stream is interrupted and it waits for userMessageContentReady to be true. Future calls to present will skip execution since didRejectTool and iterate until contentIndex is set to message length and it sets userMessageContentReady to true itself (instead of preemptively doing it in iterator)
-		if (!block.partial || this.didRejectTool) {
+		const isThisBlockFinished = !block.partial || this.didRejectTool;
+		this.unlockProcessing(isThisBlockFinished);
+
+		const isLastBlock = this.currentStreamingContentIndex >= this.assistantMessageContent.length;
+		const shouldContinue = this.presentAssistantMessageHasPendingUpdates || (!isLastBlock && isThisBlockFinished);
+		if (shouldContinue) {
+			this.handleAssistantMessage();
+		}
+	}
+
+	private unlockProcessing(isThisBlockFinished: boolean): void {
+		this.presentAssistantMessageLocked = false;
+		if (isThisBlockFinished) {
 			// block is finished streaming and executing
 			if (this.currentStreamingContentIndex === this.assistantMessageContent.length - 1) {
-				// its okay that we increment if !didCompleteReadingStream, it'll just return bc out of bounds and as streaming continues it will call presentAssitantMessage if a new block is ready. if streaming is finished then we set userMessageContentReady to true when out of bounds. This gracefully allows the stream to continue on and all potential content blocks be presented.
+				// its okay that we increment if !didCompleteReadingStream, it'll just return bc out of bounds and as streaming continues it will call presentAssitantMessage if a new block is ready. if streaming is finished then we set isThisStreamEnd to true when out of bounds. This gracefully allows the stream to continue on and all potential content blocks be presented.
 				// last block is complete and it is finished executing
-				this.userMessageContentReady = true; // will allow pwaitfor to continue
+				this.isThisStreamEnd = true; // will allow pwaitfor to continue
 			}
 
 			// call next block if it exists (if not then read stream will call it when its ready)
 			this.currentStreamingContentIndex++; // need to increment regardless, so when read stream calls this function again it will be streaming the next block
-
-			if (this.currentStreamingContentIndex < this.assistantMessageContent.length) {
-				// there are already more content blocks to stream, so we'll call this function ourselves
-				// await this.presentAssistantContent()
-
-				this.handleAssistantMessage();
-				return;
-			}
-		}
-		// block is partial, but the read stream may have finished
-		if (this.presentAssistantMessageHasPendingUpdates) {
-			this.handleAssistantMessage();
 		}
 	}
 
@@ -859,14 +869,12 @@ export class Cline {
 
 			// NOTE: this comment is here for future reference - this was a workaround for userMessageContent not getting set to true. It was due to it not recursively calling for partial blocks when didRejectTool, so it would get stuck waiting for a partial block to complete before it could continue.
 			// in case the content blocks finished
-			// it may be the api stream finished after the last parsed content block was executed, so  we are able to detect out of bounds and set userMessageContentReady to true (note you should not call presentAssistantMessage since if the last block is completed it will be presented again)
+			// it may be the api stream finished after the last parsed content block was executed, so  we are able to detect out of bounds and set isThisStreamEnd to true (note you should not call presentAssistantMessage since if the last block is completed it will be presented again)
 			// const completeBlocks = this.assistantMessageContent.filter((block) => !block.partial) // if there are any partial blocks after the stream ended we can consider them invalid
 			// if (this.currentStreamingContentIndex >= completeBlocks.length) {
-			// 	this.userMessageContentReady = true
+			// 	this.isThisStreamEnd = true
 			// }
-			console.log('[waht] waiting for user message content ready', assistantMessage);
-			await pWaitFor(() => this.userMessageContentReady);
-			console.log('[waht] wait end');
+			await pWaitFor(() => this.isThisStreamEnd);
 
 			// if the model did not tool use, then we need to tell it to either use a tool or attempt_completion
 			// const didToolUse = this.assistantMessageContent.some((block) => block.type === "tool_use")
@@ -973,7 +981,7 @@ export class Cline {
 
 		this.streamChatManager.resetStream();
 		this.userMessageContent = [];
-		this.userMessageContentReady = false;
+		this.isThisStreamEnd = false;
 		this.didRejectTool = false;
 		this.didGetNewMessage = false;
 		this.presentAssistantMessageLocked = false;
@@ -998,7 +1006,7 @@ export class Cline {
 				this.assistantMessageContent = parseBlocks(assistantMessage);
 				const replacing = this.assistantMessageContent.length <= prevLength;
 				if (this.assistantMessageContent.length > prevLength) {
-					this.userMessageContentReady = false; // new content we need to present, reset to false in case previous content set this to true
+					this.isThisStreamEnd = false; // new content we need to present, reset to false in case previous content set this to true
 				}
 				// present content to user
 				this.handleAssistantMessage(replacing);
