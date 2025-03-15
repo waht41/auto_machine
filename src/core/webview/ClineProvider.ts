@@ -81,12 +81,18 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		ClineProvider.activeInstances.add(this);
 		this.workspaceTracker = new WorkspaceTracker(this);
 		this.mcpHub = new McpHub('.',this.postMessageToWebview.bind(this));
-		this.mcpHub.initialize();
 		this.configManager = new ConfigManager(this.context);
 		this.customModesManager = new CustomModesManager(this.context, async () => {
 			await this.postStateToWebview();
 		});
 		this.configService = ConfigService.getInstance(new GlobalState(path.join(configPath, 'auto_machine_global_state.json')));
+		this.init();
+	}
+
+	async init() {
+		await this.setUpAllowedTools();
+		await this.mcpHub?.initialize();
+		await this.postMessageToWebview({ type: 'allowedTools', allowedTools:this.allowedToolTree.getAllowedTools() });
 	}
 
 	public get globalState(): GlobalState{ // todo waht 临时方案，待删
@@ -175,7 +181,6 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		} = await this.getState();
 		const modePrompt = customModePrompts?.[mode] as PromptComponent;
 		const effectiveInstructions = [globalInstructions, modePrompt?.customInstructions].filter(Boolean).join('\n\n');
-		await this.setUpAllowedTools();
 
 		this.cline = new Cline(
 			{

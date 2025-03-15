@@ -828,6 +828,9 @@ export class Cline {
 				});
 				this.consecutiveMistakeCount++;
 				return true;
+			} else if (this.asking) {
+				this.asking = false;
+				return true; // 不管asking，直接返回
 			} else {
 				didEndLoop = await this.recursivelyMakeClineRequests(this.userMessageContent);
 			}

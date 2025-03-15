@@ -1,5 +1,5 @@
 import { ClineProvider } from '@core/webview/ClineProvider';
-import { MockExtensionContext, MockWebviewView, window } from '../../vscode';
+import { MockExtensionContext, MockWebviewView } from '../../vscode';
 
 /**
  * 客户端处理器，负责处理与客户端相关的业务逻辑
@@ -19,8 +19,8 @@ export class ClientHandler {
 	}
 
 	/**
-     * 处理来自主进程的消息
-     */
+	 * 处理来自主进程的消息
+	 */
 	public async handleMessage(message: any): Promise<void> {
 		if (message === 'webview ready') {
 			await this.cp.clearTask();
