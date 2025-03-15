@@ -5,6 +5,9 @@ import { IInternalContext, MCPCommand } from '@core/internal-implementation/type
 export class MCPCommandExecutor implements CommandExecutor {
 	async execute(command: MCPCommand, context: IInternalContext): Promise<any> {
 		const mcp = context.mcpHub;
+		if (!mcp){
+			return 'MCP not defined';
+		}
 		switch (command.cmd) {
 			case 'list':
 				return yaml.dump(mcp.getServers());
