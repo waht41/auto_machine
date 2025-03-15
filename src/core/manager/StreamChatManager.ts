@@ -7,7 +7,6 @@ import { Anthropic } from '@anthropic-ai/sdk';
 import path from 'path';
 import { GlobalFileNames } from '@core/webview/ClineProvider';
 import { fileExistsAtPath } from '@/utils/fs';
-import { AssistantMessageContent } from '@core/assistant-message';
 import { ProcessingState } from '@core/handlers/type';
 import { calculateApiCost } from '@/utils/cost';
 import { ClineMessage } from '@/shared/ExtensionMessage';

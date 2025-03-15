@@ -5,6 +5,7 @@ import { headerStyle, toolIcon } from './common';
 import { LogComponent } from './LogComponent';
 import { BaseTool, ComponentRenderer, RouteNode } from './type';
 import { AskApprovalComponent } from './AskApproval';
+import { FollowupComponent } from '@webview-ui/components/special-tool/FollowupComponent';
 
 
 const componentRoutes: Record<string, RouteNode> = {
@@ -14,7 +15,8 @@ const componentRoutes: Record<string, RouteNode> = {
 	ask: {
 		choice: ChoiceComponent,
 		multiChoice: MultiChoiceComponent,
-		askApproval: AskApprovalComponent
+		askApproval: AskApprovalComponent,
+		followup: FollowupComponent,
 	}
 };
 

@@ -12,7 +12,7 @@ export const DefaultComponent: ComponentRenderer = (tool) => {
 				{toolIcon('warning')}
 				<span style={{fontWeight: 'bold'}}>unknown tool type:</span>
 			</div>
-			<MarkdownBlock markdown={'```yaml\n' + yaml.dump(tool.content) + '```'}></MarkdownBlock>
+			<MarkdownBlock markdown={'```yaml\n' + yaml.dump(tool) + '```'}></MarkdownBlock>
 		</>
 	);
 };
