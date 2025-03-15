@@ -16,11 +16,15 @@ const logger = winston.createLogger({
 		winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }), // 自定义时间戳格式
 		winston.format.printf(({ timestamp, level, message, ...meta }) => {
 			let metaString = '';
-			if (Object.keys(meta).length) {
-				// 将元数据转换为更简洁的字符串，避免过多双引号
-				metaString = Object.entries(meta)
-					.map(([key, value]) => `${key}=${typeof value === 'object' ? JSON.stringify(value) : value}`)
-					.join(' ');
+			const splat = meta[Symbol.for('splat')];
+			if (Array.isArray(splat) && splat.length > 0) {
+				metaString = splat.map(item => {
+					if (typeof item === 'object' && item !== null) {
+						return JSON.stringify(item);
+					} else {
+						return item;
+					}
+				}).join(' ');
 				metaString = ` ${metaString}`;
 			}
 			return `${timestamp} ${level.toUpperCase()}: ${message}${metaString}`;
