@@ -113,6 +113,26 @@ export const performanceMiddleware: Middleware = async (command, context, next) 
 };
 
 /**
+ * 安全执行中间件 - 捕获执行命令时抛出的错误，并返回对应的错误信息字符串
+ */
+export const safeExecuteMiddleware: Middleware = async (command, context, next) => {
+	try {
+		// 执行下一个中间件或最终的命令
+		return await next(command, context);
+	} catch (error) {
+		// 捕获错误并转换为错误信息字符串
+		const errorMessage = error instanceof Error 
+			? `执行错误: ${error.message}` 
+			: `未知错误: ${String(error)}`;
+		
+		console.error(`[安全执行] 命令类型: ${command.type} 捕获到错误`, error);
+		
+		// 返回错误信息字符串而不是抛出异常
+		return errorMessage;
+	}
+};
+
+/**
  * 示例：如何使用这些中间件
  */
 export const setupMiddlewareExample = (runner: any) => {
@@ -121,7 +141,8 @@ export const setupMiddlewareExample = (runner: any) => {
 		.use(loggerMiddleware)
 		.use(performanceMiddleware)
 		.use(cacheMiddleware({ ttl: 30000 }))
-		.use(retryMiddleware({ maxRetries: 2 }));
+		.use(retryMiddleware({ maxRetries: 2 }))
+		.use(safeExecuteMiddleware);
     
 	return runner;
 };

@@ -37,6 +37,7 @@ import { GlobalStateKey, SecretKey } from '@core/webview/type';
 import ApiProviderManager from '@core/manager/ApiProviderManager';
 import { MessageService } from '@core/services/MessageService';
 import { ConfigService } from '@core/services/ConfigService';
+import { safeExecuteMiddleware } from '@executors/middleware';
 
 /*
 https://github.com/microsoft/vscode-webview-ui-toolkit-samples/blob/main/default/weather-webview/src/providers/WeatherViewProvider.ts
@@ -187,7 +188,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 				images,
 				historyItem,
 				experimentalDiffStrategy,
-				middleWares: [ApprovalMiddleWrapper(this.allowedToolTree)],
+				middleWares: [safeExecuteMiddleware, ApprovalMiddleWrapper(this.allowedToolTree)],
 				mcpHub: this.mcpHub,
 				taskParentDir: path.join(this.context.globalStorageUri.fsPath,'tasks')
 			}
