@@ -14,7 +14,7 @@ const componentRoutes: Record<string, RouteNode> = {
 	},
 	ask: {
 		choice: ChoiceComponent,
-		multiChoice: MultiChoiceComponent,
+		multiple_choice: MultiChoiceComponent,
 		askApproval: AskApprovalComponent,
 		followup: FollowupComponent,
 	}
