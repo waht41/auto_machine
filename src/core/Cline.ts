@@ -25,7 +25,7 @@ import { getApiMetrics } from '@/shared/getApiMetrics';
 import { HistoryItem } from '@/shared/HistoryItem';
 import { ClineAskResponse } from '@/shared/WebviewMessage';
 import { parseMentions } from './mentions';
-import { ToolUse, ToolUseName } from './assistant-message';
+import { ToolUse } from './assistant-message';
 import { formatResponse } from './prompts/responses';
 import { truncateHalfConversation } from './sliding-window';
 import { ClineProvider } from './webview/ClineProvider';
@@ -452,16 +452,6 @@ export class Cline {
 		}
 	}
 
-	async sayAndCreateMissingParamError(toolName: ToolUseName, paramName: string, relPath?: string) {
-		await this.say(
-			'error',
-			`Roo tried to use ${toolName}${
-				relPath ? ` for '${relPath.toPosix()}'` : ''
-			} without value for required parameter '${paramName}'. Retrying...`,
-		);
-		return formatResponse.toolError(formatResponse.missingToolParameterError(paramName));
-	}
-
 	// Task lifecycle
 
 	private async startTask(task?: string, images?: string[]): Promise<void> {
@@ -564,16 +554,8 @@ export class Cline {
 
 			//const totalCost = this.calculateApiCost(totalInputTokens, totalOutputTokens)
 			if (didEndLoop) {
-				// For now a task never 'completes'. This will only happen if the user hits max requests and denies resetting the count.
-				//this.say("task_completed", `Task completed. Total API usage cost: ${totalCost}`)
-
 				break;
 			} else {
-				// this.say(
-				// 	"tool",
-				// 	"Cline responded with only text blocks but has not called attempt_completion yet. Forcing him to continue with task..."
-				// )
-				console.log('[waht] 触发了no tool use');
 				nextUserContent = [
 					{
 						type: 'text',

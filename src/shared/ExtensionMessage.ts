@@ -143,34 +143,15 @@ export type ClineSay =
 	| 'task'
 	| 'error'
 	| 'api_req_started'
-	| 'api_req_finished'
 	| 'text'
 	| 'reasoning'
 	| 'completion_result'
 	| 'user_feedback'
-	| 'user_feedback_diff'
-	| 'api_req_retried'
-	| 'api_req_retry_delayed'
-	| 'command_output'
 	| 'tool'
-	| 'shell_integration_warning'
-	| 'browser_action'
-	| 'browser_action_result'
 	| 'command'
-	| 'mcp_server_request_started'
-	| 'mcp_server_response'
 
 export interface ClineSayTool {
-	tool:
-		| 'editedExistingFile'
-		| 'appliedDiff'
-		| 'newFileCreated'
-		| 'readFile'
-		| 'listFilesTopLevel'
-		| 'listFilesRecursive'
-		| 'listCodeDefinitionNames'
-		| 'searchFiles'
-		| 'switchMode'
+	tool: ''
 	path?: string
 	diff?: string
 	content?: string

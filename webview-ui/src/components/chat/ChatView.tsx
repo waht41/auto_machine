@@ -6,7 +6,6 @@ import styled from 'styled-components';
 import {
 	ClineAsk,
 	ClineMessage,
-	ClineSayBrowserAction,
 	ClineSayTool,
 	ExtensionMessage,
 } from '@/shared/ExtensionMessage';
@@ -130,12 +129,6 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 							setEnableButtons(!isPartial);
 							const tool = JSON.parse(lastMessage.text || '{}') as ClineSayTool;
 							switch (tool.tool) {
-								case 'editedExistingFile':
-								case 'appliedDiff':
-								case 'newFileCreated':
-									setPrimaryButtonText('Save');
-									setSecondaryButtonText('Reject');
-									break;
 								default:
 									setPrimaryButtonText('Approve');
 									setSecondaryButtonText('Reject');
@@ -179,20 +172,11 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 				case 'say':
 					// don't want to reset since there could be a "say" after an "ask" while ask is waiting for response
 					switch (lastMessage.say) {
-						case 'api_req_retry_delayed':
-							setTextAreaDisabled(true);
-							break;
 						case 'api_req_started':
 							break;
 						case 'task':
 						case 'error':
-						case 'api_req_finished':
 						case 'text':
-						case 'browser_action':
-						case 'browser_action_result':
-						case 'command_output':
-						case 'mcp_server_request_started':
-						case 'mcp_server_response':
 						case 'completion_result':
 						case 'tool':
 							break;
@@ -438,20 +422,12 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 					return false;
 			}
 			switch (message.say) {
-				case 'api_req_finished': // combineApiRequests removes this from modifiedMessages anyways
-				case 'api_req_retried': // this message is used to update the latest api_req_started that the request was retried
-					return false;
-				case 'api_req_retry_delayed':
-					// Only show the retry message if it's the last message
-					return message === modifiedMessages.at(-1);
 				case 'text':
 					// Sometimes cline returns an empty text message, we don't want to render these. (We also use a say text for user messages, so in case they just sent images we still render that)
 					if ((message.text ?? '') === '' && (message.images?.length ?? 0) === 0) {
 						return false;
 					}
 					break;
-				case 'mcp_server_request_started':
-					return false;
 			}
 			return true;
 		});
@@ -609,14 +585,6 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 
 				if (isBrowserSessionMessage(message)) {
 					currentGroup.push(message);
-
-					// Check if this is a close action
-					if (message.say === 'browser_action') {
-						const browserAction = JSON.parse(message.text || '{}') as ClineSayBrowserAction;
-						if (browserAction.action === 'close') {
-							endBrowserSession();
-						}
-					}
 				} else {
 					// complete existing browser session if any
 					endBrowserSession();
