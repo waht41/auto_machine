@@ -110,6 +110,7 @@ export class StreamChatManager{
 
 	public endStream(){
 		this.didCompleteReadingStream = true;
+
 	}
 
 	public isStreamComplete(){

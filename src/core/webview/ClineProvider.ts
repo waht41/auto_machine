@@ -175,6 +175,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		} = await this.getState();
 		const modePrompt = customModePrompts?.[mode] as PromptComponent;
 		const effectiveInstructions = [globalInstructions, modePrompt?.customInstructions].filter(Boolean).join('\n\n');
+		await this.setUpAllowedTools();
 
 		this.cline = new Cline(
 			{
@@ -234,8 +235,6 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 						// Load custom modes first
 						const customModes = await this.customModesManager.getCustomModes();
 						await this.updateGlobalState('customModes', customModes);
-
-						await this.setUpAllowedTools();
 						await this.postMessageToWebview({ type: 'toolCategories', toolCategories: this.toolCategories });
 						await this.postMessageToWebview({ type: 'allowedTools', allowedTools:this.allowedToolTree.getAllowedTools() });
 

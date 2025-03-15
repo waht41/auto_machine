@@ -42,6 +42,7 @@ import { IApiConversationHistory } from '@core/manager/type';
 import { IInternalContext } from '@core/internal-implementation/type';
 import { ProcessingState } from '@core/handlers/type';
 import { BlockProcessHandler } from '@core/handlers/BlockProcessHandler';
+import logger from '@/utils/logger';
 
 const cwd = process.cwd();
 
@@ -565,6 +566,7 @@ export class Cline {
 			if (didEndLoop) {
 				// For now a task never 'completes'. This will only happen if the user hits max requests and denies resetting the count.
 				//this.say("task_completed", `Task completed. Total API usage cost: ${totalCost}`)
+
 				break;
 			} else {
 				// this.say(
@@ -675,6 +677,7 @@ export class Cline {
 				};
 
 				const pushToolResult = (content: ToolResponse) => {
+					logger.debug('push Tool result:', content);
 					this.userMessageContent.push({
 						type: 'text',
 						text: `${toolDescription()} Result:`,
@@ -689,6 +692,7 @@ export class Cline {
 					}
 					const texts = this.userMessageContent.filter((block) => block.type === 'text');
 					const textStrings = texts.map((block) => block.text);
+					logger.debug('push Tool text string:', textStrings.join('\n'));
 					this.say('text', textStrings.join('\n'), undefined, block.partial, replacing);
 					// once a tool result has been collected, ignore all other tool uses since we should only ever present one tool result per message
 					this.didGetNewMessage = true;
@@ -819,7 +823,9 @@ export class Cline {
 			// if (this.currentStreamingContentIndex >= completeBlocks.length) {
 			// 	this.isThisStreamEnd = true
 			// }
+			console.log('[waht]','waiting for stream end');
 			await pWaitFor(() => this.isThisStreamEnd);
+			console.log('[waht]','stream end', this.didGetNewMessage);
 
 			// if the model did not tool use, then we need to tell it to either use a tool or attempt_completion
 			// const didToolUse = this.assistantMessageContent.some((block) => block.type === "tool_use")
@@ -833,9 +839,6 @@ export class Cline {
 				});
 				this.consecutiveMistakeCount++;
 				return true;
-			} else if (this.asking) {
-				this.asking = false;
-				return true; // 不管asking，直接返回
 			} else {
 				didEndLoop = await this.recursivelyMakeClineRequests(this.userMessageContent);
 			}
@@ -1008,6 +1011,7 @@ export class Cline {
 
 	private async finalizeProcessing(state: ProcessingState, index: number) {
 		this.streamChatManager.endStream();
+		this.isThisStreamEnd = true;
 
 		if (this.blockProcessHandler.hasPartialBlock()) {
 			await this.handleAssistantMessage();
