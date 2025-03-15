@@ -816,17 +816,6 @@ export class Cline {
 				content: [{type: 'text', text: assistantMessage}],
 			});
 
-			// NOTE: this comment is here for future reference - this was a workaround for userMessageContent not getting set to true. It was due to it not recursively calling for partial blocks when didRejectTool, so it would get stuck waiting for a partial block to complete before it could continue.
-			// in case the content blocks finished
-			// it may be the api stream finished after the last parsed content block was executed, so  we are able to detect out of bounds and set isThisStreamEnd to true (note you should not call presentAssistantMessage since if the last block is completed it will be presented again)
-			// const completeBlocks = this.assistantMessageContent.filter((block) => !block.partial) // if there are any partial blocks after the stream ended we can consider them invalid
-			// if (this.currentStreamingContentIndex >= completeBlocks.length) {
-			// 	this.isThisStreamEnd = true
-			// }
-			console.log('[waht]','waiting for stream end');
-			await pWaitFor(() => this.isThisStreamEnd);
-			console.log('[waht]','stream end', this.didGetNewMessage);
-
 			// if the model did not tool use, then we need to tell it to either use a tool or attempt_completion
 			// const didToolUse = this.assistantMessageContent.some((block) => block.type === "tool_use")
 			if (!this.didGetNewMessage) {
@@ -1011,11 +1000,11 @@ export class Cline {
 
 	private async finalizeProcessing(state: ProcessingState, index: number) {
 		this.streamChatManager.endStream();
-		this.isThisStreamEnd = true;
-
 		if (this.blockProcessHandler.hasPartialBlock()) {
+			this.blockProcessHandler.markPartialBlockAsComplete();
 			await this.handleAssistantMessage();
 		}
+		await pWaitFor(() => this.isThisStreamEnd); // wait for the last block to be presented
 
 		this.updateApiReq(state.apiReq, index);
 		await this.saveClineMessages();

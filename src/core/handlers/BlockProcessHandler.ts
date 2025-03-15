@@ -35,6 +35,12 @@ export class BlockProcessHandler {
 		return this.assistantMessageBlocks.some(block => block.partial);
 	}
 
+	public markPartialBlockAsComplete(): void {
+		this.assistantMessageBlocks.forEach((item) =>{
+			item.partial = false;
+		});
+	}
+
 	public getCurrentBlock(): AssistantMessageContent {
 		return cloneDeep(this.assistantMessageBlocks[this.currentStreamingContentIndex]);
 	}
