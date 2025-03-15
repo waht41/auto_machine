@@ -142,33 +142,6 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 									break;
 							}
 							break;
-						case 'browser_action_launch':
-							if (!isAutoApproved(lastMessage)) {
-								playSound('notification');
-							}
-							setTextAreaDisabled(isPartial);
-							setClineAsk('browser_action_launch');
-							setEnableButtons(!isPartial);
-							setPrimaryButtonText('Approve');
-							setSecondaryButtonText('Reject');
-							break;
-						case 'command':
-							if (!isAutoApproved(lastMessage)) {
-								playSound('notification');
-							}
-							setTextAreaDisabled(isPartial);
-							setClineAsk('command');
-							setEnableButtons(!isPartial);
-							setPrimaryButtonText('Run Command');
-							setSecondaryButtonText('Reject');
-							break;
-						case 'command_output':
-							setTextAreaDisabled(false);
-							setClineAsk('command_output');
-							setEnableButtons(true);
-							setPrimaryButtonText('Proceed While Running');
-							setSecondaryButtonText(undefined);
-							break;
 						case 'use_mcp_server':
 							setTextAreaDisabled(isPartial);
 							setClineAsk('use_mcp_server');
@@ -210,14 +183,6 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 							setTextAreaDisabled(true);
 							break;
 						case 'api_req_started':
-							if (secondLastMessage?.ask === 'command_output') {
-								// if the last ask is a command_output, and we receive an api_req_started, then that means the command has finished and we don't need input from the user anymore (in every other case, the user has to interact with input field or buttons to continue, which does the following automatically)
-								setInputValue('');
-								setTextAreaDisabled(true);
-								setSelectedImages([]);
-								setClineAsk(undefined);
-								setEnableButtons(false);
-							}
 							break;
 						case 'task':
 						case 'error':
@@ -295,9 +260,6 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 					switch (clineAsk) {
 						case 'followup':
 						case 'tool':
-						case 'browser_action_launch':
-						case 'command': // user can provide feedback to a tool or command use
-						case 'command_output': // user can send input to command stdin
 						case 'use_mcp_server':
 						case 'completion_result': // if this happens then the user has feedback for the completion result
 						case 'resume_task':
@@ -338,10 +300,7 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 	const handlePrimaryButtonClick = useCallback(() => {
 		switch (clineAsk) {
 			case 'api_req_failed':
-			case 'command':
-			case 'command_output':
 			case 'tool':
-			case 'browser_action_launch':
 			case 'use_mcp_server':
 			case 'resume_task':
 			case 'mistake_limit_reached':
@@ -373,9 +332,7 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 			case 'resume_task':
 				startNewTask();
 				break;
-			case 'command':
 			case 'tool':
-			case 'browser_action_launch':
 			case 'use_mcp_server':
 				// responds to the API with a "This operation failed" and lets it try again
 				vscode.postMessage({ type: 'askResponse', askResponse: 'noButtonClicked' });
@@ -592,7 +549,6 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 							}
 							break;
 						case 'tool':
-						case 'browser_action_launch':
 						case 'resume_task':
 						case 'use_mcp_server':
 							playSound('notification');
@@ -634,13 +590,7 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 		};
 
 		visibleMessages.forEach((message) => {
-			if (message.ask === 'browser_action_launch') {
-				// complete existing browser session if any
-				endBrowserSession();
-				// start new
-				isInBrowserSession = true;
-				currentGroup.push(message);
-			} else if (isInBrowserSession) {
+			if (isInBrowserSession) {
 				// end session if api_req_started is cancelled
 
 				if (message.say === 'api_req_started') {

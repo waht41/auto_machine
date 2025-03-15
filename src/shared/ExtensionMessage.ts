@@ -131,15 +131,12 @@ export interface ClineMessage {
 
 export type ClineAsk =
 	| 'followup'
-	| 'command'
-	| 'command_output'
 	| 'completion_result'
 	| 'tool'
 	| 'api_req_failed'
 	| 'resume_task'
 	| 'resume_completed_task'
 	| 'mistake_limit_reached'
-	| 'browser_action_launch'
 	| 'use_mcp_server'
 
 export type ClineSay =
