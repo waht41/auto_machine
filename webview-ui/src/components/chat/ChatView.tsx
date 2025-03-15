@@ -27,6 +27,7 @@ import AutoApproveMenu from './AutoApproveMenu';
 import { AudioType } from '@/shared/WebviewMessage';
 import { validateCommand } from '../../utils/command-validation';
 import { normalizeApiConfiguration } from '@webview-ui/components/settings/ApiOptions/utils';
+import { VSCodeButton } from '@vscode/webview-ui-toolkit/react';
 
 interface ChatViewProps {
 	isHidden: boolean
@@ -362,6 +363,7 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 		if (isStreaming) {
 			vscode.postMessage({ type: 'cancelTask' });
 			setDidClickCancel(true);
+			setTextAreaDisabled(false);
 			return;
 		}
 
@@ -554,8 +556,24 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 		[allowedCommands],
 	);
 
-	const isAutoApproved = (prop:any)=> true;  // todo waht 工具基本都删了，留下的都是基本工具,不过还需要进一步整理
 
+	const isAutoApproved = useCallback(
+		(message: ClineMessage | undefined) => {
+			if (!message || message.type !== 'ask') return false;
+
+			return (
+				(alwaysAllowMcp && message.ask === 'use_mcp_server' && isMcpToolAlwaysAllowed(message))
+			);
+		},
+		[
+			isReadOnlyToolAction,
+			isWriteToolAction,
+			isAllowedCommand,
+			alwaysAllowMcp,
+			isMcpToolAlwaysAllowed,
+		],
+	);
+	
 	useEffect(() => {
 		// Only execute when isStreaming changes from true to false
 		if (wasStreaming && !isStreaming && lastMessage) {
@@ -942,7 +960,7 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 							initialTopMostItemIndex={groupedMessages.length - 1}
 						/>
 					</div>
-					{showScrollToBottom && (
+					{showScrollToBottom ? (
 						<div
 							style={{
 								display: 'flex',
@@ -955,6 +973,43 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 								}}>
 								<span className="codicon codicon-chevron-down" style={{ fontSize: '18px' }}></span>
 							</ScrollToBottomButton>
+						</div>
+					) : (
+						<div
+							style={{
+								opacity:
+									primaryButtonText || secondaryButtonText || isStreaming
+										? enableButtons || (isStreaming && !didClickCancel)
+											? 1
+											: 0.5
+										: 0,
+								display: 'flex',
+								padding: `${primaryButtonText || secondaryButtonText || isStreaming ? '10' : '0'}px 15px 0px 15px`,
+							}}>
+							{primaryButtonText && !isStreaming && (
+								<VSCodeButton
+									appearance="primary"
+									disabled={!enableButtons}
+									style={{
+										flex: secondaryButtonText ? 1 : 2,
+										marginRight: secondaryButtonText ? '6px' : '0',
+									}}
+									onClick={handlePrimaryButtonClick}>
+									{primaryButtonText}
+								</VSCodeButton>
+							)}
+							{(secondaryButtonText || isStreaming) && (
+								<VSCodeButton
+									appearance="secondary"
+									disabled={!enableButtons && !(isStreaming && !didClickCancel)}
+									style={{
+										flex: isStreaming ? 2 : 1,
+										marginLeft: isStreaming ? 0 : '6px',
+									}}
+									onClick={handleSecondaryButtonClick}>
+									{isStreaming ? 'Cancel' : secondaryButtonText}
+								</VSCodeButton>
+							)}
 						</div>
 					)}
 				</>
