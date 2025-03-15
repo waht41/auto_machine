@@ -9,14 +9,14 @@ export interface BlockState {
 }
 
 export class BlockProcessHandler {
-	private currentStreamingContentIndex = 0;
+	private currentBlockIndex = 0;
 	private presentAssistantMessageLocked = false;
 	private presentAssistantMessageHasPendingUpdates = false;
 	private assistantMessageBlocks: AssistantMessageContent[] = [];
 	private prevLength = 0;
 
 	public reset() {
-		this.currentStreamingContentIndex = 0;
+		this.currentBlockIndex = 0;
 		this.assistantMessageBlocks = [];
 		this.presentAssistantMessageHasPendingUpdates = false;
 		this.presentAssistantMessageLocked = false;
@@ -42,7 +42,7 @@ export class BlockProcessHandler {
 	}
 
 	public getCurrentBlock(): AssistantMessageContent {
-		return cloneDeep(this.assistantMessageBlocks[this.currentStreamingContentIndex]);
+		return cloneDeep(this.assistantMessageBlocks[this.currentBlockIndex]);
 	}
 
 	checkProcessingLock(): boolean {
@@ -65,15 +65,15 @@ export class BlockProcessHandler {
 	unlockProcessing(isThisBlockFinished: boolean): void {
 		this.presentAssistantMessageLocked = false;
 		if (isThisBlockFinished) {
-			this.currentStreamingContentIndex++; // need to increment regardless, so when read stream calls this function again it will be streaming the next block
+			this.currentBlockIndex++; // need to increment regardless, so when read stream calls this function again it will be streaming the next block
 		}
 	}
 
 	getBlockPositionState(): BlockState {
 		return {
-			remaining: this.currentStreamingContentIndex < this.assistantMessageBlocks.length,
-			last: this.currentStreamingContentIndex === this.assistantMessageBlocks.length - 1,
-			overLimit: this.currentStreamingContentIndex > this.assistantMessageBlocks.length - 1
+			remaining: this.currentBlockIndex < this.assistantMessageBlocks.length,
+			last: this.currentBlockIndex === this.assistantMessageBlocks.length - 1,
+			overLimit: this.currentBlockIndex > this.assistantMessageBlocks.length - 1
 		};
 	}
 

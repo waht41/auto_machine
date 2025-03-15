@@ -93,7 +93,7 @@ export class Cline {
 	// streaming
 	private blockProcessHandler = new BlockProcessHandler();
 	private userMessageContent: (Anthropic.TextBlockParam | Anthropic.ImageBlockParam)[] = [];
-	private isThisStreamEnd = false;
+	private isCurrentStreamEnd = false;
 	private didRejectTool = false;
 	private didGetNewMessage = false;
 
@@ -645,7 +645,7 @@ export class Cline {
 			// if streaming is finished, and we're out of bounds then this means
 			// we already presented/executed the last content block and are ready to continue to next request
 			if (this.streamChatManager.isStreamComplete()) {
-				this.isThisStreamEnd = true;
+				this.isCurrentStreamEnd = true;
 			}
 			this.blockProcessHandler.unlockPresentAssistantMessage();
 			return;
@@ -747,7 +747,7 @@ export class Cline {
 		if (isThisBlockFinished && blockPositionState.last) {
 			// its okay that we increment if !didCompleteReadingStream, it'll just return bc out of bounds and as streaming continues it will call presentAssitantMessage if a new block is ready. if streaming is finished then we set isThisStreamEnd to true when out of bounds. This gracefully allows the stream to continue on and all potential content blocks be presented.
 			// last block is complete and it is finished executing
-			this.isThisStreamEnd = true; // will allow pwaitfor to continue
+			this.isCurrentStreamEnd = true; // will allow pwaitfor to continue
 		}
 
 		const shouldContinue = this.blockProcessHandler.shouldContinueProcessing(isThisBlockFinished);
@@ -918,7 +918,7 @@ export class Cline {
 		this.streamChatManager.resetStream();
 
 		this.userMessageContent = [];
-		this.isThisStreamEnd = false;
+		this.isCurrentStreamEnd = false;
 		this.didRejectTool = false;
 		this.didGetNewMessage = false;
 
@@ -940,7 +940,7 @@ export class Cline {
 				// parse raw assistant message into content blocks
 				this.blockProcessHandler.setAssistantMessageBlocks(assistantMessage);
 				if (this.blockProcessHandler.hasNewBlock()) { // has new block
-					this.isThisStreamEnd = false; // new content we need to present, reset to false in case previous content set this to true
+					this.isCurrentStreamEnd = false; // new content we need to present, reset to false in case previous content set this to true
 				}
 				// present content to user and apply tool
 				const replacing = !this.blockProcessHandler.hasNewBlock();
@@ -1004,7 +1004,7 @@ export class Cline {
 			this.blockProcessHandler.markPartialBlockAsComplete();
 			await this.handleAssistantMessage();
 		}
-		await pWaitFor(() => this.isThisStreamEnd); // wait for the last block to be presented
+		await pWaitFor(() => this.isCurrentStreamEnd); // wait for the last block to be presented
 
 		this.updateApiReq(state.apiReq, index);
 		await this.saveClineMessages();
