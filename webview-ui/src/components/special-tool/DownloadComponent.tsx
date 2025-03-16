@@ -67,16 +67,16 @@ const formatBytes = (bytes: number, decimals = 2) => {
 };
 
 // 下载组件
-export const DownloadComponent: ComponentRenderer = (progress: DownloadProgress) => {
+export const DownloadComponent : ComponentRenderer = (progress: DownloadProgress) => {
   
 	// 获取状态文本
 	const getStatusText = (status: string) => {
 		switch (status) {
-			case 'started': return '准备下载...';
-			case 'downloading': return '正在下载...';
-			case 'completed': return '下载完成';
-			case 'error': return '下载出错';
-			default: return '未知状态';
+			case 'started': return 'Preparing download...';
+			case 'downloading': return 'Downloading...';
+			case 'completed': return 'Download completed';
+			case 'error': return 'Download error';
+			default: return 'Unknown status';
 		}
 	};
   
@@ -94,17 +94,17 @@ export const DownloadComponent: ComponentRenderer = (progress: DownloadProgress)
 		<DownloadCard>
 			<HeaderContainer>
 				{toolIcon('download')}
-				<Title level={4}>文件下载</Title>
+				<Title level={4}>File Download</Title>
 			</HeaderContainer>
       
 			<InfoContainer>
 				<Typography.Text>
-					{progress.fileName ? `文件名: ${progress.fileName}` : '正在下载文件...'}
+					{progress.fileName ? `File name: ${progress.fileName}` : 'Downloading file...'}
 				</Typography.Text>
         
 				<Space direction="vertical" style={{ width: '100%', marginTop: '8px' }}>
 					<Typography.Text>
-            已下载: {formatBytes(progress.downloaded)} / {formatBytes(progress.total)}
+            Downloaded: {formatBytes(progress.downloaded)} / {formatBytes(progress.total)}
 					</Typography.Text>
 				</Space>
 			</InfoContainer>

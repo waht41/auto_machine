@@ -1,7 +1,7 @@
 // 组件类型定义
 import React from 'react';
 
-export type ComponentRenderer = (tool: BaseTool) => React.ReactNode;
+export type ComponentRenderer = (prop: any) => React.ReactNode;
 
 interface RouteNodeMap {
     [key: string]: RouteNode;
