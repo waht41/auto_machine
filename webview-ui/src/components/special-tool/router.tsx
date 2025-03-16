@@ -6,6 +6,7 @@ import { LogComponent } from './LogComponent';
 import { BaseTool, ComponentRenderer, RouteNode } from './type';
 import { AskApprovalComponent } from './AskApproval';
 import { FollowupComponent } from '@webview-ui/components/special-tool/FollowupComponent';
+import { DownloadComponent } from '@webview-ui/components/special-tool/DownloadComponent';
 
 
 const componentRoutes: Record<string, RouteNode> = {
@@ -17,6 +18,9 @@ const componentRoutes: Record<string, RouteNode> = {
 		multiple_choice: MultiChoiceComponent,
 		askApproval: AskApprovalComponent,
 		followup: FollowupComponent,
+	},
+	file: {
+		download: DownloadComponent,
 	}
 };
 

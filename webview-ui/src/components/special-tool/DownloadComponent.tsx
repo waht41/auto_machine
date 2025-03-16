@@ -1,0 +1,125 @@
+import { headerStyle, toolIcon } from './common';
+import { ComponentRenderer } from './type';
+import { Progress, Card, Typography, Space } from 'antd';
+import styled from 'styled-components';
+
+// 定义下载进度接口
+export interface DownloadProgress {
+	fileName: string;
+    downloaded: number;    // 已下载的字节数
+    total: number;         // 文件总大小（字节）
+    percentage: number;    // 下载百分比 (0-100)
+    status: 'started' | 'downloading' | 'completed' | 'error';  // 下载状态
+}
+
+// 样式组件
+const DownloadCard = styled(Card)`
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  margin-bottom: 16px;
+`;
+
+const HeaderContainer = styled.div`
+  ${headerStyle};
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const Title = styled(Typography.Title)`
+  margin: 0;
+`;
+
+const InfoContainer = styled.div`
+  margin-bottom: 16px;
+`;
+
+const ProgressContainer = styled.div`
+  margin-bottom: 16px;
+`;
+
+const StatusText = styled(Typography.Text)<{ status: string }>`
+  display: block;
+  margin-top: 8px;
+  font-weight: bold;
+  color: ${props => {
+		switch (props.status) {
+			case 'completed': return '#52c41a'; // 成功绿色
+			case 'error': return '#f5222d';     // 错误红色
+			case 'downloading': return '#1890ff'; // 下载中蓝色
+			default: return 'inherit';
+		}
+	}};
+`;
+
+// 格式化字节数为可读形式
+const formatBytes = (bytes: number, decimals = 2) => {
+	if (bytes === 0) return '0 Bytes';
+  
+	const k = 1024;
+	const dm = decimals < 0 ? 0 : decimals;
+	const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+  
+	const i = Math.floor(Math.log(bytes) / Math.log(k));
+  
+	return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+};
+
+// 下载组件
+export const DownloadComponent: ComponentRenderer = (progress: DownloadProgress) => {
+  
+	// 获取状态文本
+	const getStatusText = (status: string) => {
+		switch (status) {
+			case 'started': return '准备下载...';
+			case 'downloading': return '正在下载...';
+			case 'completed': return '下载完成';
+			case 'error': return '下载出错';
+			default: return '未知状态';
+		}
+	};
+  
+	// 获取进度条状态
+	const getProgressStatus = (status: string) => {
+		switch (status) {
+			case 'completed': return 'success';
+			case 'error': return 'exception';
+			case 'downloading': return 'active';
+			default: return 'normal';
+		}
+	};
+  
+	return (
+		<DownloadCard>
+			<HeaderContainer>
+				{toolIcon('download')}
+				<Title level={4}>文件下载</Title>
+			</HeaderContainer>
+      
+			<InfoContainer>
+				<Typography.Text>
+					{progress.fileName ? `文件名: ${progress.fileName}` : '正在下载文件...'}
+				</Typography.Text>
+        
+				<Space direction="vertical" style={{ width: '100%', marginTop: '8px' }}>
+					<Typography.Text>
+            已下载: {formatBytes(progress.downloaded)} / {formatBytes(progress.total)}
+					</Typography.Text>
+				</Space>
+			</InfoContainer>
+      
+			<ProgressContainer>
+				<Progress 
+					percent={progress.percentage} 
+					status={getProgressStatus(progress.status)}
+					strokeWidth={8}
+					showInfo={true}
+				/>
+				<StatusText status={progress.status}>
+					{getStatusText(progress.status)}
+				</StatusText>
+			</ProgressContainer>
+		</DownloadCard>
+	);
+};

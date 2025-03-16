@@ -61,3 +61,14 @@ search:
     - tool: file
       cmd: search_file
       keyword: /[1-9]/g
+
+download:
+    description: 下载文件
+    params:
+        url: 下载地址
+        path: 保存路径
+    example:
+        - tool: file
+          cmd: download
+          url: https://www.baidu.com/favicon.ico
+          path: /path/to/save
