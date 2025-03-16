@@ -791,6 +791,9 @@ export class Cline {
 	async handleAssistantMessageComplete(assistantMessage: string) {
 		// now add to apiconversationhistory
 		// need to save assistant responses to file before proceeding to tool use since user can exit at any moment and we wouldn't be able to save the assistant's response
+		if (this.abort){
+			return true;
+		}
 		let didEndLoop = false;
 		if (assistantMessage.length > 0) {
 			await this.addToApiConversationHistory({
@@ -881,6 +884,8 @@ export class Cline {
 		console.error('error when receive chunk: ', error);
 		// abandoned happens when extension is no longer waiting for the cline instance to finish aborting (error is thrown here when any function in the for loop throws due to this.abort)
 		if (!this.abandoned) {
+			this.isCurrentStreamEnd = true;
+			this.blockProcessHandler.markPartialBlockAsComplete();
 			this.abortTask(); // if the stream failed, there's various states the task could be in (i.e. could have streamed some tools the user may have executed), so we just resort to replicating a cancel task
 			await this.abortStream(
 				'streaming_failed',
