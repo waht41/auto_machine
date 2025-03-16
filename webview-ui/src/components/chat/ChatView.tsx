@@ -6,7 +6,6 @@ import styled from 'styled-components';
 import {
 	ClineAsk,
 	ClineMessage,
-	ClineSayTool,
 	ExtensionMessage,
 } from '@/shared/ExtensionMessage';
 import { McpServer, McpTool } from '@/shared/mcp';
@@ -126,21 +125,10 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 							}
 							setTextAreaDisabled(isPartial);
 							setClineAsk('tool');
-							setEnableButtons(!isPartial);
-							const tool = JSON.parse(lastMessage.text || '{}') as ClineSayTool;
-							switch (tool.tool) {
-								default:
-									setPrimaryButtonText('Approve');
-									setSecondaryButtonText('Reject');
-									break;
-							}
 							break;
 						case 'use_mcp_server':
 							setTextAreaDisabled(isPartial);
 							setClineAsk('use_mcp_server');
-							setEnableButtons(!isPartial);
-							setPrimaryButtonText('Approve');
-							setSecondaryButtonText('Reject');
 							break;
 						case 'completion_result':
 							// extension waiting for feedback. but we can just present a new task button
@@ -173,7 +161,6 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 					// don't want to reset since there could be a "say" after an "ask" while ask is waiting for response
 					switch (lastMessage.say) {
 						case 'api_req_started':
-							break;
 						case 'task':
 						case 'error':
 						case 'text':
@@ -183,13 +170,6 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 					}
 					break;
 			}
-		} else {
-			// this would get called after sending the first message, so we have to watch messages.length instead
-			// No messages, so user has to submit a task
-			// setTextAreaDisabled(false)
-			// setClineAsk(undefined)
-			// setPrimaryButtonText(undefined)
-			// setSecondaryButtonText(undefined)
 		}
 	}, [lastMessage, secondLastMessage]);
 
