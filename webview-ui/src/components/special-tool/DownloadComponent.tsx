@@ -67,8 +67,7 @@ const formatBytes = (bytes: number, decimals = 2) => {
 };
 
 // 下载组件
-export const DownloadComponent : ComponentRenderer = (progress: DownloadProgress) => {
-  
+export const DownloadComponent: ComponentRenderer = (progress: DownloadProgress) => {
 	// 获取状态文本
 	const getStatusText = (status: string) => {
 		switch (status) {

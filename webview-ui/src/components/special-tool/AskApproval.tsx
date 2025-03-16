@@ -1,4 +1,4 @@
-import { ComponentRenderer } from './type';
+import { ComponentRenderer, ApprovalTool } from './type';
 import { headerStyle, toolIcon } from './common';
 import yaml from 'js-yaml';
 import MarkdownBlock from '../common/MarkdownBlock';
@@ -40,7 +40,7 @@ const WarningText = styled(Typography.Text)`
 `;
 
 // 审批组件
-export const AskApprovalComponent: ComponentRenderer = (tool) => {
+export const AskApprovalComponent: ComponentRenderer = (tool: ApprovalTool) => {
 	console.log('[waht]', tool);
 	const [showButtons, setShowButtons] = useState(true);
 	const [responseMessage, setResponseMessage] = useState('');

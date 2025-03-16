@@ -1,7 +1,7 @@
-import { ComponentRenderer } from '@webview-ui/components/special-tool/type';
+import { ComponentRenderer, FollowupTool } from '@webview-ui/components/special-tool/type';
 import { headerStyle, toolIcon } from '@webview-ui/components/special-tool/common';
 
-export const FollowupComponent: ComponentRenderer = (tool) => {
+export const FollowupComponent: ComponentRenderer = (tool: FollowupTool) => {
 	return (
 		<>
 			<div style={headerStyle}>

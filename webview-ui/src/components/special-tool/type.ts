@@ -14,7 +14,7 @@ export interface BaseTool {
     type: string;
     uuid: string;
 
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 export interface LogTool extends BaseTool {
@@ -29,13 +29,19 @@ export interface ChoiceTool extends BaseTool {
     askType: 'choice';
     question: string;
     choices: string[];
-    result?: string;
+    result?: string | string[];
 }
 
 export interface ApprovalTool extends BaseTool {
     type: 'ask';
     askType: 'askApproval';
-    content: any;
+    content: unknown;
 }
 
-export type Tool = LogTool | ChoiceTool | ApprovalTool;
+export interface FollowupTool extends BaseTool {
+    type: 'ask';
+    askType: 'followup';
+    question: string;
+}
+
+export type Tool = LogTool | ChoiceTool | ApprovalTool | FollowupTool;

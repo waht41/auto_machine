@@ -1,8 +1,8 @@
 import { headerStyle, toolIcon } from './common';
-import { ComponentRenderer } from './type';
+import { ComponentRenderer, LogTool } from './type';
 
 // 日志组件
-export const LogComponent: ComponentRenderer = (tool) => {
+export const LogComponent: ComponentRenderer = (tool: LogTool) => {
 	console.log('[waht] 开始渲染log工具');
 	return (
 		<>

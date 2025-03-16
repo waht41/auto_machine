@@ -1,6 +1,6 @@
 import { headerStyle, toolIcon } from './common';
 import { vscode } from '../../utils/vscode';
-import { ComponentRenderer } from './type';
+import { ComponentRenderer, ChoiceTool } from './type';
 import { Button, Radio, Checkbox, Space, Typography, Card } from 'antd';
 import { useState, useEffect } from 'react';
 import styled from 'styled-components';
@@ -45,14 +45,14 @@ const ResultText = styled(Typography.Text)`
 `;
 
 // 单选组件
-export const ChoiceComponent: ComponentRenderer = (tool) => {
+export const ChoiceComponent: ComponentRenderer = (tool:ChoiceTool) => {
 	console.log('[waht]', tool);
 	const [selectedValue, setSelectedValue] = useState<string | undefined>(undefined);
 	
 	// 如果已经有结果，则设置为选中状态
 	useEffect(() => {
 		if (tool.result) {
-			setSelectedValue(tool.result);
+			setSelectedValue(tool.result as string);
 		}
 	}, [tool.result]);
 	
@@ -107,7 +107,7 @@ export const ChoiceComponent: ComponentRenderer = (tool) => {
 };
 
 // 多选组件
-export const MultiChoiceComponent: ComponentRenderer = (tool) => {
+export const MultiChoiceComponent: ComponentRenderer = (tool:ChoiceTool) => {
 	console.log('[waht]', tool);
 	const [selectedValues, setSelectedValues] = useState<string[]>([]);
 	

@@ -32,7 +32,7 @@ const TYPE_PRIORITY = ['type', 'cmd', 'askType', 'action'];
 const isDevMode = process.env.NODE_ENV === 'development';
 
 // 路由解析引擎
-export const resolveComponent = (tool: BaseTool): ComponentRenderer => {
+export const resolveComponent = (tool: BaseTool): ComponentRenderer<any> => {
 	if (!tool || typeof tool !== 'object') {
 		console.error('[ComponentRouter] 无效工具对象:', tool);
 		return DefaultComponent;
@@ -90,7 +90,7 @@ export const resolveComponent = (tool: BaseTool): ComponentRenderer => {
 	}
 
 	// 返回匹配的组件
-	return currentRoute as ComponentRenderer;
+	return currentRoute as ComponentRenderer<any>;
 };
 
 /**
@@ -100,7 +100,7 @@ export const resolveComponent = (tool: BaseTool): ComponentRenderer => {
  */
 export function registerToolComponent(
 	paths: string,
-	renderer: ComponentRenderer,
+	renderer: ComponentRenderer<any>,
 ): void {
 	const pathList = paths.split('/');
 	let currentRoute: any = componentRoutes;
