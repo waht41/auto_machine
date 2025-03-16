@@ -26,10 +26,13 @@ export class FileCommandExecutor implements CommandExecutor {
 			case 'edit':
 				return await File.edit(command);
 			case 'download':
-				let replacing = false;
+				let replacing = true, partial = true;
 				for await (const progress of File.download(command)) {
-					await cline?.sayP({ sayType:'tool',text: JSON.stringify({...command,...progress}), replacing });
-					replacing = true;
+					if (progress.status === 'completed'){
+						replacing = false;
+						partial = false;
+					}
+					await cline?.sayP({ sayType:'tool',text: JSON.stringify({...command,...progress}), replacing, partial });
 				}
 				return 'Download completed';
 
