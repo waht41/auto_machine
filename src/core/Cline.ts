@@ -131,7 +131,7 @@ export class Cline {
 		this.diffViewProvider = new DiffViewProvider(cwd);
 		this.mcpHub = mcpHub;
 		this.taskDir = path.join(taskParentDir, this.taskId);
-		this.streamChatManager = new StreamChatManager(this.api, this.taskDir);
+		this.streamChatManager = new StreamChatManager(this.taskId, this.api, this.taskDir, this.postTaskHistory.bind(this));
 		registerInternalImplementation(this.executor);
 		for (const middleware of middleWares) {
 			this.executor.use(middleware);
@@ -140,6 +140,11 @@ export class Cline {
 
 		// Initialize diffStrategy based on current state
 		this.updateDiffStrategy(experimentalDiffStrategy);
+	}
+
+	async init() {
+		await this.updateDiffStrategy();
+		await this.streamChatManager.init();
 	}
 
 	async start({task, images}: { task?: string, images?: string[] }) {
@@ -177,10 +182,6 @@ export class Cline {
 		return this.streamChatManager.apiConversationHistory;
 	}
 
-	private set apiConversationHistory(value: IApiConversationHistory) {
-		this.streamChatManager.apiConversationHistory = value;
-	}
-
 	private async addToApiConversationHistory(message: Anthropic.MessageParam) {
 		await this.streamChatManager.addToApiConversationHistory(message);
 	}
@@ -193,54 +194,21 @@ export class Cline {
 		return this.streamChatManager.clineMessages;
 	}
 
-	public set clineMessages(value: ClineMessage[]) {
-		this.streamChatManager.clineMessages = value;
-	}
-
-	async getSavedClineMessages(): Promise<ClineMessage[]> {
-		return await this.streamChatManager.getSavedClineMessages();
-	}
-
 	private async addToClineMessages(message: ClineMessage) {
-		this.clineMessages.push(message);
-		await this.saveClineMessages();
+		await this.streamChatManager.addToClineMessages(message);
 	}
 
 	public async overwriteClineMessages(newMessages: ClineMessage[]) {
-		this.clineMessages = newMessages;
-		await this.saveClineMessages();
+		await this.streamChatManager.overwriteClineMessages(newMessages);
 	}
 
 	private async saveClineMessages() {
-		try {
-			await this.streamChatManager.saveClineMessages();
-			await this.postTaskHistory();
-		} catch (error) {
-			console.error('Failed to save cline messages:', error);
-		}
+		await this.streamChatManager.saveClineMessages();
 	}
 
 	private async postTaskHistory() {
-		// combined as they are in ChatView
-		const apiMetrics = getApiMetrics(combineApiRequests(combineCommandSequences(this.clineMessages.slice(1))));
-		const taskMessage = this.clineMessages[0]; // first message is always the task say
-		const lastRelevantMessage =
-			this.clineMessages[
-				findLastIndex(
-					this.clineMessages,
-					(m) => !(m.ask === 'resume_task' || m.ask === 'resume_completed_task'),
-				)
-			];
-		await this.providerRef.deref()?.updateTaskHistory({
-			id: this.taskId,
-			ts: lastRelevantMessage.ts,
-			task: taskMessage.text ?? '',
-			tokensIn: apiMetrics.totalTokensIn,
-			tokensOut: apiMetrics.totalTokensOut,
-			cacheWrites: apiMetrics.totalCacheWrites,
-			cacheReads: apiMetrics.totalCacheReads,
-			totalCost: apiMetrics.totalCost,
-		});
+		const historyItem = this.streamChatManager.getHistoryItem();
+		await this.providerRef.deref()?.updateTaskHistory(historyItem);
 	}
 
 	// Communicate with webview
@@ -457,8 +425,7 @@ export class Cline {
 	private async startTask(task?: string, images?: string[]): Promise<void> {
 		// conversationHistory (for API) and clineMessages (for webview) need to be in sync
 		// if the extension process were killed, then on restart the clineMessages might not be empty, so we need to set it to [] when we create a new Cline client (otherwise webview would show stale messages from previous session)
-		this.clineMessages = [];
-		this.apiConversationHistory = [];
+		await this.streamChatManager.clearHistory();
 		await this.providerRef.deref()?.postStateToWebview();
 
 		await this.say('text', task, images);

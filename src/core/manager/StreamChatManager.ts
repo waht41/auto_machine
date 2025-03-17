@@ -10,21 +10,35 @@ import { fileExistsAtPath } from '@/utils/fs';
 import { ProcessingState } from '@core/handlers/type';
 import { calculateApiCost } from '@/utils/cost';
 import { ClineMessage } from '@/shared/ExtensionMessage';
+import { getApiMetrics } from '@/shared/getApiMetrics';
+import { combineApiRequests } from '@/shared/combineApiRequests';
+import { combineCommandSequences } from '@/shared/combineCommandSequences';
+import { findLastIndex } from '@/shared/array';
+import { HistoryItem } from '@/shared/HistoryItem';
 
 
-export class StreamChatManager{
+export class StreamChatManager {
 	apiConversationHistory: IApiConversationHistory = [];
 	didCompleteReadingStream = false;
 
 	clineMessages: ClineMessage[] = [];
 	readonly endHint = 'roo stop the conversion, should resume?';
 
-	constructor(private api: ApiHandler, private taskDir: string) {
+	constructor(private taskId: string, private api: ApiHandler, private taskDir: string, private onSaveClineMessages: () => Promise<void>) {
+	}
+	async init() {
+		await this.resumeHistory();
 	}
 
-	public resetStream(){
+	public resetStream() {
 		this.didCompleteReadingStream = false;
-
+	}
+	
+	public async clearHistory() {
+		this.apiConversationHistory = [];
+		this.clineMessages = [];
+		await this.saveClineMessages();
+		await this.saveApiConversationHistory();
 	}
 
 	private async getTaskDirectory(): Promise<string> {
@@ -61,8 +75,30 @@ export class StreamChatManager{
 		this.apiConversationHistory = newHistory;
 		await this.saveApiConversationHistory();
 	}
+	
+	public getHistoryItem() : HistoryItem{
+		const apiMetrics = getApiMetrics(combineApiRequests(combineCommandSequences(this.clineMessages.slice(1))));
+		const taskMessage = this.clineMessages[0]; // first message is always the task say
+		const lastRelevantMessage =
+			this.clineMessages[
+				findLastIndex(
+					this.clineMessages,
+					(m) => !(m.ask === 'resume_task' || m.ask === 'resume_completed_task'),
+				)
+			];
+		return {
+			id: this.taskId,
+			ts: lastRelevantMessage.ts,
+			task: taskMessage.text ?? '',
+			tokensIn: apiMetrics.totalTokensIn,
+			tokensOut: apiMetrics.totalTokensOut,
+			cacheWrites: apiMetrics.totalCacheWrites,
+			cacheReads: apiMetrics.totalCacheReads,
+			totalCost: apiMetrics.totalCost,
+		};
+	}
 
-	async *attemptApiRequest(): ApiStream {
+	async* attemptApiRequest(): ApiStream {
 		const systemPrompt = await SYSTEM_PROMPT();
 		// Clean conversation history by:
 		// 1. Converting to Anthropic.MessageParam by spreading only the API-required properties
@@ -80,8 +116,8 @@ export class StreamChatManager{
 		yield* iterator;
 	}
 
-	private convertToConversation(){
-		return this.apiConversationHistory.map(({ role, content }) => {
+	private convertToConversation() {
+		return this.apiConversationHistory.map(({role, content}) => {
 			// Handle array content (could contain image blocks)
 			if (Array.isArray(content)) {
 				if (!this.api.getModel().info.supportsImages) {
@@ -100,24 +136,20 @@ export class StreamChatManager{
 					});
 				}
 			}
-			return { role, content };
+			return {role, content};
 		});
 	}
 
-	public getApiConversationHistory(){
-		return this.apiConversationHistory;
-	}
-
-	public endStream(){
+	public endStream() {
 		this.didCompleteReadingStream = true;
 
 	}
 
-	public isStreamComplete(){
+	public isStreamComplete() {
 		return this.didCompleteReadingStream;
 	}
 
-	public handleChunk(chunk: ApiStreamChunk,state: ProcessingState,) {
+	public handleChunk(chunk: ApiStreamChunk, state: ProcessingState,) {
 		switch (chunk.type) {
 			case 'reasoning':
 				const reasoningMessage = state.reasoningMessage + chunk.text;
@@ -147,7 +179,7 @@ export class StreamChatManager{
 				return state;
 		}
 	}
-	
+
 	public async getSavedClineMessages(): Promise<ClineMessage[]> {
 		const filePath = path.join(await this.getTaskDirectory(), GlobalFileNames.uiMessages);
 		if (await fileExistsAtPath(filePath)) {
@@ -157,16 +189,26 @@ export class StreamChatManager{
 	}
 
 	public async saveClineMessages() {
-		const filePath = path.join(await this.getTaskDirectory(), GlobalFileNames.uiMessages);
-		await fs.writeFile(filePath, JSON.stringify(this.clineMessages));
+		try {
+			const filePath = path.join(await this.getTaskDirectory(), GlobalFileNames.uiMessages);
+			await fs.writeFile(filePath, JSON.stringify(this.clineMessages));
+			await this.onSaveClineMessages();
+		} catch (error) {
+			console.error('Failed to save cline messages:', error);
+		}
 	}
 
-	private async addToClineMessages(message: ClineMessage) {
+	public async overwriteClineMessages(newMessages: ClineMessage[]) {
+		this.clineMessages = newMessages;
+		await this.saveClineMessages();
+	}
+
+	async addToClineMessages(message: ClineMessage) {
 		this.clineMessages.push(message);
 		await this.saveClineMessages();
 	}
 
-	public async resumeHistory(){
+	public async resumeHistory() {
 		[this.clineMessages, this.apiConversationHistory] = await Promise.all([
 			this.getSavedClineMessages(),
 			this.getSavedApiConversationHistory()

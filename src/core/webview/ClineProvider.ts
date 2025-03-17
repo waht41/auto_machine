@@ -199,9 +199,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 				taskParentDir: path.join(this.context.globalStorageUri.fsPath,'tasks')
 			}
 		);
-		if (historyItem){
-			this.cline.clineMessages = await this.cline.getSavedClineMessages() || [];
-		}
+		await this.cline.init();
 	}
 
 	public async initClineWithTask(task?: string, images?: string[]) {
