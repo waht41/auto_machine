@@ -75,11 +75,6 @@ export class Cline {
 
 	private readonly taskDir: string;
 
-	private askResponse?: ClineAskResponse;
-	private askResponseText?: string;
-	private askResponseImages?: string[];
-	private lastMessageTs?: number;
-	private consecutiveMistakeCount: number = 0;
 	private providerRef: WeakRef<ClineProvider>;
 	private abort: boolean = false;
 	didFinishAborting = false;
@@ -204,7 +199,10 @@ export class Cline {
 	}
 
 	private async postTaskHistory() {
-		const historyItem = this.streamChatManager.getHistoryItem();
+		const historyItem = this.streamChatManager.generateHistoryItem();
+		if (!historyItem){
+			return;
+		}
 		await this.providerRef.deref()?.updateTaskHistory(historyItem);
 	}
 
@@ -214,32 +212,34 @@ export class Cline {
 		askType,
 		text,
 		partial,
-		replacing = false,
-		noReturn = true
+		messageId,
 	}: {
 		askType: ClineAsk,
 		text?: string,
 		partial?: boolean,
-		replacing?: boolean,
+		messageId?: number,
 		noReturn?: boolean
 	}) {
-		return await this.askx(askType, text, partial, replacing, noReturn);
+		return await this.askx({
+			type: 'ask',
+			ts: Date.now(),
+			ask: askType,
+			text,
+			partial,
+			messageId
+		});
 	}
 
 	async askx(
-		askType: ClineAsk,
-		text?: string,
-		partial?: boolean,
-		replacing = false,
-		noReturn = false
-	): Promise<{ response: ClineAskResponse; text?: string; images?: string[] }> {
+		message: ClineMessage,
+	) {
 		if (this.abort) {
 			throw new Error('Roo Code instance aborted');
 		}
-
-		const lastMessage = this.clineMessages.at(-1);
-		const isUpdatingPreviousPartial =
-			lastMessage && lastMessage.partial && (lastMessage.ask === askType || replacing);
+		const {ask, text, partial} = message;
+		const askType = ask;
+		const lastMessage = this.streamChatManager.getLastClineMessage();
+		const isUpdatingPreviousPartial = !!(lastMessage && lastMessage.messageId === message.messageId);
 		let askTs: number | undefined;
 		const handlePartialUpdate = async () => {
 			if (isUpdatingPreviousPartial) {
@@ -254,7 +254,6 @@ export class Cline {
 			} else {
 				// this is a new partial message, so add it with partial state
 				askTs = Date.now();
-				this.lastMessageTs = askTs;
 				await this.addToClineMessages({ts: askTs, type: 'ask', ask: askType, text, partial});
 				await this.providerRef.deref()?.postStateToWebview();
 				throw new Error('Current ask promise was ignored 2');
@@ -264,7 +263,6 @@ export class Cline {
 		const handleCompletion = async () => {
 			// partial=false means its a complete version of a previously partial message
 			if (isUpdatingPreviousPartial) {
-				this.resetAskState();
 
 				/*
                 Bug for the history books:
@@ -273,7 +271,6 @@ export class Cline {
                 So in this case we must make sure that the message ts is never altered after first setting it.
                 */
 				askTs = lastMessage.ts;
-				this.lastMessageTs = askTs;
 				lastMessage.ask = askType;
 				lastMessage.say = undefined;
 				lastMessage.type = 'ask';
@@ -289,9 +286,7 @@ export class Cline {
 
 		const addNewAsk = async () => {
 			// this is a new non-partial message, so add it like normal
-			this.resetAskState();
 			askTs = Date.now();
-			this.lastMessageTs = askTs;
 			await this.addToClineMessages({ts: askTs, type: 'ask', ask: askType, text});
 			await this.providerRef.deref()?.postStateToWebview();
 		};
@@ -303,46 +298,8 @@ export class Cline {
 		} else {
 			await addNewAsk();
 		}
-
-		if (noReturn) {
-			this.asking = true;
-			//@ts-ignore
-			return;
-		}
-		await this.waitForResponse(askTs);
-		return this.getResponseResult();
-	}
-
-	private resetAskState() {
-		this.askResponse = undefined;
-		this.askResponseText = undefined;
-		this.askResponseImages = undefined;
-	}
-
-	private async waitForResponse(ts?: number) {
-		await pWaitFor(
-			() => this.askResponse !== undefined || this.lastMessageTs !== ts,
-			{interval: 100}
-		);
-		if (this.lastMessageTs !== ts) {
-			throw new Error('Current ask promise was ignored');
-		}
-	}
-
-	private getResponseResult() {
-		const result = {
-			response: this.askResponse!,
-			text: this.askResponseText,
-			images: this.askResponseImages
-		};
-		this.resetAskState();
-		return result;
-	}
-
-	async handleWebviewAskResponse(askResponse: ClineAskResponse, text?: string, images?: string[]) {
-		this.askResponse = askResponse;
-		this.askResponseText = text;
-		this.askResponseImages = images;
+		this.asking = true;
+		return;
 	}
 
 	async sayP({
@@ -405,7 +362,6 @@ export class Cline {
 		const addMessage = async (partial?: boolean) => {
 			// this is a new non-partial message, so add it like normal
 			const sayTs = Date.now();
-			this.lastMessageTs = sayTs;
 			await this.addToClineMessages({ts: sayTs, type: 'say', say: sayType, text, images, partial});
 			await this.providerRef.deref()?.postStateToWebview();
 		};
@@ -723,7 +679,7 @@ export class Cline {
 	async handleAssistantMessageComplete(assistantMessage: string) {
 		// now add to apiconversationhistory
 		// need to save assistant responses to file before proceeding to tool use since user can exit at any moment and we wouldn't be able to save the assistant's response
-		if (this.abort){
+		if (this.abort) {
 			return true;
 		}
 		let didEndLoop = false;
@@ -740,7 +696,6 @@ export class Cline {
 					askType: 'followup',
 					text: this.streamChatManager.endHint,
 					partial: false,
-					replacing: false,
 					noReturn: true,
 				});
 				return true;

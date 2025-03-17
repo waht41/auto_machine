@@ -15,6 +15,7 @@ import { combineApiRequests } from '@/shared/combineApiRequests';
 import { combineCommandSequences } from '@/shared/combineCommandSequences';
 import { findLastIndex } from '@/shared/array';
 import { HistoryItem } from '@/shared/HistoryItem';
+import cloneDeep from 'clone-deep';
 
 
 export class StreamChatManager {
@@ -23,9 +24,11 @@ export class StreamChatManager {
 
 	clineMessages: ClineMessage[] = [];
 	readonly endHint = 'roo stop the conversion, should resume?';
+	private messageId = 0;
 
 	constructor(private taskId: string, private api: ApiHandler, private taskDir: string, private onSaveClineMessages: () => Promise<void>) {
 	}
+
 	async init() {
 		await this.resumeHistory();
 	}
@@ -33,7 +36,7 @@ export class StreamChatManager {
 	public resetStream() {
 		this.didCompleteReadingStream = false;
 	}
-	
+
 	public async clearHistory() {
 		this.apiConversationHistory = [];
 		this.clineMessages = [];
@@ -75,8 +78,11 @@ export class StreamChatManager {
 		this.apiConversationHistory = newHistory;
 		await this.saveApiConversationHistory();
 	}
-	
-	public getHistoryItem() : HistoryItem{
+
+	public generateHistoryItem(): HistoryItem | null {
+		if (!this.clineMessages.length) {
+			return null;
+		}
 		const apiMetrics = getApiMetrics(combineApiRequests(combineCommandSequences(this.clineMessages.slice(1))));
 		const taskMessage = this.clineMessages[0]; // first message is always the task say
 		const lastRelevantMessage =
@@ -220,5 +226,13 @@ export class StreamChatManager {
 		this.clineMessages = this.clineMessages.filter(message =>
 			!(message.type === 'ask' && message.text === this.endHint)
 		);
+	}
+
+	public getNewMessageId() {
+		return this.messageId++;
+	}
+
+	public getLastClineMessage() {
+		return this.clineMessages.at(-1);
 	}
 }
