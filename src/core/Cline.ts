@@ -11,8 +11,6 @@ import { TerminalManager } from '@/integrations/terminal/TerminalManager';
 import { UrlContentFetcher } from '@/services/browser/UrlContentFetcher';
 import { ApiConfiguration } from '@/shared/api';
 import { findLastIndex } from '@/shared/array';
-import { combineApiRequests } from '@/shared/combineApiRequests';
-import { combineCommandSequences } from '@/shared/combineCommandSequences';
 import {
 	ClineApiReqCancelReason,
 	ClineApiReqInfo,
@@ -21,7 +19,6 @@ import {
 	ClineSay,
 	ExtensionMessage,
 } from '@/shared/ExtensionMessage';
-import { getApiMetrics } from '@/shared/getApiMetrics';
 import { HistoryItem } from '@/shared/HistoryItem';
 import { ClineAskResponse } from '@/shared/WebviewMessage';
 import { parseMentions } from './mentions';
@@ -226,10 +223,10 @@ export class Cline {
 		replacing?: boolean,
 		noReturn?: boolean
 	}) {
-		return await this.ask(askType, text, partial, replacing, noReturn);
+		return await this.askx(askType, text, partial, replacing, noReturn);
 	}
 
-	async ask(
+	async askx(
 		askType: ClineAsk,
 		text?: string,
 		partial?: boolean,
@@ -512,9 +509,8 @@ export class Cline {
 	}
 
 	private async initiateTaskLoop(userContent: UserContent): Promise<void> {
-		let nextUserContent = userContent;
 		while (!this.abort) {
-			const didEndLoop = await this.recursivelyMakeClineRequests(nextUserContent);
+			const didEndLoop = await this.recursivelyMakeClineRequests(userContent);
 
 			//  The way this agentic loop works is that cline will be given a task that he then calls tools to complete. unless there's an attempt_completion call, we keep responding back to him with his tool's responses until he either attempt_completion or does not use anymore tools. If he does not use anymore tools, we ask him to consider if he's completed the task and then call attempt_completion, otherwise proceed with completing the task.
 			// There is a MAX_REQUESTS_PER_TASK limit to prevent infinite requests, but Cline is prompted to finish the task as efficiently as he can.
@@ -522,14 +518,6 @@ export class Cline {
 			//const totalCost = this.calculateApiCost(totalInputTokens, totalOutputTokens)
 			if (didEndLoop) {
 				break;
-			} else {
-				nextUserContent = [
-					{
-						type: 'text',
-						text: '上一轮消息结束',
-					},
-				];
-				this.consecutiveMistakeCount++;
 			}
 		}
 	}
@@ -718,29 +706,6 @@ export class Cline {
 		return null;
 	}
 
-	private async handleMistakeLimit(userContent: UserContent) {
-		if (this.consecutiveMistakeCount < 3) return;
-
-		const {response, text, images} = await this.ask(
-			'mistake_limit_reached',
-			this.api.getModel().id.includes('claude')
-				? 'This may indicate a failure in his thought process or inability to use a tool properly, which can be mitigated with some user guidance (e.g. "Try breaking down the task into smaller steps").'
-				: 'Roo Code uses complex prompts and iterative task execution that may be challenging for less capable models. For best results, it\'s recommended to use Claude 3.5 Sonnet for its advanced agentic coding capabilities.',
-		);
-		if (response === 'messageResponse') {
-			userContent.push(
-				...[
-					{
-						type: 'text',
-						text: formatResponse.tooManyMistakes(text),
-					} as Anthropic.Messages.TextBlockParam,
-					...formatResponse.imageBlocks(images),
-				],
-			);
-		}
-		this.consecutiveMistakeCount = 0;
-	}
-
 	async prepareUserContent(userContent: UserContent, lastApiReqIndex: number): Promise<UserContent> {
 		const [parsedUserContent] = await this.loadContext(userContent);
 		await this.addToApiConversationHistory({role: 'user', content: parsedUserContent});
@@ -778,7 +743,6 @@ export class Cline {
 					replacing: false,
 					noReturn: true,
 				});
-				this.consecutiveMistakeCount++;
 				return true;
 			} else if (this.asking) {
 				this.asking = false;
@@ -974,8 +938,6 @@ export class Cline {
 		if (this.abort) {
 			throw new Error('Roo Code instance aborted');
 		}
-
-		await this.handleMistakeLimit(userContent);
 
 		// get previous api req's index to check token usage and determine if we need to truncate conversation history
 		const previousApiReqIndex = findLastIndex(this.clineMessages, (m) => m.say === 'api_req_started');
