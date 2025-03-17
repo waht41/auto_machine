@@ -32,7 +32,7 @@ const TYPE_PRIORITY = ['type', 'cmd', 'askType', 'action'];
 const isDevMode = process.env.NODE_ENV === 'development';
 
 // 路由解析引擎
-export const resolveComponent = (tool: BaseTool): ComponentRenderer<any> => {
+export const resolveComponent = (tool: BaseTool): ComponentRenderer => {
 	if (!tool || typeof tool !== 'object') {
 		console.error('[ComponentRouter] 无效工具对象:', tool);
 		return DefaultComponent;
@@ -90,7 +90,7 @@ export const resolveComponent = (tool: BaseTool): ComponentRenderer<any> => {
 	}
 
 	// 返回匹配的组件
-	return currentRoute as ComponentRenderer<any>;
+	return currentRoute as ComponentRenderer;
 };
 
 /**
@@ -100,7 +100,7 @@ export const resolveComponent = (tool: BaseTool): ComponentRenderer<any> => {
  */
 export function registerToolComponent(
 	paths: string,
-	renderer: ComponentRenderer<any>,
+	renderer: ComponentRenderer,
 ): void {
 	const pathList = paths.split('/');
 	let currentRoute: any = componentRoutes;
@@ -139,7 +139,7 @@ export const renderTool = (tool: BaseTool): React.ReactNode => {
 
 	const Component = resolveComponent(tool);
 	try {
-		return Component(tool);
+		return <Component {...tool} />;
 	} catch (error) {
 		console.error('[ComponentRouter] 渲染组件出错:', error);
 		// 在开发模式下显示更详细的错误信息
@@ -156,6 +156,6 @@ export const renderTool = (tool: BaseTool): React.ReactNode => {
 				</div>
 			);
 		}
-		return DefaultComponent(tool);
+		return <DefaultComponent {...tool} />;
 	}
 };

@@ -127,6 +127,7 @@ export interface ClineMessage {
 	images?: string[]
 	partial?: boolean
 	reasoning?: string
+	messageId?: number
 }
 
 export type ClineAsk =
