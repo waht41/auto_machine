@@ -1,9 +1,11 @@
 import { BaseCommandExecutor } from './base';
 import { CommandRunner } from '@executors/runner';
 import { AskCommandExecutor } from '@core/internal-implementation/ask';
-import { BrowserCommandExecutor, ExternalCommandExecutor, FileCommandExecutor } from '@executors/implementations';
 import { ApprovalCommandExecutor } from '@core/internal-implementation/approval';
 import { MCPCommandExecutor } from '@core/internal-implementation/mcp';
+import { FileCommandExecutor } from '@core/internal-implementation/file';
+import { BrowserCommandExecutor } from '@core/internal-implementation/browser';
+import { ExternalCommandExecutor } from '@core/internal-implementation/external';
 
 export const registerInternalImplementation = (codeRunner: CommandRunner) => {
 	codeRunner.registerExecutor('base', new BaseCommandExecutor());
