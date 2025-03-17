@@ -20,7 +20,6 @@ import {
 	ExtensionMessage,
 } from '@/shared/ExtensionMessage';
 import { HistoryItem } from '@/shared/HistoryItem';
-import { ClineAskResponse } from '@/shared/WebviewMessage';
 import { parseMentions } from './mentions';
 import { ToolUse } from './assistant-message';
 import { formatResponse } from './prompts/responses';
@@ -230,76 +229,52 @@ export class Cline {
 		});
 	}
 
-	async askx(
-		message: ClineMessage,
-	) {
+	async askx(message: ClineMessage) {
 		if (this.abort) {
 			throw new Error('Roo Code instance aborted');
 		}
-		const {ask, text, partial} = message;
-		const askType = ask;
+
 		const lastMessage = this.streamChatManager.getLastClineMessage();
-		const isUpdatingPreviousPartial = !!(lastMessage && lastMessage.messageId === message.messageId);
-		let askTs: number | undefined;
-		const handlePartialUpdate = async () => {
-			if (isUpdatingPreviousPartial) {
-				// existing partial message, so update it
-				lastMessage.text = text;
-				lastMessage.partial = partial;
-				lastMessage.ask = askType;
-				lastMessage.say = undefined;
-				lastMessage.type = 'ask';
-				await this.postMessageToWebview({type: 'partialMessage', partialMessage: lastMessage});
-				throw new Error('Current ask promise was ignored 1');
-			} else {
-				// this is a new partial message, so add it with partial state
-				askTs = Date.now();
-				await this.addToClineMessages({ts: askTs, type: 'ask', ask: askType, text, partial});
-				await this.providerRef.deref()?.postStateToWebview();
-				throw new Error('Current ask promise was ignored 2');
-			}
-		};
+		const isUpdatingPartial = !!lastMessage && lastMessage.messageId === message.messageId;
 
 		const handleCompletion = async () => {
-			// partial=false means its a complete version of a previously partial message
-			if (isUpdatingPreviousPartial) {
-
-				/*
-                Bug for the history books:
-                In the webview we use the ts as the chatrow key for the virtuoso list. Since we would update this ts right at the end of streaming, it would cause the view to flicker. The key prop has to be stable otherwise react has trouble reconciling items between renders, causing unmounting and remounting of components (flickering).
-                The lesson here is if you see flickering when rendering lists, it's likely because the key prop is not stable.
-                So in this case we must make sure that the message ts is never altered after first setting it.
-                */
-				askTs = lastMessage.ts;
-				lastMessage.ask = askType;
-				lastMessage.say = undefined;
-				lastMessage.type = 'ask';
-				lastMessage.text = text;
-				lastMessage.partial = false;
-				await this.saveClineMessages();
-				await this.postMessageToWebview({type: 'partialMessage', partialMessage: lastMessage});
-
+			if (isUpdatingPartial) {
+				await this.finalizePartialMessage(message, lastMessage);
 			} else {
-				await addNewAsk();
+				await this.addNewCompleteMessage(message);
 			}
 		};
 
-		const addNewAsk = async () => {
-			// this is a new non-partial message, so add it like normal
-			askTs = Date.now();
-			await this.addToClineMessages({ts: askTs, type: 'ask', ask: askType, text});
-			await this.providerRef.deref()?.postStateToWebview();
-		};
-
-		if (partial !== undefined) {
-			partial ?
-				await handlePartialUpdate() :
+		switch (message.partial) {
+			case true:
+				throw new Error(`ask should not be partial, isUpdatingPartial: ${isUpdatingPartial}`);
+			case false:
 				await handleCompletion();
-		} else {
-			await addNewAsk();
+				break;
+			default:
+				await this.addNewCompleteMessage(message);
 		}
+
 		this.asking = true;
-		return;
+	}
+
+	private async finalizePartialMessage(message: ClineMessage, lastMessage: ClineMessage) {
+		// 保留原始时间戳防止渲染闪烁
+		await this.streamChatManager.setLastMessage({ ...message, ts: lastMessage.ts });
+		await this.postMessageToWebview({
+			type: 'partialMessage',
+			partialMessage: lastMessage
+		});
+	}
+
+	private async addNewCompleteMessage(message: ClineMessage) {
+		const askTs = Date.now();
+		await this.addToClineMessages({ ...message, ts: askTs });
+		await this.updateWebviewState();
+	}
+
+	private async updateWebviewState() {
+		await this.providerRef.deref()?.postStateToWebview();
 	}
 
 	async sayP({

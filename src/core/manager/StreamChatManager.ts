@@ -235,4 +235,13 @@ export class StreamChatManager {
 	public getLastClineMessage() {
 		return this.clineMessages.at(-1);
 	}
+
+	public async setLastMessage(message: ClineMessage) {
+		if (this.clineMessages.length < 1) { // first message is always the task say, so we need at least 2 messages
+			console.error('cline message too short', this.clineMessages);
+			return;
+		}
+		this.clineMessages[this.clineMessages.length - 1] = message;
+		await this.saveClineMessages();
+	}
 }
