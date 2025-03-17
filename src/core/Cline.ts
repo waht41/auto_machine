@@ -211,7 +211,7 @@ export class Cline {
 		askType,
 		text,
 		partial,
-		messageId,
+		messageId = this.streamChatManager.getNewMessageId(),
 	}: {
 		askType: ClineAsk,
 		text?: string,
@@ -290,61 +290,69 @@ export class Cline {
 		partial?: boolean,
 		replacing?: boolean
 	}) {
-		return await this.say(sayType, text, images, partial, replacing);
+		const message: ClineMessage = {
+			ts: Date.now(),
+			type: 'say',
+			say: sayType,
+			text,
+			images,
+			partial
+		};
+		return await this.say(sayType, text, images, partial, replacing, message);
 	}
 
-	async say(sayType: ClineSay, text?: string, images?: string[], partial?: boolean, replacing = false): Promise<undefined> {
+	async say(sayType: ClineSay, text?: string, images?: string[], partial?: boolean, replacing = false, message?: ClineMessage,): Promise<undefined> {
 		if (this.abort) {
 			throw new Error('Roo Code instance aborted');
 		}
-		const lastMessage = this.clineMessages.at(-1);
+		if (!message){
+			message = {
+				ts: Date.now(),
+				type: 'say',
+				say: sayType,
+				text,
+				images,
+				partial
+			};
+		}
+		const lastMessage = this.streamChatManager.getLastClineMessage();
 		const isUpdatingPreviousPartial =
 			lastMessage && lastMessage.partial && (lastMessage.say === sayType || replacing);
 
-		const updateLastMessage = () => {
-			const lastMessage = this.clineMessages.at(-1);
-			if (!lastMessage) return;
-			lastMessage.type = 'say';
-			lastMessage.say = sayType;
-			lastMessage.text = text;
-			lastMessage.images = images;
-			lastMessage.partial = partial;
-		};
-
 		const handlePartialUpdate = async () => {
 			if (isUpdatingPreviousPartial) {
-				// existing partial message, so update it
-				updateLastMessage();
+				await this.streamChatManager.setLastMessage({ ...message, ts: lastMessage.ts });
 				await this.postMessageToWebview({type: 'partialMessage', partialMessage: lastMessage});
 			} else {
-				await addMessage(partial);
+				await addMessage();
 			}
 		};
 
 		const handleCompletion = async () => {
 			if (isUpdatingPreviousPartial) {
-				// this is the complete version of a previously partial message, so replace the partial with the complete version
-				updateLastMessage();
-
-				// instead of streaming partialMessage events, we do a save and post like normal to persist to disk
-				await this.saveClineMessages();
+				await this.streamChatManager.setLastMessage({ ...message, ts: lastMessage.ts });
 				await this.postMessageToWebview({type: 'partialMessage', partialMessage: lastMessage}); // more performant than an entire postStateToWebview
 			} else {
 				await addMessage();
 			}
 		};
 
-		const addMessage = async (partial?: boolean) => {
+		const addMessage = async () => {
 			// this is a new non-partial message, so add it like normal
 			const sayTs = Date.now();
-			await this.addToClineMessages({ts: sayTs, type: 'say', say: sayType, text, images, partial});
+			await this.addToClineMessages({...message, ts: sayTs});
 			await this.providerRef.deref()?.postStateToWebview();
 		};
 
-		if (partial !== undefined) {
-			partial ? await handlePartialUpdate() : await handleCompletion();
-		} else {
-			await addMessage();
+		switch (partial) {
+			case true:
+				await handlePartialUpdate();
+				break;
+			case false:
+				await handleCompletion();
+				break;
+			default:
+				await addMessage();
 		}
 	}
 
