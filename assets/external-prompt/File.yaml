@@ -71,4 +71,4 @@ download:
         - tool: file
           cmd: download
           url: https://www.baidu.com/favicon.ico
-          path: /path/to/save
+          path: ./download/favicon.ico  # 保存到当前目录下的download文件夹中
