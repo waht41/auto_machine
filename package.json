@@ -41,7 +41,28 @@
     "package": "electron-builder",
     "release": "npm run build && npm run package",
     "lint": "eslint \"src/**/*.{ts,tsx}\" \"webview-ui/**/*.{ts,tsx}\"",
-    "lint:fix": "eslint \"src/**/*.{ts,tsx}\" \"webview-ui/**/*.{ts,tsx}\" --fix"
+    "lint:fix": "eslint \"src/**/*.{ts,tsx}\" \"webview-ui/**/*.{ts,tsx}\" --fix",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "src/**/*.{ts,tsx}": [
+      "eslint --fix"
+    ],
+    "webview-ui/**/*.{ts,tsx}": [
+      "eslint --fix"
+    ],
+    "electron-main/**/*.{ts,tsx}": [
+      "eslint --fix"
+    ],
+    "electron-preload/**/*.{ts,tsx}": [
+      "eslint --fix"
+    ],
+    "executors/**/*.{ts,tsx}": [
+      "eslint --fix"
+    ],
+    "operation/**/*.{ts,tsx}": [
+      "eslint --fix"
+    ]
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.2",
@@ -64,8 +85,10 @@
     "esbuild": "^0.25.0",
     "eslint": "^8.56.0",
     "glob": "^11.0.1",
+    "husky": "^9.1.7",
     "jest": "^29.7.0",
     "jest-simple-dot-reporter": "^1.0.5",
+    "lint-staged": "^15.5.0",
     "nodemon": "^3.1.9",
     "prettier": "^3.3.1",
     "rimraf": "^6.0.1",
