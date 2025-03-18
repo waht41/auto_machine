@@ -307,30 +307,17 @@ export class Cline {
 			partial,
 			messageId
 		};
-		return await this.sayx(sayType, text, images, partial, message);
+		return await this.sayx(message);
 	}
 
-	async sayx(sayType: ClineSay, text?: string, images?: string[], partial?: boolean, message?: ClineMessage,): Promise<undefined> {
+	async sayx(message: ClineMessage): Promise<undefined> {
 		if (this.abort) {
 			throw new Error('Roo Code instance aborted');
-		}
-		if (!message) {
-			message = {
-				ts: Date.now(),
-				type: 'say',
-				say: sayType,
-				text,
-				images,
-				partial
-			};
 		}
 		const lastMessage = this.streamChatManager.getLastClineMessage();
 		const isUpdatingPreviousPartial =
 			!!lastMessage && lastMessage.messageId === message.messageId;
 
-		if (!isUpdatingPreviousPartial) {
-			console.log('updating', lastMessage, message);
-		}
 		const handlePartialUpdate = async () => {
 			if (isUpdatingPreviousPartial) {
 				await this.streamChatManager.setLastMessage({...message, ts: lastMessage.ts});
@@ -356,7 +343,7 @@ export class Cline {
 			await this.providerRef.deref()?.postStateToWebview();
 		};
 
-		switch (partial) {
+		switch (message.partial) {
 			case true:
 				await handlePartialUpdate();
 				break;
