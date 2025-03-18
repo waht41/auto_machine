@@ -39,6 +39,7 @@ import { IInternalContext } from '@core/internal-implementation/type';
 import { ProcessingState } from '@core/handlers/type';
 import { BlockProcessHandler } from '@core/handlers/BlockProcessHandler';
 import logger from '@/utils/logger';
+import yaml from 'js-yaml';
 
 const cwd = process.cwd();
 
@@ -382,13 +383,14 @@ export class Cline {
 		this.initiateTaskLoop(userContent);
 	}
 
-	async receiveAnswer({uuid, result, images}: { uuid: string; result: string; images?: string[] }) {
+	async receiveAnswer({uuid, result, images}: { uuid: string; result: string | object; images?: string[] }) {
 		if (!uuid) {
 			throw new Error('No uuid provided for answer');
 		}
+		const answer = typeof result === 'string' ? result : yaml.dump(result);
 		await this.streamChatManager.resumeHistory();
-		await this.updateAskMessageByUuid(uuid, result);
-		this.initiateTaskLoop(toUserContent(result, images));
+		await this.updateAskMessageByUuid(uuid, answer);
+		this.initiateTaskLoop(toUserContent(answer, images));
 	}
 
 	private async updateAskMessageByUuid(uuid: string, result: string): Promise<boolean> {
@@ -409,7 +411,7 @@ export class Cline {
 
 		command.result = result;
 		message.text = JSON.stringify(command);
-		// await this.overwriteClineMessages(this.clineMessages);  // 按需启用持久化
+		await this.saveClineMessages();
 		return true;
 	}
 
@@ -875,7 +877,7 @@ export class Cline {
 		this.streamChatManager.endStream();
 		if (this.blockProcessHandler.hasPartialBlock()) {
 			this.blockProcessHandler.markPartialBlockAsComplete();
-			await this.handleAssistantMessage();
+			await this.handleAssistantMessage(true, this.streamChatManager.getMessageId());
 		}
 		await pWaitFor(() => this.isCurrentStreamEnd); // wait for the last block to be presented
 
