@@ -1,0 +1,18 @@
+# 构建输出目录
+build/
+dist/
+node_modules/
+
+# 测试文件
+**/*.test.ts
+**/*.test.tsx
+**/__tests__/
+
+# 缓存和临时文件
+.cache/
+.temp/
+.tmp/
+
+# 其他不需要检查的文件
+*.min.js
+*.bundle.js
