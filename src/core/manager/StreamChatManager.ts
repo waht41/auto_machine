@@ -15,7 +15,7 @@ import { combineApiRequests } from '@/shared/combineApiRequests';
 import { combineCommandSequences } from '@/shared/combineCommandSequences';
 import { findLastIndex } from '@/shared/array';
 import { HistoryItem } from '@/shared/HistoryItem';
-import cloneDeep from 'clone-deep';
+import { DeepReadonly } from '@/utils/type';
 
 
 export class StreamChatManager {
@@ -233,7 +233,7 @@ export class StreamChatManager {
 	}
 
 	public getLastClineMessage() {
-		return this.clineMessages.at(-1);
+		return this.clineMessages.at(-1) as DeepReadonly<ClineMessage>;
 	}
 
 	public async setLastMessage(message: ClineMessage) {

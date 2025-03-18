@@ -653,7 +653,7 @@ describe('Cline', () => {
 				jest.spyOn(require('delay'), 'default').mockImplementation(mockDelay);
 
 				// Mock say to track messages
-				const saySpy = jest.spyOn(cline, 'say');
+				const saySpy = jest.spyOn(cline, 'sayx');
 
 				// Create a stream that fails on first chunk
 				const mockError = new Error('API Error');

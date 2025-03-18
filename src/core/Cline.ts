@@ -283,12 +283,14 @@ export class Cline {
 		images,
 		partial,
 		replacing = false,
+		messageId = this.streamChatManager.getNewMessageId(),
 	}: {
 		sayType: ClineSay,
 		text?: string,
 		images?: string[],
 		partial?: boolean,
 		replacing?: boolean
+		messageId?: number
 	}) {
 		const message: ClineMessage = {
 			ts: Date.now(),
@@ -296,12 +298,13 @@ export class Cline {
 			say: sayType,
 			text,
 			images,
-			partial
+			partial,
+			messageId
 		};
-		return await this.say(sayType, text, images, partial, replacing, message);
+		return await this.sayx(sayType, text, images, partial, replacing, message);
 	}
 
-	async say(sayType: ClineSay, text?: string, images?: string[], partial?: boolean, replacing = false, message?: ClineMessage,): Promise<undefined> {
+	async sayx(sayType: ClineSay, text?: string, images?: string[], partial?: boolean, replacing = false, message?: ClineMessage,): Promise<undefined> {
 		if (this.abort) {
 			throw new Error('Roo Code instance aborted');
 		}
@@ -364,7 +367,7 @@ export class Cline {
 		await this.streamChatManager.clearHistory();
 		await this.providerRef.deref()?.postStateToWebview();
 
-		await this.say('text', task, images);
+		await this.sayP({sayType: 'task', text: task, images});
 
 		const imageBlocks: Anthropic.ImageBlockParam[] = formatResponse.imageBlocks(images);
 		await this.initiateTaskLoop([
@@ -378,7 +381,7 @@ export class Cline {
 
 	private async resumeTaskWithNewMessage(text?: string, images?: string[]) {
 		await this.streamChatManager.resumeHistory();
-		await this.say('user_feedback', text, images, true);
+		await this.sayP({sayType: 'user_feedback', text, images, partial: true});
 		const userContent: UserContent = toUserContent(text, images);
 		this.initiateTaskLoop(userContent);
 	}
@@ -532,7 +535,7 @@ export class Cline {
 		switch (block.type) {
 			case 'text': {
 				const content = block.content;
-				await this.say('text', content, undefined, block.partial, replacing);
+				await this.sayP({sayType: 'text', text: content, partial: block.partial, replacing});
 				break;
 			}
 			case 'tool_use':
@@ -569,17 +572,14 @@ export class Cline {
 					const texts = this.userMessageContent.filter((block) => block.type === 'text');
 					const textStrings = texts.map((block) => block.text);
 					logger.debug('push Tool text string:', textStrings.join('\n'));
-					this.say('text', textStrings.join('\n'), undefined, block.partial, replacing);
+					this.sayP({sayType: 'text', text: textStrings.join('\n'), partial: block.partial, replacing});
 					// once a tool result has been collected, ignore all other tool uses since we should only ever present one tool result per message
 					this.didGetNewMessage = true;
 				};
 
 				const handleError = async (action: string, error: Error) => {
-					const errorString = `Error ${action}: ${JSON.stringify(serializeError(error))}`;
-					await this.say(
-						'error',
-						`Error ${action}:\n${error.message ?? JSON.stringify(serializeError(error), null, 2)}`,
-					);
+					const errorString = `Error ${action}:\n${error.message ?? JSON.stringify(serializeError(error), null, 2)}`;
+					await this.sayP({sayType: 'error', text: errorString});
 					pushToolResult(formatResponse.toolError(errorString));
 				};
 
@@ -690,10 +690,7 @@ export class Cline {
 			}
 		} else {
 			// if there's no assistant_responses, that means we got no text or tool_use content blocks from API which we should assume is an error
-			await this.say(
-				'error',
-				'Unexpected API Response: The language model did not provide any assistant messages. This may indicate an issue with the API or the model\'s output.',
-			);
+			await this.sayP({sayType:'error',text:'Unexpected API Response: The language model did not provide any assistant messages. This may indicate an issue with the API or the model\'s output.'});
 			await this.addToApiConversationHistory({
 				role: 'assistant',
 				content: [{type: 'text', text: 'Failure: I did not provide a response.'}],
@@ -792,7 +789,7 @@ export class Cline {
 		switch (chunk.type) {
 			case 'reasoning':
 				const reasoningMessage = newState.reasoningMessage;
-				await this.say('reasoning', reasoningMessage, undefined, true);
+				await this.sayP({sayType: 'reasoning', text: reasoningMessage, partial: true});
 				break;
 			case 'text':
 				const assistantMessage = newState.assistantMessage;
@@ -882,13 +879,12 @@ export class Cline {
 
 		// getting verbose details is an expensive operation, it uses globby to top-down build file structure of project which for large projects can take a few seconds
 		// for the best UX we show a placeholder api_req_started message with a loading spinner as this happens
-		await this.say(
-			'api_req_started',
-			JSON.stringify({
-				request:
-					userContent.map((block) => formatContentBlockToMarkdown(block)).join('\n\n') + '\n\nLoading...',
+		await this.sayP({
+			sayType: 'api_req_started',
+			text:	JSON.stringify({
+				request: userContent.map((block) => formatContentBlockToMarkdown(block)).join('\n\n') + '\n\nLoading...',
 			}),
-		);
+		});
 
 		const lastApiReqIndex = findLastIndex(this.clineMessages, (m) => m.say === 'api_req_started');
 
