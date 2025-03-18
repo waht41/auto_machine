@@ -45,23 +45,8 @@
     "prepare": "husky"
   },
   "lint-staged": {
-    "src/**/*.{ts,tsx}": [
-      "eslint --fix"
-    ],
-    "webview-ui/**/*.{ts,tsx}": [
-      "eslint --fix"
-    ],
-    "electron-main/**/*.{ts,tsx}": [
-      "eslint --fix"
-    ],
-    "electron-preload/**/*.{ts,tsx}": [
-      "eslint --fix"
-    ],
-    "executors/**/*.{ts,tsx}": [
-      "eslint --fix"
-    ],
-    "operation/**/*.{ts,tsx}": [
-      "eslint --fix"
+    "**/*.{ts,tsx}": [
+      "eslint --fix --cache --cache-location ./node_modules/.cache/eslint"
     ]
   },
   "devDependencies": {
