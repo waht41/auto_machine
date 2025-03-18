@@ -229,11 +229,19 @@ export class StreamChatManager {
 	}
 
 	public getNewMessageId() {
-		return this.messageId++;
+		return ++this.messageId;
+	}
+
+	public getMessageId() {
+		return this.messageId;
 	}
 
 	public getLastClineMessage() {
-		return this.clineMessages.at(-1) as DeepReadonly<ClineMessage>;
+		const lastMessage = this.clineMessages.at(-1);
+		if (!lastMessage) {
+			return null;
+		}
+		return lastMessage as DeepReadonly<ClineMessage>;
 	}
 
 	public async setLastMessage(message: ClineMessage) {

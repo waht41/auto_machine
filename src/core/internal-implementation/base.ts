@@ -4,8 +4,7 @@ import { IBaseCommand, IInternalContext } from '@core/internal-implementation/ty
 export class BaseCommandExecutor implements CommandExecutor {
 	async execute(command: IBaseCommand, context: IInternalContext): Promise<boolean> {
 		const cline = context.cline;
-		const replacing = context.replacing;
-		await cline.sayP({sayType: 'tool', text: JSON.stringify(command), partial: false, replacing: replacing});
+		await cline.sayP({sayType: 'tool', text: JSON.stringify(command), partial: false});
 		return true;
 	}
 }

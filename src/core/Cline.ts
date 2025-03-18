@@ -199,7 +199,7 @@ export class Cline {
 
 	private async postTaskHistory() {
 		const historyItem = this.streamChatManager.generateHistoryItem();
-		if (!historyItem){
+		if (!historyItem) {
 			return;
 		}
 		await this.providerRef.deref()?.updateTaskHistory(historyItem);
@@ -260,7 +260,7 @@ export class Cline {
 
 	private async finalizePartialMessage(message: ClineMessage, lastMessage: ClineMessage) {
 		// 保留原始时间戳防止渲染闪烁
-		await this.streamChatManager.setLastMessage({ ...message, ts: lastMessage.ts });
+		await this.streamChatManager.setLastMessage({...message, ts: lastMessage.ts});
 		await this.postMessageToWebview({
 			type: 'partialMessage',
 			partialMessage: lastMessage
@@ -269,7 +269,7 @@ export class Cline {
 
 	private async addNewCompleteMessage(message: ClineMessage) {
 		const askTs = Date.now();
-		await this.addToClineMessages({ ...message, ts: askTs });
+		await this.addToClineMessages({...message, ts: askTs});
 		await this.updateWebviewState();
 	}
 
@@ -277,19 +277,25 @@ export class Cline {
 		await this.providerRef.deref()?.postStateToWebview();
 	}
 
+	public getNewMessageId() {
+		return this.streamChatManager.getNewMessageId();
+	}
+
+	public getMessageId() {
+		return this.streamChatManager.getMessageId();
+	}
+
 	async sayP({
 		sayType,
 		text,
 		images,
 		partial,
-		replacing = false,
 		messageId = this.streamChatManager.getNewMessageId(),
 	}: {
 		sayType: ClineSay,
 		text?: string,
 		images?: string[],
 		partial?: boolean,
-		replacing?: boolean
 		messageId?: number
 	}) {
 		const message: ClineMessage = {
@@ -301,14 +307,14 @@ export class Cline {
 			partial,
 			messageId
 		};
-		return await this.sayx(sayType, text, images, partial, replacing, message);
+		return await this.sayx(sayType, text, images, partial, message);
 	}
 
-	async sayx(sayType: ClineSay, text?: string, images?: string[], partial?: boolean, replacing = false, message?: ClineMessage,): Promise<undefined> {
+	async sayx(sayType: ClineSay, text?: string, images?: string[], partial?: boolean, message?: ClineMessage,): Promise<undefined> {
 		if (this.abort) {
 			throw new Error('Roo Code instance aborted');
 		}
-		if (!message){
+		if (!message) {
 			message = {
 				ts: Date.now(),
 				type: 'say',
@@ -320,11 +326,14 @@ export class Cline {
 		}
 		const lastMessage = this.streamChatManager.getLastClineMessage();
 		const isUpdatingPreviousPartial =
-			lastMessage && lastMessage.partial && (lastMessage.say === sayType || replacing);
+			!!lastMessage && lastMessage.messageId === message.messageId;
 
+		if (!isUpdatingPreviousPartial) {
+			console.log('updating', lastMessage, message);
+		}
 		const handlePartialUpdate = async () => {
 			if (isUpdatingPreviousPartial) {
-				await this.streamChatManager.setLastMessage({ ...message, ts: lastMessage.ts });
+				await this.streamChatManager.setLastMessage({...message, ts: lastMessage.ts});
 				await this.postMessageToWebview({type: 'partialMessage', partialMessage: lastMessage});
 			} else {
 				await addMessage();
@@ -333,7 +342,7 @@ export class Cline {
 
 		const handleCompletion = async () => {
 			if (isUpdatingPreviousPartial) {
-				await this.streamChatManager.setLastMessage({ ...message, ts: lastMessage.ts });
+				await this.streamChatManager.setLastMessage({...message, ts: lastMessage.ts});
 				await this.postMessageToWebview({type: 'partialMessage', partialMessage: lastMessage}); // more performant than an entire postStateToWebview
 			} else {
 				await addMessage();
@@ -508,7 +517,7 @@ export class Cline {
 		return this.streamChatManager.attemptApiRequest();
 	}
 
-	async handleAssistantMessage(replacing = false) {
+	async handleAssistantMessage(replacing = false, messageId?: number) {
 		if (this.abort) {
 			throw new Error('Roo Code instance aborted');
 		}
@@ -535,7 +544,12 @@ export class Cline {
 		switch (block.type) {
 			case 'text': {
 				const content = block.content;
-				await this.sayP({sayType: 'text', text: content, partial: block.partial, replacing});
+				await this.sayP({
+					sayType: 'text',
+					text: content,
+					partial: block.partial,
+					messageId: messageId
+				});
 				break;
 			}
 			case 'tool_use':
@@ -572,7 +586,12 @@ export class Cline {
 					const texts = this.userMessageContent.filter((block) => block.type === 'text');
 					const textStrings = texts.map((block) => block.text);
 					logger.debug('push Tool text string:', textStrings.join('\n'));
-					this.sayP({sayType: 'text', text: textStrings.join('\n'), partial: block.partial, replacing});
+					this.sayP({
+						sayType: 'text',
+						text: textStrings.join('\n'),
+						partial: block.partial,
+						messageId
+					});
 					// once a tool result has been collected, ignore all other tool uses since we should only ever present one tool result per message
 					this.didGetNewMessage = true;
 				};
@@ -607,7 +626,7 @@ export class Cline {
 				}
 
 				try {
-					const res = await this.applyToolUse(block, this.getInternalContext());
+					const res = await this.applyToolUse(block, this.getInternalContext(replacing));
 					if (typeof res === 'string') {
 						console.log('[waht] 执行tool 返回结果: ', res);
 						pushToolResult(res);
@@ -628,7 +647,9 @@ export class Cline {
 
 		const shouldContinue = this.blockProcessHandler.shouldContinueProcessing(isThisBlockFinished);
 		if (shouldContinue) {
-			this.handleAssistantMessage();
+			const continueReplacing = !isThisBlockFinished;
+			const nextMessageId = continueReplacing ? this.getMessageId() : this.streamChatManager.getNewMessageId();
+			this.handleAssistantMessage(continueReplacing, nextMessageId);
 		}
 	}
 
@@ -690,7 +711,10 @@ export class Cline {
 			}
 		} else {
 			// if there's no assistant_responses, that means we got no text or tool_use content blocks from API which we should assume is an error
-			await this.sayP({sayType:'error',text:'Unexpected API Response: The language model did not provide any assistant messages. This may indicate an issue with the API or the model\'s output.'});
+			await this.sayP({
+				sayType: 'error',
+				text: 'Unexpected API Response: The language model did not provide any assistant messages. This may indicate an issue with the API or the model\'s output.'
+			});
 			await this.addToApiConversationHistory({
 				role: 'assistant',
 				content: [{type: 'text', text: 'Failure: I did not provide a response.'}],
@@ -789,18 +813,24 @@ export class Cline {
 		switch (chunk.type) {
 			case 'reasoning':
 				const reasoningMessage = newState.reasoningMessage;
-				await this.sayP({sayType: 'reasoning', text: reasoningMessage, partial: true});
-				break;
+				await this.sayP({
+					sayType: 'reasoning',
+					text: reasoningMessage,
+					partial: true,
+					messageId: this.streamChatManager.getMessageId()
+				});
+				break;  //todo waht 大概有不少bug
 			case 'text':
 				const assistantMessage = newState.assistantMessage;
 				// parse raw assistant message into content blocks
 				this.blockProcessHandler.setAssistantMessageBlocks(assistantMessage);
-				if (this.blockProcessHandler.hasNewBlock()) { // has new block
+				if (this.blockProcessHandler.hasNewBlock()) {
 					this.isCurrentStreamEnd = false; // new content we need to present, reset to false in case previous content set this to true
+					this.streamChatManager.getNewMessageId();
 				}
 				// present content to user and apply tool
 				const replacing = !this.blockProcessHandler.hasNewBlock();
-				this.handleAssistantMessage(replacing);
+				this.handleAssistantMessage(replacing, this.streamChatManager.getMessageId());
 		}
 		return newState;
 	}
@@ -881,7 +911,7 @@ export class Cline {
 		// for the best UX we show a placeholder api_req_started message with a loading spinner as this happens
 		await this.sayP({
 			sayType: 'api_req_started',
-			text:	JSON.stringify({
+			text: JSON.stringify({
 				request: userContent.map((block) => formatContentBlockToMarkdown(block)).join('\n\n') + '\n\nLoading...',
 			}),
 		});
