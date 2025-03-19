@@ -510,82 +510,90 @@ export class Cline {
 	}
 
 	async handleAssistantMessage(replacing = false, messageId?: number) {
-		if (this.abort) {
-			throw new Error('Roo Code instance aborted');
-		}
+		let currentReplacing = replacing;
+		let currentMessageId = messageId;
 
-		if (this.blockProcessHandler.checkProcessingLock()) {
-			return;
-		}
-		this.blockProcessHandler.lockProcessing();
-		const blockPositionState = this.blockProcessHandler.getBlockPositionState();
-
-		if (blockPositionState.overLimit) {
-			// this may happen if the last content block was completed before streaming could finish.
-			// if streaming is finished, and we're out of bounds then this means
-			// we already presented/executed the last content block and are ready to continue to next request
-			if (this.streamChatManager.isStreamComplete()) {
-				this.isCurrentStreamEnd = true;
+		// eslint-disable-next-line no-constant-condition
+		while (true) {
+			if (this.abort) {
+				throw new Error('Roo Code instance aborted');
 			}
-			this.blockProcessHandler.unlockPresentAssistantMessage();
-			return;
-		}
 
-		// need to create copy bc while stream is updating the array, it could be updating the reference block properties too
-		const block = this.blockProcessHandler.getCurrentBlock();
-		switch (block.type) {
-			case 'text': {
-				const content = block.content;
-				logger.debug('handleAssistantMessage',content);
-				await this.sayP({
-					sayType: 'text',
-					text: content,
-					partial: block.partial,
-					messageId: messageId
-				});
-				break;
+			if (this.blockProcessHandler.checkProcessingLock()) {
+				return;
 			}
-			case 'tool_use':
-				if (block.partial) {
+			this.blockProcessHandler.lockProcessing();
+			const blockPositionState = this.blockProcessHandler.getBlockPositionState();
+
+			if (blockPositionState.overLimit) {
+				// this may happen if the last content block was completed before streaming could finish.
+				// if streaming is finished, and we're out of bounds then this means
+				// we already presented/executed the last content block and are ready to continue to next request
+				if (this.streamChatManager.isStreamComplete()) {
+					this.isCurrentStreamEnd = true;
+				}
+				this.blockProcessHandler.unlockPresentAssistantMessage();
+				return;
+			}
+
+			// need to create copy bc while stream is updating the array, it could be updating the reference block properties too
+			const block = this.blockProcessHandler.getCurrentBlock();
+			switch (block.type) {
+				case 'text': {
+					const content = block.content;
+					logger.debug('handleAssistantMessage', content);
+					await this.sayP({
+						sayType: 'text',
+						text: content,
+						partial: block.partial,
+						messageId: currentMessageId
+					});
 					break;
 				}
-				logger.debug('handleAssistantMessage','tool_use',block);
-				await this.sayP({sayType:'text', text: `apply tool ${block.name}`, partial: false, messageId});
-
-				const handleError = async (action: string, error: Error) => {
-					const errorString = `Error ${action}:\n${error.message ?? JSON.stringify(serializeError(error), null, 2)}`;
-					await this.sayP({sayType: 'error', text: errorString});
-					await this.pushToolResult(formatResponse.toolError(errorString),block);
-				};
-
-				if (block.name === 'ask') { // assign UUID to receive corresponding answers
-					block.params.uuid = crypto.randomUUID();
-				}
-
-				try {
-					const res = await this.applyToolUse(block, this.getInternalContext(replacing));
-					if (typeof res === 'string') {
-						await this.pushToolResult(res, block);
+				case 'tool_use':
+					if (block.partial) {
+						break;
 					}
-				} catch (e) {
-					await handleError(`executing tool ${block.name}, `, e);
-				}
-		}
+					logger.debug('handleAssistantMessage', 'tool_use', block);
+					await this.sayP({ sayType: 'text', text: `apply tool ${block.name}`, partial: false, messageId: currentMessageId });
 
-		const isThisBlockFinished = !block.partial || this.didRejectTool;
-		this.blockProcessHandler.unlockProcessing(isThisBlockFinished);
+					const handleError = async (action: string, error: Error) => {
+						const errorString = `Error ${action}:\n${error.message ?? JSON.stringify(serializeError(error), null, 2)}`;
+						await this.sayP({ sayType: 'error', text: errorString });
+						await this.pushToolResult(formatResponse.toolError(errorString), block);
+					};
 
-		if (isThisBlockFinished && blockPositionState.last) {
-			// its okay that we increment if !didCompleteReadingStream, it'll just return bc out of bounds and as streaming continues it will call presentAssitantMessage if a new block is ready. if streaming is finished then we set isThisStreamEnd to true when out of bounds. This gracefully allows the stream to continue on and all potential content blocks be presented.
-			// last block is complete and it is finished executing
-			this.isCurrentStreamEnd = true; // will allow pwaitfor to continue
-		}
+					if (block.name === 'ask') { // assign UUID to receive corresponding answers
+						block.params.uuid = crypto.randomUUID();
+					}
 
-		const shouldContinue = this.blockProcessHandler.shouldContinueProcessing(isThisBlockFinished);
-		if (shouldContinue) {
-			const continueReplacing = !isThisBlockFinished;
-			const nextMessageId = continueReplacing ? this.getMessageId() : this.streamChatManager.getNewMessageId();
-			this.handleAssistantMessage(continueReplacing, nextMessageId);
+					try {
+						const res = await this.applyToolUse(block, this.getInternalContext(currentReplacing));
+						if (typeof res === 'string') {
+							await this.pushToolResult(res, block);
+						}
+					} catch (e) {
+						await handleError(`executing tool ${block.name}, `, e);
+					}
+					break;
+			}
+
+			const isThisBlockFinished = !block.partial || this.didRejectTool;
+			this.blockProcessHandler.unlockProcessing(isThisBlockFinished);
+
+			if (isThisBlockFinished && blockPositionState.last) {
+				// its okay that we increment if !didCompleteReadingStream, it'll just return bc out of bounds and as streaming continues it will call presentAssitantMessage if a new block is ready. if streaming is finished then we set isThisStreamEnd to true when out of bounds. This gracefully allows the stream to continue on and all potential content blocks be presented.
+				// last block is complete and it is finished executing
+				this.isCurrentStreamEnd = true;
+			}
+
+			const shouldContinue = this.blockProcessHandler.shouldContinueProcessing(isThisBlockFinished);
+			if (!shouldContinue) {
+				break;
+			}
+
+			currentReplacing = !isThisBlockFinished;
+			currentMessageId = currentReplacing ? this.getMessageId() : this.streamChatManager.getNewMessageId();
 		}
 	}
 
