@@ -509,10 +509,7 @@ export class Cline {
 		return this.streamChatManager.attemptApiRequest();
 	}
 
-	async handleAssistantMessage(replacing = false, messageId?: number) {
-		let currentReplacing = replacing;
-		let currentMessageId = messageId;
-
+	async handleAssistantMessage() {
 		// eslint-disable-next-line no-constant-condition
 		while (true) {
 			if (this.abort) {
@@ -538,10 +535,11 @@ export class Cline {
 
 			// need to create copy bc while stream is updating the array, it could be updating the reference block properties too
 			const block = this.blockProcessHandler.getCurrentBlock();
+			const currentMessageId = this.blockProcessHandler.getCurrentMessageId();
 			switch (block.type) {
 				case 'text': {
 					const content = block.content;
-					logger.debug('handleAssistantMessage', content);
+					logger.debug('handleAssistantMessage: text',currentMessageId, content);
 					await this.sayP({
 						sayType: 'text',
 						text: content,
@@ -554,7 +552,7 @@ export class Cline {
 					if (block.partial) {
 						break;
 					}
-					logger.debug('handleAssistantMessage', 'tool_use', block);
+					logger.debug('handleAssistantMessage: tool_use', block);
 					await this.sayP({ sayType: 'text', text: `apply tool ${block.name}`, partial: false, messageId: currentMessageId });
 
 					const handleError = async (action: string, error: Error) => {
@@ -568,7 +566,8 @@ export class Cline {
 					}
 
 					try {
-						const res = await this.applyToolUse(block, this.getInternalContext(currentReplacing));
+						const isReplacing = !this.blockProcessHandler.hasNewBlock();
+						const res = await this.applyToolUse(block, this.getInternalContext(isReplacing));
 						if (typeof res === 'string') {
 							await this.pushToolResult(res, block);
 						}
@@ -579,21 +578,21 @@ export class Cline {
 			}
 
 			const isThisBlockFinished = !block.partial || this.didRejectTool;
-			this.blockProcessHandler.unlockProcessing(isThisBlockFinished);
-
+			if (isThisBlockFinished){
+				this.blockProcessHandler.toNextBlock();
+				logger.debug('handleAssistantMessage', 'toNextBlock', this.blockProcessHandler.getCurrentMessageId());
+			}
 			if (isThisBlockFinished && blockPositionState.last) {
 				// its okay that we increment if !didCompleteReadingStream, it'll just return bc out of bounds and as streaming continues it will call presentAssitantMessage if a new block is ready. if streaming is finished then we set isThisStreamEnd to true when out of bounds. This gracefully allows the stream to continue on and all potential content blocks be presented.
 				// last block is complete and it is finished executing
 				this.isCurrentStreamEnd = true;
 			}
+			this.blockProcessHandler.unlockProcessing();
 
 			const shouldContinue = this.blockProcessHandler.shouldContinueProcessing(isThisBlockFinished);
 			if (!shouldContinue) {
 				break;
 			}
-
-			currentReplacing = !isThisBlockFinished;
-			currentMessageId = currentReplacing ? this.getMessageId() : this.streamChatManager.getNewMessageId();
 		}
 	}
 
@@ -808,11 +807,11 @@ export class Cline {
 				this.blockProcessHandler.setAssistantMessageBlocks(assistantMessage);
 				if (this.blockProcessHandler.hasNewBlock()) {
 					this.isCurrentStreamEnd = false; // new content we need to present, reset to false in case previous content set this to true
-					this.streamChatManager.getNewMessageId();
+
+					this.blockProcessHandler.addMessageId(this.streamChatManager.getNewMessageId());
 				}
 				// present content to user and apply tool
-				const replacing = !this.blockProcessHandler.hasNewBlock();
-				this.handleAssistantMessage(replacing, this.streamChatManager.getMessageId());
+				this.handleAssistantMessage();
 		}
 		return newState;
 	}
@@ -871,7 +870,7 @@ export class Cline {
 		if (this.blockProcessHandler.hasPartialBlock()) {
 			this.blockProcessHandler.markPartialBlockAsComplete();
 			logger.debug('finalizing processing',this.blockProcessHandler.getCurrentBlock());
-			await this.handleAssistantMessage(true, this.streamChatManager.getMessageId());
+			await this.handleAssistantMessage();
 		}
 		await pWaitFor(() => this.isCurrentStreamEnd); // wait for the last block to be presented
 

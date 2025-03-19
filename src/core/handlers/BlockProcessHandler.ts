@@ -1,6 +1,7 @@
 import { AssistantMessageContent } from '@core/assistant-message';
 import cloneDeep from 'clone-deep';
 import { parseBlocks } from '@core/assistant-message/parse-assistant-message';
+import logger from '@/utils/logger';
 
 export interface BlockState {
 	remaining?: boolean,
@@ -13,10 +14,12 @@ export class BlockProcessHandler {
 	private presentAssistantMessageLocked = false;
 	private presentAssistantMessageHasPendingUpdates = false;
 	private assistantMessageBlocks: AssistantMessageContent[] = [];
+	private blockMessageIds: number[] = [];
 	private prevLength = 0;
 
 	public reset() {
 		this.currentBlockIndex = 0;
+		this.blockMessageIds = [];
 		this.assistantMessageBlocks = [];
 		this.presentAssistantMessageHasPendingUpdates = false;
 		this.presentAssistantMessageLocked = false;
@@ -25,6 +28,18 @@ export class BlockProcessHandler {
 	public setAssistantMessageBlocks(assistantMessage: string): void {
 		this.prevLength = this.assistantMessageBlocks.length;
 		this.assistantMessageBlocks = parseBlocks(assistantMessage);
+	}
+
+	public addMessageId(msgId: number): void {
+		this.blockMessageIds.push(msgId);
+		if (this.blockMessageIds.length !== this.assistantMessageBlocks.length) {
+			console.error('BlockProcessHandler: blockMessageIds and assistantMessageBlocks are not the same length');
+		}
+		logger.debug('BlockProcessHandler: addMessageId', this.blockMessageIds);
+	}
+
+	public getCurrentMessageId(): number {
+		return this.blockMessageIds[this.currentBlockIndex];
 	}
 
 	public hasNewBlock(): boolean {
@@ -62,11 +77,12 @@ export class BlockProcessHandler {
 		this.presentAssistantMessageLocked = false;
 	}
 
-	unlockProcessing(isThisBlockFinished: boolean): void {
+	unlockProcessing(): void {
 		this.presentAssistantMessageLocked = false;
-		if (isThisBlockFinished) {
-			this.currentBlockIndex++; // need to increment regardless, so when read stream calls this function again it will be streaming the next block
-		}
+	}
+
+	toNextBlock(): void {
+		this.currentBlockIndex++;
 	}
 
 	getBlockPositionState(): BlockState {
