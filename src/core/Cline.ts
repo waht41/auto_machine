@@ -551,68 +551,12 @@ export class Cline {
 				}
 				logger.debug('handleAssistantMessage','tool_use',block);
 				await this.sayP({sayType:'text', text: `apply tool ${block.name}`, partial: false, messageId});
-				const toolDescription = () => {
-					switch (block.name) {
-						case 'external':
-							return `[${block.name} for '${block.params.request}']`;
-						case 'file':
-							return `[${block.name} for '${block.params.path}']`;
-						case 'ask':
-							return `[${block.name} for '${block.params.askType}']`;
-						default:
-							return `[${block.name}]`;
-					}
-				};
-
-				const pushToolResult = (content: ToolResponse) => {
-					this.userMessageContent.push({
-						type: 'text',
-						text: `${toolDescription()} Result:`,
-					});
-					if (typeof content === 'string') {
-						this.userMessageContent.push({
-							type: 'text',
-							text: content || '(tool did not return anything)',
-						});
-					} else {
-						this.userMessageContent.push(...content);
-					}
-					const texts = this.userMessageContent.filter((block) => block.type === 'text');
-					const textStrings = texts.map((block) => block.text);
-					logger.debug('handleAssistantMessage','pushToolResult',textStrings);
-					this.sayP({
-						sayType: 'text',
-						text: textStrings.join('\n'),
-						partial: block.partial,
-					});
-					// once a tool result has been collected, ignore all other tool uses since we should only ever present one tool result per message
-					this.didGetNewMessage = true;
-				};
 
 				const handleError = async (action: string, error: Error) => {
 					const errorString = `Error ${action}:\n${error.message ?? JSON.stringify(serializeError(error), null, 2)}`;
 					await this.sayP({sayType: 'error', text: errorString});
-					pushToolResult(formatResponse.toolError(errorString));
+					await this.pushToolResult(formatResponse.toolError(errorString),block);
 				};
-
-				// Validate tool use before execution todo waht 之后可能需要加上验证功能
-				// const {mode, customModes} = (await this.providerRef.deref()?.getState()) ?? {};
-				// try {
-				// 	validateToolUse(
-				// 		block.name as ToolName,
-				// 		mode ?? defaultModeSlug,
-				// 		customModes ?? [],
-				// 		{
-				// 			apply_diff: this.diffEnabled,
-				// 		},
-				// 		block.params,
-				// 	);
-				// } catch (error) {
-				// 	this.consecutiveMistakeCount++;
-				// 	pushToolResult(formatResponse.toolError(error.message));
-				// 	console.error('Tool use validation error:', error);
-				// 	break;
-				// }
 
 				if (block.name === 'ask') { // assign UUID to receive corresponding answers
 					block.params.uuid = crypto.randomUUID();
@@ -621,7 +565,7 @@ export class Cline {
 				try {
 					const res = await this.applyToolUse(block, this.getInternalContext(replacing));
 					if (typeof res === 'string') {
-						pushToolResult(res);
+						await this.pushToolResult(res, block);
 					}
 				} catch (e) {
 					await handleError(`executing tool ${block.name}, `, e);
@@ -643,6 +587,44 @@ export class Cline {
 			const nextMessageId = continueReplacing ? this.getMessageId() : this.streamChatManager.getNewMessageId();
 			this.handleAssistantMessage(continueReplacing, nextMessageId);
 		}
+	}
+
+	private toolDescription (block: ToolUse): string {
+		switch (block.name) {
+			case 'external':
+				return `[${block.name} for '${block.params.request}']`;
+			case 'file':
+				return `[${block.name} for '${block.params.path}']`;
+			case 'ask':
+				return `[${block.name} for '${block.params.askType}']`;
+			default:
+				return `[${block.name}]`;
+		}
+	}
+
+	private async pushToolResult (content: ToolResponse, block: ToolUse) {
+		this.userMessageContent.push({
+			type: 'text',
+			text: `${this.toolDescription(block)} Result:`,
+		});
+		if (typeof content === 'string') {
+			this.userMessageContent.push({
+				type: 'text',
+				text: content || '(tool did not return anything)',
+			});
+		} else {
+			this.userMessageContent.push(...content);
+		}
+		const texts = this.userMessageContent.filter((block) => block.type === 'text');
+		const textStrings = texts.map((block) => block.text);
+		logger.debug('handleAssistantMessage','pushToolResult',textStrings);
+		await this.sayP({
+			sayType: 'text',
+			text: textStrings.join('\n'),
+			partial: false,
+		});
+		// once a tool result has been collected, ignore all other tool uses since we should only ever present one tool result per message
+		this.didGetNewMessage = true;
 	}
 
 	async applyToolUse(block: ToolUse, context?: IInternalContext): Promise<string | unknown> {
