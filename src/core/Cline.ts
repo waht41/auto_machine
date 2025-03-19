@@ -318,6 +318,9 @@ export class Cline {
 		const lastMessage = this.streamChatManager.getLastClineMessage();
 		const isUpdatingPreviousPartial =
 			!!lastMessage && lastMessage.messageId === message.messageId;
+		if (!isUpdatingPreviousPartial && message.say === 'text') {
+			logger.debug('sayx',message);
+		}
 
 		const handlePartialUpdate = async () => {
 			if (isUpdatingPreviousPartial) {
@@ -533,6 +536,7 @@ export class Cline {
 		switch (block.type) {
 			case 'text': {
 				const content = block.content;
+				logger.debug('handleAssistantMessage',content);
 				await this.sayP({
 					sayType: 'text',
 					text: content,
@@ -545,6 +549,8 @@ export class Cline {
 				if (block.partial) {
 					break;
 				}
+				logger.debug('handleAssistantMessage','tool_use',block);
+				await this.sayP({sayType:'text', text: `apply tool ${block.name}`, partial: false, messageId});
 				const toolDescription = () => {
 					switch (block.name) {
 						case 'external':
@@ -559,7 +565,6 @@ export class Cline {
 				};
 
 				const pushToolResult = (content: ToolResponse) => {
-					logger.debug('push Tool result:', content);
 					this.userMessageContent.push({
 						type: 'text',
 						text: `${toolDescription()} Result:`,
@@ -574,12 +579,11 @@ export class Cline {
 					}
 					const texts = this.userMessageContent.filter((block) => block.type === 'text');
 					const textStrings = texts.map((block) => block.text);
-					logger.debug('push Tool text string:', textStrings.join('\n'));
+					logger.debug('handleAssistantMessage','pushToolResult',textStrings);
 					this.sayP({
 						sayType: 'text',
 						text: textStrings.join('\n'),
 						partial: block.partial,
-						messageId
 					});
 					// once a tool result has been collected, ignore all other tool uses since we should only ever present one tool result per message
 					this.didGetNewMessage = true;
@@ -617,7 +621,6 @@ export class Cline {
 				try {
 					const res = await this.applyToolUse(block, this.getInternalContext(replacing));
 					if (typeof res === 'string') {
-						console.log('[waht] 执行tool 返回结果: ', res);
 						pushToolResult(res);
 					}
 				} catch (e) {
@@ -877,6 +880,7 @@ export class Cline {
 		this.streamChatManager.endStream();
 		if (this.blockProcessHandler.hasPartialBlock()) {
 			this.blockProcessHandler.markPartialBlockAsComplete();
+			logger.debug('finalizing processing',this.blockProcessHandler.getCurrentBlock());
 			await this.handleAssistantMessage(true, this.streamChatManager.getMessageId());
 		}
 		await pWaitFor(() => this.isCurrentStreamEnd); // wait for the last block to be presented
