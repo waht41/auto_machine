@@ -5,7 +5,6 @@ import { IApiConversationHistory } from '@core/manager/type';
 import fs from 'fs/promises';
 import { Anthropic } from '@anthropic-ai/sdk';
 import path from 'path';
-import { GlobalFileNames } from '@core/webview/ClineProvider';
 import { fileExistsAtPath } from '@/utils/fs';
 import { ProcessingState } from '@core/handlers/type';
 import { calculateApiCost } from '@/utils/cost';
@@ -16,6 +15,7 @@ import { combineCommandSequences } from '@/shared/combineCommandSequences';
 import { findLastIndex } from '@/shared/array';
 import { HistoryItem } from '@/shared/HistoryItem';
 import { DeepReadonly } from '@/utils/type';
+import { GlobalFileNames } from '@core/webview/const';
 
 
 export class StreamChatManager {

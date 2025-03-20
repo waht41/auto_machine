@@ -3,9 +3,9 @@ import axios from 'axios';
 import vscode from 'vscode';
 import path from 'path';
 import fs from 'fs/promises';
-import { GlobalFileNames } from '@core/webview/ClineProvider';
 import { fileExistsAtPath } from '@/utils/fs';
 import { URL } from 'url';
+import { GlobalFileNames } from '@core/webview/const';
 
 class ApiProviderService {
 	private static _instance: ApiProviderService;

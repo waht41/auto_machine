@@ -16,7 +16,7 @@ import { findLast } from '@/shared/array';
 import { ExtensionMessage } from '@/shared/ExtensionMessage';
 import { HistoryItem } from '@/shared/HistoryItem';
 import { WebviewMessage } from '@/shared/WebviewMessage';
-import { defaultModeSlug, Mode, PromptComponent, } from '@/shared/modes';
+import { defaultModeSlug, Mode, PromptComponent } from '@/shared/modes';
 import { SYSTEM_PROMPT } from '../prompts/system';
 import { fileExistsAtPath } from '@/utils/fs';
 import { Cline } from '../Cline';
@@ -38,20 +38,13 @@ import ApiProviderManager from '@core/manager/ApiProviderManager';
 import { MessageService } from '@core/services/MessageService';
 import { ConfigService } from '@core/services/ConfigService';
 import { safeExecuteMiddleware } from '@executors/middleware';
+import { GlobalFileNames } from '@core/webview/const';
 
 /*
 https://github.com/microsoft/vscode-webview-ui-toolkit-samples/blob/main/default/weather-webview/src/providers/WeatherViewProvider.ts
 
 https://github.com/KumarVariable/vscode-extension-sidebar-html/blob/master/src/customSidebarViewProvider.ts
 */
-
-export const GlobalFileNames = {
-	apiConversationHistory: 'api_conversation_history.json',
-	uiMessages: 'ui_messages.json',
-	glamaModels: 'glama_models.json',
-	openRouterModels: 'openrouter_models.json',
-	mcpSettings: 'cline_mcp_settings.json',
-};
 
 export class ClineProvider implements vscode.WebviewViewProvider {
 	public static readonly sideBarId = 'roo-cline.SidebarProvider'; // used in package.json as the view's id. This value cannot be changed due to how vscode caches views based on their id, and updating the id would break existing instances of the extension.
@@ -80,12 +73,12 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		this.apiManager = ApiProviderManager.getInstance(configPath, this.messageService);
 		ClineProvider.activeInstances.add(this);
 		this.workspaceTracker = new WorkspaceTracker(this);
-		this.mcpHub = new McpHub('.',this.postMessageToWebview.bind(this));
+		this.mcpHub = new McpHub(path.join(configPath,GlobalFileNames.mcpSettings),this.postMessageToWebview.bind(this));
 		this.configManager = new ConfigManager(this.context);
 		this.customModesManager = new CustomModesManager(this.context, async () => {
 			await this.postStateToWebview();
 		});
-		this.configService = ConfigService.getInstance(new GlobalState(path.join(configPath, 'auto_machine_global_state.json')));
+		this.configService = ConfigService.getInstance(new GlobalState(path.join(configPath, GlobalFileNames.globalState)));
 		this.init();
 	}
 
@@ -877,7 +870,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 								await this.configManager.deleteConfig(oldName);
 
 								const listApiConfig = await this.configManager.listConfig();
-								const config = listApiConfig?.find((c) => c.name === newName);
+								// const config = listApiConfig?.find((c) => c.name === newName);
 
 								// Update listApiConfigMeta first to ensure UI has latest data
 								await this.updateGlobalState('listApiConfigMeta', listApiConfig);

@@ -11,7 +11,6 @@ import chokidar, { FSWatcher } from 'chokidar';
 import delay from 'delay';
 import deepEqual from 'fast-deep-equal';
 import * as fs from 'fs/promises';
-import * as path from 'path';
 import * as vscode from 'vscode';
 import { z } from 'zod';
 import {
@@ -57,7 +56,7 @@ export class McpHub {
 	connections: McpConnection[] = [];
 	isConnecting: boolean = false;
 
-	constructor(private mcpServerPath: string, private postMessage: (message: any) => Promise<void>, private mcpSettingName = 'cline_mcp_settings.json') {
+	constructor(private mcpSettingsPath: string, private postMessage: (message: any) => Promise<void>) {
 		// this.providerRef = new WeakRef(provider)
 		// this.watchMcpSettingsFile()
 		// this.initializeMcpServers()
@@ -77,16 +76,6 @@ export class McpHub {
 		return this.connections.filter((conn) => !conn.server.disabled).map((conn) => conn.server);
 	}
 
-	async getMcpServersPath(): Promise<string> {
-		return this.mcpServerPath;
-		// const provider = this.providerRef.deref()
-		// if (!provider) {
-		// 	throw new Error("Provider not available")
-		// }
-		// const mcpServersPath = await provider.ensureMcpServersDirectoryExists()
-		// return mcpServersPath
-	}
-
 	async getMcpSettingsFilePath(): Promise<string> {
 		// const provider = this.providerRef.deref()
 		// if (!provider) {
@@ -96,7 +85,7 @@ export class McpHub {
 		// 	await provider.ensureSettingsDirectoryExists(),
 		// 	GlobalFileNames.mcpSettings,
 		// )
-		const mcpSettingsFilePath = path.join(this.mcpServerPath, this.mcpSettingName);
+		const mcpSettingsFilePath = this.mcpSettingsPath;
 		const fileExists = await fileExistsAtPath(mcpSettingsFilePath);
 		if (!fileExists) {
 			await fs.writeFile(
@@ -111,7 +100,7 @@ export class McpHub {
 		return mcpSettingsFilePath;
 	}
 
-	private async watchMcpSettingsFile(): Promise<void> {
+	private async watchMcpSettingsFile(): Promise<void> { //todo 清理vscode的api
 		const settingsPath = await this.getMcpSettingsFilePath();
 		this.disposables.push(
 			vscode.workspace.onDidSaveTextDocument(async (document) => {

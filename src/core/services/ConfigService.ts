@@ -5,7 +5,8 @@ import { SecretStorage } from '@core/storage/secret';
 import { GlobalStateKey, SecretKey } from '@core/webview/type';
 import { ApiConfiguration } from '@/shared/api';
 import { IGlobalState, secretKeys } from '@core/storage/type';
-import { defaultModeSlug, modes } from '@/shared/modes';
+import { defaultModeSlug } from '@/shared/modes';
+import { GlobalFileNames } from '@core/webview/const';
 
 const defaultApiConfig = {
 	apiConfiguration: {
@@ -34,7 +35,7 @@ const defaultApiConfig = {
 
 export class ConfigService {
 	private static _instance: ConfigService;
-	private _secrets = new SecretStorage(path.join(configPath, 'auto_machine_secrets.json'));
+	private _secrets = new SecretStorage(path.join(configPath, GlobalFileNames.secrets));
 
 	private constructor(private _state: GlobalState) {
 	}
