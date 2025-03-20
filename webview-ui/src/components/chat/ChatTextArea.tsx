@@ -1,6 +1,6 @@
 import React, { forwardRef, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import DynamicTextArea from 'react-textarea-autosize';
-import { mentionRegex, mentionRegexGlobal } from '../../../../src/shared/context-mentions';
+import { mentionRegex, mentionRegexGlobal } from '@/shared/context-mentions';
 import { useExtensionState } from '../../context/ExtensionStateContext';
 import {
 	ContextMenuOptionType,
@@ -13,9 +13,8 @@ import { MAX_IMAGES_PER_MESSAGE } from './ChatView';
 import ContextMenu from './ContextMenu';
 import Thumbnails from '../common/Thumbnails';
 import { vscode } from '../../utils/vscode';
-import { WebviewMessage } from '../../../../src/shared/WebviewMessage';
-import { Mode, getAllModes } from '../../../../src/shared/modes';
-import { CaretIcon } from '../common/CaretIcon';
+import { WebviewMessage } from '@/shared/WebviewMessage';
+import { Mode } from '@/shared/modes';
 
 interface ChatTextAreaProps {
 	inputValue: string
@@ -45,18 +44,16 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 			onSelectImages,
 			shouldDisableImages,
 			onHeightChange,
-			mode,
-			setMode,
 		},
 		ref,
 	) => {
-		const { filePaths, currentApiConfigName, listApiConfigMeta, customModes } = useExtensionState();
+		const { filePaths } = useExtensionState();
 		const [gitCommits, setGitCommits] = useState<any[]>([]);
 		const [showDropdown, setShowDropdown] = useState(false);
 
 		// Close dropdown when clicking outside
 		useEffect(() => {
-			const handleClickOutside = (event: MouseEvent) => {
+			const handleClickOutside = () => {
 				if (showDropdown) {
 					setShowDropdown(false);
 				}
@@ -496,35 +493,6 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 			[updateCursorPosition],
 		);
 
-		const selectStyle = {
-			fontSize: '11px',
-			cursor: textAreaDisabled ? 'not-allowed' : 'pointer',
-			backgroundColor: 'transparent',
-			border: 'none',
-			color: 'var(--vscode-foreground)',
-			opacity: textAreaDisabled ? 0.5 : 0.8,
-			outline: 'none',
-			paddingLeft: '20px',
-			paddingRight: '6px',
-			WebkitAppearance: 'none' as const,
-			MozAppearance: 'none' as const,
-			appearance: 'none' as const,
-		};
-
-		const optionStyle = {
-			backgroundColor: 'var(--vscode-dropdown-background)',
-			color: 'var(--vscode-dropdown-foreground)',
-		};
-
-		const caretContainerStyle = {
-			position: 'absolute' as const,
-			left: 6,
-			top: '50%',
-			transform: 'translateY(-45%)',
-			pointerEvents: 'none' as const,
-			opacity: textAreaDisabled ? 0.5 : 0.8,
-		};
-
 		return (
 			<div
 				className="chat-text-area"
@@ -704,114 +672,11 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 				<div
 					style={{
 						display: 'flex',
-						justifyContent: 'space-between',
+						justifyContent: 'flex-end',
 						alignItems: 'center',
 						marginTop: 'auto',
 						paddingTop: '8px',
 					}}>
-					<div
-						style={{
-							display: 'flex',
-							alignItems: 'center',
-						}}>
-						<div style={{ position: 'relative', display: 'inline-block' }}>
-							<select
-								value={mode}
-								disabled={textAreaDisabled}
-								onChange={(e) => {
-									const value = e.target.value;
-									if (value === 'prompts-action') {
-										window.postMessage({ type: 'action', action: 'promptsButtonClicked' });
-										return;
-									}
-									setMode(value as Mode);
-									vscode.postMessage({
-										type: 'mode',
-										text: value,
-									});
-								}}
-								style={{
-									...selectStyle,
-									minWidth: '70px',
-									flex: '0 0 auto',
-								}}>
-								{getAllModes(customModes).map((mode) => (
-									<option key={mode.slug} value={mode.slug} style={{ ...optionStyle }}>
-										{mode.name}
-									</option>
-								))}
-								<option
-									disabled
-									style={{
-										borderTop: '1px solid var(--vscode-dropdown-border)',
-										...optionStyle,
-									}}>
-									────
-								</option>
-								<option value="prompts-action" style={{ ...optionStyle }}>
-									Edit...
-								</option>
-							</select>
-							<div style={caretContainerStyle}>
-								<CaretIcon />
-							</div>
-						</div>
-
-						<div
-							style={{
-								position: 'relative',
-								display: 'inline-block',
-								flex: '1 1 auto',
-								minWidth: 0,
-								maxWidth: '150px',
-								overflow: 'hidden',
-							}}>
-							<select
-								value={currentApiConfigName || ''}
-								disabled={textAreaDisabled}
-								onChange={(e) => {
-									const value = e.target.value;
-									if (value === 'settings-action') {
-										window.postMessage({ type: 'action', action: 'settingsButtonClicked' });
-										return;
-									}
-									vscode.postMessage({
-										type: 'loadApiConfiguration',
-										text: value,
-									});
-								}}
-								style={{
-									...selectStyle,
-									width: '100%',
-									textOverflow: 'ellipsis',
-								}}>
-								{(listApiConfigMeta || []).map((config) => (
-									<option
-										key={config.name}
-										value={config.name}
-										style={{
-											...optionStyle,
-										}}>
-										{config.name}
-									</option>
-								))}
-								<option
-									disabled
-									style={{
-										borderTop: '1px solid var(--vscode-dropdown-border)',
-										...optionStyle,
-									}}>
-									────
-								</option>
-								<option value="settings-action" style={{ ...optionStyle }}>
-									Edit...
-								</option>
-							</select>
-							<div style={caretContainerStyle}>
-								<CaretIcon />
-							</div>
-						</div>
-					</div>
 
 					<div
 						style={{

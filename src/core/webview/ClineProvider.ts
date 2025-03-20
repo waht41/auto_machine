@@ -844,7 +844,6 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 					case 'upsertApiConfiguration':
 						if (message.text && message.apiConfiguration) {
 							try {
-								console.log('[waht]','upsertApiConfiguration',message.text,message.apiConfiguration);
 								await this.configManager.saveConfig(message.text, message.apiConfiguration);
 								const listApiConfig = await this.configManager.listConfig();
 

@@ -1,10 +1,9 @@
-import { VSCodeButton, VSCodeCheckbox, VSCodeLink, VSCodeTextField } from '@vscode/webview-ui-toolkit/react';
+import { VSCodeButton } from '@vscode/webview-ui-toolkit/react';
 import { memo, useEffect, useState } from 'react';
 import { useExtensionState } from '@webview-ui/context/ExtensionStateContext';
 import { validateApiConfiguration, validateModelId } from '@webview-ui/utils/validate';
 import { vscode } from '@webview-ui/utils/vscode';
 import ApiOptions from './ApiOptions';
-import ApiConfigManager from './ApiConfigManager';
 
 type SettingsViewProps = {
 	onDone: () => void
@@ -13,42 +12,26 @@ type SettingsViewProps = {
 const SettingsView = ({ onDone }: SettingsViewProps) => {
 	const {
 		apiConfiguration,
-		version,
 		alwaysAllowMcp,
-		setAlwaysAllowMcp,
 		soundEnabled,
-		setSoundEnabled,
 		soundVolume,
-		setSoundVolume,
 		diffEnabled,
-		setDiffEnabled,
 		browserViewportSize,
-		setBrowserViewportSize,
 		openRouterModels,
 		glamaModels,
-		setAllowedCommands,
 		allowedCommands,
 		fuzzyMatchThreshold,
-		setFuzzyMatchThreshold,
 		writeDelayMs,
-		setWriteDelayMs,
 		screenshotQuality,
-		setScreenshotQuality,
 		terminalOutputLineLimit,
-		setTerminalOutputLineLimit,
 		mcpEnabled,
 		alwaysApproveResubmit,
-		setAlwaysApproveResubmit,
 		requestDelaySeconds,
-		setRequestDelaySeconds,
 		currentApiConfigName,
-		listApiConfigMeta,
 		experimentalDiffStrategy,
-		setExperimentalDiffStrategy,
 	} = useExtensionState();
 	const [apiErrorMessage, setApiErrorMessage] = useState<string | undefined>(undefined);
 	const [modelIdErrorMessage, setModelIdErrorMessage] = useState<string | undefined>(undefined);
-	const [commandInput, setCommandInput] = useState('');
 
 	const handleSubmit = () => {
 		const apiValidationResult = validateApiConfiguration(apiConfiguration);
@@ -98,23 +81,6 @@ const SettingsView = ({ onDone }: SettingsViewProps) => {
 		setModelIdErrorMessage(modelIdValidationResult);
 	}, [apiConfiguration, glamaModels, openRouterModels]);
 
-	const handleResetState = () => {
-		vscode.postMessage({ type: 'resetState' });
-	};
-
-	const handleAddCommand = () => {
-		const currentCommands = allowedCommands ?? [];
-		if (commandInput && !currentCommands.includes(commandInput)) {
-			const newCommands = [...currentCommands, commandInput];
-			setAllowedCommands(newCommands);
-			setCommandInput('');
-			vscode.postMessage({
-				type: 'allowedCommands',
-				commands: newCommands,
-			});
-		}
-	};
-
 	return (
 		<div
 			style={{
@@ -144,36 +110,6 @@ const SettingsView = ({ onDone }: SettingsViewProps) => {
 				<div style={{ marginBottom: 40 }}>
 					<h3 style={{ color: 'var(--vscode-foreground)', margin: '0 0 15px 0' }}>Provider Settings</h3>
 					<div style={{ marginBottom: 15 }}>
-						<ApiConfigManager
-							currentApiConfigName={currentApiConfigName}
-							listApiConfigMeta={listApiConfigMeta}
-							onSelectConfig={(configName: string) => {
-								vscode.postMessage({
-									type: 'loadApiConfiguration',
-									text: configName,
-								});
-							}}
-							onDeleteConfig={(configName: string) => {
-								vscode.postMessage({
-									type: 'deleteApiConfiguration',
-									text: configName,
-								});
-							}}
-							onRenameConfig={(oldName: string, newName: string) => {
-								vscode.postMessage({
-									type: 'renameApiConfiguration',
-									values: { oldName, newName },
-									apiConfiguration,
-								});
-							}}
-							onUpsertConfig={(configName: string) => {
-								vscode.postMessage({
-									type: 'upsertApiConfiguration',
-									text: configName,
-									apiConfiguration,
-								});
-							}}
-						/>
 						<ApiOptions apiErrorMessage={apiErrorMessage} modelIdErrorMessage={modelIdErrorMessage} />
 					</div>
 				</div>
