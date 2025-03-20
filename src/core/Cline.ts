@@ -174,10 +174,6 @@ export class Cline {
 		return this.streamChatManager.apiConversationHistory;
 	}
 
-	private async addToApiConversationHistory(message: Anthropic.MessageParam) {
-		await this.streamChatManager.addToApiConversationHistory(message);
-	}
-
 	async overwriteApiConversationHistory(newHistory: Anthropic.MessageParam[]) {
 		await this.streamChatManager.overwriteApiConversationHistory(newHistory);
 	}
@@ -186,16 +182,8 @@ export class Cline {
 		return this.streamChatManager.clineMessages;
 	}
 
-	private async addToClineMessages(message: ClineMessage) {
-		await this.streamChatManager.addToClineMessages(message);
-	}
-
 	public async overwriteClineMessages(newMessages: ClineMessage[]) {
 		await this.streamChatManager.overwriteClineMessages(newMessages);
-	}
-
-	private async saveClineMessages() {
-		await this.streamChatManager.saveClineMessages();
 	}
 
 	private async postTaskHistory() {
@@ -270,7 +258,7 @@ export class Cline {
 
 	private async addNewCompleteMessage(message: ClineMessage) {
 		const askTs = Date.now();
-		await this.addToClineMessages({...message, ts: askTs});
+		await this.streamChatManager.addToClineMessages({...message, ts: askTs});
 		await this.updateWebviewState();
 	}
 
@@ -343,7 +331,7 @@ export class Cline {
 		const addMessage = async () => {
 			// this is a new non-partial message, so add it like normal
 			const sayTs = Date.now();
-			await this.addToClineMessages({...message, ts: sayTs});
+			await this.streamChatManager.addToClineMessages({...message, ts: sayTs});
 			await this.providerRef.deref()?.postStateToWebview();
 		};
 
@@ -414,7 +402,7 @@ export class Cline {
 
 		command.result = result;
 		message.text = JSON.stringify(command);
-		await this.saveClineMessages();
+		await this.streamChatManager.saveClineMessages();
 		return true;
 	}
 
@@ -649,13 +637,13 @@ export class Cline {
 
 	async prepareUserContent(userContent: UserContent, lastApiReqIndex: number): Promise<UserContent> {
 		const [parsedUserContent] = await this.loadContext(userContent);
-		await this.addToApiConversationHistory({role: 'user', content: parsedUserContent});
+		await this.streamChatManager.addToApiConversationHistory({role: 'user', content: parsedUserContent});
 
 		// since we sent off a placeholder api_req_started message to update the webview while waiting to actually start the API request (to load potential details for example), we need to update the text of that message
 		this.clineMessages[lastApiReqIndex].text = JSON.stringify({
 			request: parsedUserContent.map((block) => formatContentBlockToMarkdown(block)).join('\n\n'),
 		} satisfies ClineApiReqInfo);
-		await this.saveClineMessages();
+		await this.streamChatManager.saveClineMessages();
 		await this.providerRef.deref()?.postStateToWebview();
 
 		return parsedUserContent;
@@ -669,7 +657,7 @@ export class Cline {
 		}
 		let didEndLoop = false;
 		if (assistantMessage.length > 0) {
-			await this.addToApiConversationHistory({
+			await this.streamChatManager.addToApiConversationHistory({
 				role: 'assistant',
 				content: [{type: 'text', text: assistantMessage}],
 			});
@@ -696,7 +684,7 @@ export class Cline {
 				sayType: 'error',
 				text: 'Unexpected API Response: The language model did not provide any assistant messages. This may indicate an issue with the API or the model\'s output.'
 			});
-			await this.addToApiConversationHistory({
+			await this.streamChatManager.addToApiConversationHistory({
 				role: 'assistant',
 				content: [{type: 'text', text: 'Failure: I did not provide a response.'}],
 			});
@@ -721,11 +709,10 @@ export class Cline {
 			lastMessage.partial = false;
 			// instead of streaming partialMessage events, we do a save and post like normal to persist to disk
 			console.log('updating partial message', lastMessage);
-			// await this.saveClineMessages()
 		}
 
 		// Let assistant know their response was interrupted for when task is resumed
-		await this.addToApiConversationHistory({
+		await this.streamChatManager.addToApiConversationHistory({
 			role: 'assistant',
 			content: [
 				{
@@ -745,7 +732,7 @@ export class Cline {
 		apiReq.cancelReason = cancelReason;
 		apiReq.streamingFailedMessage = streamingFailedMessage;
 		this.updateApiReq(apiReq, lastApiReqIndex);
-		await this.saveClineMessages();
+		await this.streamChatManager.saveClineMessages();
 
 		// signals to provider that it can retrieve the saved messages from disk, as abortTask can not be awaited on in nature
 		this.didFinishAborting = true;
@@ -875,7 +862,7 @@ export class Cline {
 		await pWaitFor(() => this.isCurrentStreamEnd); // wait for the last block to be presented
 
 		this.updateApiReq(state.apiReq, index);
-		await this.saveClineMessages();
+		await this.streamChatManager.saveClineMessages();
 		await this.providerRef.deref()?.postStateToWebview();
 	}
 
