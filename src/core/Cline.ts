@@ -913,8 +913,6 @@ export class Cline {
 
 	async loadContext(userContent: UserContent) {
 		return await Promise.all([
-			// Process userContent array, which contains various block types:
-			// TextBlockParam, ImageBlockParam, ToolUseBlockParam, and ToolResultBlockParam.
 			// We need to apply parseMentions() to:
 			// 1. All TextBlockParam's text (first user message with task)
 			// 2. ToolResultBlockParam's content/context text arrays if it contains "<feedback>" (see formatToolDeniedFeedback, attemptCompletion, executeCommand, and consecutiveMistakeCount >= 3) or "<answer>" (see askFollowupQuestion), we place all user generated content in these tags so they can effectively be used as markers for when we should parse mentions)
@@ -931,7 +929,9 @@ export class Cline {
 							};
 						}
 						return block;
-					} else if (block.type === 'tool_result') {
+					}
+
+					if (block.type === 'tool_result') {
 						if (typeof block.content === 'string') {
 							if (shouldProcessMentions(block.content)) {
 								return {
@@ -940,7 +940,9 @@ export class Cline {
 								};
 							}
 							return block;
-						} else if (Array.isArray(block.content)) {
+						}
+
+						if (Array.isArray(block.content)) {
 							const parsedContent = await Promise.all(
 								block.content.map(async (contentBlock) => {
 									if (contentBlock.type === 'text' && shouldProcessMentions(contentBlock.text)) {
@@ -957,8 +959,10 @@ export class Cline {
 								content: parsedContent,
 							};
 						}
+
 						return block;
 					}
+
 					return block;
 				}),
 			),
