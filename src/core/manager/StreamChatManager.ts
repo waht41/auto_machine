@@ -220,6 +220,8 @@ export class StreamChatManager {
 			this.getSavedApiConversationHistory()
 		]);
 		this.removeEndHintMessages();
+		this.messageId = this.clineMessages.reduce((maxId, { messageId }) =>
+			messageId != null ? Math.max(maxId, messageId) : maxId, this.messageId);
 	}
 
 	private removeEndHintMessages() {
