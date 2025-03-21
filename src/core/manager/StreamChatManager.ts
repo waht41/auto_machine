@@ -135,6 +135,24 @@ export class StreamChatManager {
 		return null;
 	}
 
+	public getHistoryTextWithId(historyId: number): string | null {
+		const item = this.getHistoryContentWithId(historyId);
+		if (item) {
+			if (typeof item.content === 'string') {
+				return item.content;
+			}
+			if (Array.isArray(item.content)) {
+				return item.content.map(block => {
+					if (this.isTextBlock(block)) {
+						return block.text;
+					}
+					return '';
+				}).join('\n');
+			}
+		}
+		return null;
+	}
+
 	private async saveApiConversationHistory() {
 		try {
 			const filePath = path.join(await this.getTaskDirectory(), GlobalFileNames.apiConversationHistory);

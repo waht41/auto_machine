@@ -17,7 +17,7 @@ import {
 	ClineAsk,
 	ClineMessage,
 	ClineSay,
-	ExtensionMessage,
+	ExtensionMessage
 } from '@/shared/ExtensionMessage';
 import { HistoryItem } from '@/shared/HistoryItem';
 import { parseMentions } from './mentions';
@@ -40,6 +40,7 @@ import { ProcessingState } from '@core/handlers/type';
 import { BlockProcessHandler } from '@core/handlers/BlockProcessHandler';
 import logger from '@/utils/logger';
 import yaml from 'js-yaml';
+import { parseXml } from '@/utils/xml';
 
 const cwd = process.cwd();
 
@@ -274,8 +275,9 @@ export class Cline {
 		return this.streamChatManager.getMessageId();
 	}
 
-	public getHistoryContentWithId(historyId: number) {
-		return this.streamChatManager.getHistoryContentWithId(historyId);
+	public getHistoryTextWithId(historyId: number) {
+		logger.debug('getHistoryContentWithId res', this.streamChatManager.getHistoryTextWithId(historyId));
+		return this.streamChatManager.getHistoryTextWithId(historyId);
 	}
 
 	async sayP({
@@ -310,9 +312,6 @@ export class Cline {
 		const lastMessage = this.streamChatManager.getLastClineMessage();
 		const isUpdatingPreviousPartial =
 			!!lastMessage && lastMessage.messageId === message.messageId;
-		if (!isUpdatingPreviousPartial && message.say === 'text') {
-			logger.debug('sayx',message);
-		}
 
 		const handlePartialUpdate = async () => {
 			if (isUpdatingPreviousPartial) {
@@ -531,7 +530,7 @@ export class Cline {
 			switch (block.type) {
 				case 'text': {
 					const content = block.content;
-					logger.debug('handleAssistantMessage: text',currentMessageId, content);
+					// logger.debug('handleAssistantMessage: text',currentMessageId, content);
 					await this.sayP({
 						sayType: 'text',
 						text: content,
@@ -624,10 +623,40 @@ export class Cline {
 	async applyCommand(command: Command, context?: IInternalContext): Promise<string | null> {
 		console.log('[waht] try apply tool', command);
 		if (this.executor.executorNames.includes(command.type)) {
-			return await this.executor.runCommand(command, context) as string ?? 'no result return';
+			return await this.executor.runCommand(this.parseCommand(command), context) as string ?? 'no result return';
 		}
 		console.log('[waht]', 'no executor found for', command.type);
 		return null;
+	}
+
+	private parseCommand(command: Command) {
+		const parsedCommand: Command = { ...command };
+		if (command.content) {
+			parsedCommand.content = this.replaceVariable(command.content as string);
+			logger.debug('parseCommand content: ', parsedCommand);
+		}
+		return parsedCommand;
+	}
+
+	private replaceVariable(content: string): string {
+		// 使用全局正则匹配所有 <var> 标签
+		return content.replace(/<var\s+([^>]+?)\s*\/?>/g, (match, attributesStr) => {
+			const attributes = parseXml(attributesStr);
+
+			// 处理 historyId 属性（如果有）
+			if ('historyId' in attributes) {
+				logger.debug('Processing var tag with attributes:', attributes);
+				return this.getHistoryTextWithId(Number(attributes.historyId)) ?? '';
+			}
+
+			// 警告未支持的属性
+			const unsupportedAttrs = Object.keys(attributes).filter(attr => attr !== 'historyId');
+			if (unsupportedAttrs.length > 0) {
+				console.warn(`Unsupported attributes in <var> tag: ${unsupportedAttrs.join(', ')}`);
+			}
+
+			return ''; // 移除不支持的标签
+		});
 	}
 
 	async prepareUserContent(userContent: UserContent, lastApiReqIndex: number): Promise<UserContent> {
