@@ -8,11 +8,11 @@ export class SecretStorage {
 		this.memento = new Memento(secretPath);
 	}
 
-	async get<T>(key: string): Promise<T | undefined> {
-		return this.memento.get(key);
+	async get<T extends keyof ISecret>(key: T): Promise<ISecret[T] | undefined> {
+		return this.memento.get(key) as ISecret[T] | undefined;
 	}
 
-	async set<T>(key: string, value: T): Promise<void> {
+	async set<T extends keyof ISecret>(key: T, value: ISecret[T]): Promise<void> {
 		return this.memento.update(key, value);
 	}
 
@@ -21,7 +21,7 @@ export class SecretStorage {
 	}
 
 	async getAll(): Promise<ISecret> {
-		return this.memento.getAll();
+		return this.memento.getAll() as ISecret;
 	}
 
 	async setAll(secrets: ISecret): Promise<void> {
