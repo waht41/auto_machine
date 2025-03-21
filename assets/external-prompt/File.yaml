@@ -23,7 +23,7 @@ create:
     - tool: file
       cmd: create
       path: /path/to/file.txt
-      content: "Hello, World!"
+      content: "这是要存储的内容 <var historyId=5/>"
 
 read:
   description: 读取指定路径的文件
@@ -48,7 +48,7 @@ edit:
       cmd: edit
       action: insert
       start: [-1,-1]
-      content: "Hello, World!"
+      content: "Hello, World! Task is <var historyId=1/>"
 
 
 search:
