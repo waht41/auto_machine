@@ -30,6 +30,10 @@ module.exports = {
 		'^strip-ansi$': '<rootDir>/src/__mocks__/strip-ansi.js',
 		'^default-shell$': '<rootDir>/src/__mocks__/default-shell.js',
 		'^os-name$': '<rootDir>/src/__mocks__/os-name.js',
+		'^@/(.*)$': '<rootDir>/src/$1',
+		'^@core/(.*)$': '<rootDir>/src/core/$1',
+		'^@executors/(.*)$': '<rootDir>/executors/$1',
+		'^@operation/(.*)$': '<rootDir>/operation/$1',
 	},
 	transformIgnorePatterns: [
 		'node_modules/(?!(@modelcontextprotocol|delay|p-wait-for|globby|serialize-error|strip-ansi|default-shell|os-name)/)',
