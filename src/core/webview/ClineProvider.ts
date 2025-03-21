@@ -15,7 +15,7 @@ import { findLast } from '@/shared/array';
 import { ExtensionMessage } from '@/shared/ExtensionMessage';
 import { HistoryItem } from '@/shared/HistoryItem';
 import { WebviewMessage } from '@/shared/WebviewMessage';
-import { defaultModeSlug, Mode, PromptComponent } from '@/shared/modes';
+import { Mode, PromptComponent } from '@/shared/modes';
 import { SYSTEM_PROMPT } from '../prompts/system';
 import { fileExistsAtPath } from '@/utils/fs';
 import { Cline } from '../Cline';
@@ -25,7 +25,6 @@ import { checkExistKey } from '@/shared/checkExistApiConfig';
 import { singleCompletionHandler } from '@/utils/single-completion-handler';
 import { searchCommits } from '@/utils/git';
 import { ConfigManager } from '../config/ConfigManager';
-import { CustomModesManager } from '../config/CustomModesManager';
 import { supportPrompt } from '@/shared/support-prompt';
 import { GlobalState } from '@core/storage/global-state';
 import { configPath, createIfNotExists, getAssetPath } from '@core/storage/common';
@@ -57,7 +56,6 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 	mcpHub?: McpHub;
 	private latestAnnouncementId = 'jan-21-2025-custom-modes'; // update to some unique identifier when we add a new announcement
 	configManager: ConfigManager;
-	customModesManager: CustomModesManager;
 	private toolCategories = getToolCategory(path.join(getAssetPath(),'external-prompt'));
 	private allowedToolTree = new AllowedToolTree([],this.toolCategories);
 	private apiManager : ApiProviderManager;
@@ -75,9 +73,6 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		this.workspaceTracker = new WorkspaceTracker(this);
 		this.mcpHub = new McpHub(path.join(configPath,GlobalFileNames.mcpSettings),this.postMessageToWebview.bind(this));
 		this.configManager = new ConfigManager(this.context);
-		this.customModesManager = new CustomModesManager(this.context, async () => {
-			await this.postStateToWebview();
-		});
 		this.configService = ConfigService.getInstance(new GlobalState(path.join(configPath, GlobalFileNames.globalState)));
 		this.init();
 	}
@@ -112,7 +107,6 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		this.workspaceTracker = undefined;
 		this.mcpHub?.dispose();
 		this.mcpHub = undefined;
-		this.customModesManager?.dispose();
 		ClineProvider.activeInstances.delete(this);
 	}
 
@@ -171,7 +165,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 			mode,
 			customInstructions: globalInstructions,
 			experimentalDiffStrategy,
-			taskDirRoot = '.'
+			taskDirRoot = './tasks',
 		} = await this.getState();
 		const modePrompt = customModePrompts?.[mode] as PromptComponent;
 		const effectiveInstructions = [globalInstructions, modePrompt?.customInstructions].filter(Boolean).join('\n\n');
@@ -229,9 +223,6 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 			async (message: WebviewMessage) => {
 				switch (message.type) {
 					case 'webviewDidLaunch':
-						// Load custom modes first
-						const customModes = await this.customModesManager.getCustomModes();
-						await this.updateGlobalState('customModes', customModes);
 						await this.postMessageToWebview({ type: 'toolCategories', toolCategories: this.toolCategories });
 						await this.postMessageToWebview({ type: 'allowedTools', allowedTools:this.allowedToolTree.getAllowedTools() });
 
@@ -469,13 +460,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 						}
 						break;
 					}
-					case 'openCustomModesSettings': {
-						const customModesFilePath = await this.customModesManager.getCustomModesFilePath();
-						if (customModesFilePath) {
-							openFile(customModesFilePath);
-						}
-						break;
-					}
+
 					case 'restartMcpServer': {
 						try {
 							await this.mcpHub?.restartConnection(message.text!);
@@ -931,34 +916,6 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 							}
 						}
 						break;
-					case 'updateCustomMode':
-						if (message.modeConfig) {
-							await this.customModesManager.updateCustomMode(message.modeConfig.slug, message.modeConfig);
-							// Update state after saving the mode
-							const customModes = await this.customModesManager.getCustomModes();
-							await this.updateGlobalState('customModes', customModes);
-							await this.updateGlobalState('mode', message.modeConfig.slug);
-							await this.postStateToWebview();
-						}
-						break;
-					case 'deleteCustomMode':
-						if (message.slug) {
-							const answer = await vscode.window.showInformationMessage(
-								'Are you sure you want to delete this custom mode?',
-								{ modal: true },
-								'Yes',
-							);
-
-							if (answer !== 'Yes') {
-								break;
-							}
-
-							await this.customModesManager.deleteCustomMode(message.slug);
-							// Switch back to default mode after deletion
-							await this.updateGlobalState('mode', defaultModeSlug);
-							await this.postStateToWebview();
-						}
-						break;
 					case 'answer':
 						this.cline?.receiveAnswer(message.payload);
 						break;
@@ -1075,7 +1032,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 
 		const historyItem = history.find((item) => item.id === id);
 		if (historyItem) {
-			const taskDirRoot: string = await this.globalState.get('taskDirRoot') ?? '.';
+			const taskDirRoot: string = await this.globalState.get('taskDirRoot') ?? './tasks';
 			const taskDirPath = path.join(taskDirRoot, 'tasks', id);
 			const apiConversationHistoryFilePath = path.join(taskDirPath, GlobalFileNames.apiConversationHistory);
 			const uiMessagesFilePath = path.join(taskDirPath, GlobalFileNames.uiMessages);
@@ -1172,7 +1129,6 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 				.filter((item: HistoryItem) => item.ts && item.task)
 				.sort((a: HistoryItem, b: HistoryItem) => b.ts - a.ts),
 			shouldShowAnnouncement: lastShownAnnouncementId !== this.latestAnnouncementId,
-			customModes: await this.customModesManager.getCustomModes(),
 			...restState
 		};
 	}
@@ -1244,7 +1200,6 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 			await this.storeSecret(key, undefined);
 		}
 		await this.configManager.resetAllConfigs();
-		await this.customModesManager.resetCustomModes();
 		if (this.cline) {
 			this.cline.abortTask();
 			this.cline = undefined;
