@@ -27,6 +27,7 @@ export class StreamChatManager {
 
 	clineMessages: ClineMessage[] = [];
 	readonly endHint = 'roo stop the conversion, should resume?';
+	readonly metaRegex = /<meta[\s\S]*?<\/meta>/gi;
 	private messageId = 0;
 	private apiHistoryId = 0;
 
@@ -76,12 +77,12 @@ export class StreamChatManager {
 	private addConversationMetadata(message: Anthropic.MessageParam): IApiConversationItem {
 		let content = cloneDeep(message.content);
 		if (typeof content === 'string') {
-			content = `${this.getMeta()}\n${content}`;
+			content = `${this.getMeta()}\n${content.replace(this.metaRegex, '')}`;
 		}
 		if (isArray(content)) {
 			content = content.map(block => {
 				if (this.isTextBlock(block)) {
-					block.text = `${this.getMeta()}\n${block.text}`;
+					block.text = `${this.getMeta()}\n${block.text.replace(this.metaRegex, '')}`;
 				}
 				return block;
 			});

@@ -277,7 +277,7 @@ export class Cline {
 
 	public getHistoryTextWithId(historyId: number) {
 		logger.debug('getHistoryContentWithId res', this.streamChatManager.getHistoryTextWithId(historyId));
-		return this.streamChatManager.getHistoryTextWithId(historyId);
+		return this.streamChatManager.getHistoryTextWithId(historyId)?.replace(this.streamChatManager.metaRegex, '');
 	}
 
 	async sayP({
@@ -529,7 +529,7 @@ export class Cline {
 			const currentMessageId = this.blockProcessHandler.getCurrentMessageId();
 			switch (block.type) {
 				case 'text': {
-					const content = block.content;
+					const content = block.content.replace(this.streamChatManager.metaRegex, '');
 					// logger.debug('handleAssistantMessage: text',currentMessageId, content);
 					await this.sayP({
 						sayType: 'text',
