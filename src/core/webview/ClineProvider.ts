@@ -8,7 +8,6 @@ import { generateMarkdown } from '@/integrations/misc/export-markdown';
 import { openFile, openImage } from '@/integrations/misc/open-file';
 import { selectImages } from '@/integrations/misc/process-images';
 import { getTheme } from '@/integrations/theme/getTheme';
-import { getDiffStrategy } from '../diff/DiffStrategy';
 import WorkspaceTracker from '../../integrations/workspace/WorkspaceTracker';
 import { McpHub } from '@operation/MCP';
 import { ApiConfiguration } from '@/shared/api';
@@ -21,7 +20,7 @@ import { SYSTEM_PROMPT } from '../prompts/system';
 import { fileExistsAtPath } from '@/utils/fs';
 import { Cline } from '../Cline';
 import { openMention } from '../mentions';
-import { playSound, setSoundEnabled, setSoundVolume } from '@/utils/sound';
+import { setSoundEnabled, setSoundVolume } from '@/utils/sound';
 import { checkExistKey } from '@/shared/checkExistApiConfig';
 import { singleCompletionHandler } from '@/utils/single-completion-handler';
 import { searchCommits } from '@/utils/git';
@@ -39,6 +38,7 @@ import { MessageService } from '@core/services/MessageService';
 import { ConfigService } from '@core/services/ConfigService';
 import { safeExecuteMiddleware } from '@executors/middleware';
 import { GlobalFileNames } from '@core/webview/const';
+import process from 'node:process';
 
 /*
 https://github.com/microsoft/vscode-webview-ui-toolkit-samples/blob/main/default/weather-webview/src/providers/WeatherViewProvider.ts
@@ -171,6 +171,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 			mode,
 			customInstructions: globalInstructions,
 			experimentalDiffStrategy,
+			taskDirRoot = '.'
 		} = await this.getState();
 		const modePrompt = customModePrompts?.[mode] as PromptComponent;
 		const effectiveInstructions = [globalInstructions, modePrompt?.customInstructions].filter(Boolean).join('\n\n');
@@ -189,7 +190,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 				experimentalDiffStrategy,
 				middleWares: [safeExecuteMiddleware, ApprovalMiddleWrapper(this.allowedToolTree)],
 				mcpHub: this.mcpHub,
-				taskParentDir: path.join(this.context.globalStorageUri.fsPath,'tasks')
+				taskParentDir: taskDirRoot
 			}
 		);
 		await this.cline.init();
@@ -509,10 +510,11 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 						await this.postStateToWebview();
 						break;
 					case 'playSound':
-						if (message.audioType) {
-							const soundPath = path.join(this.context.extensionPath, 'audio', `${message.audioType}.wav`);
-							playSound(soundPath);
-						}
+						// if (message.audioType) {
+						// 	const soundPath = path.join(this.context.extensionPath, 'audio', `${message.audioType}.wav`);
+						// 	playSound(soundPath);
+						// }
+						//todo waht 考虑要不要加声音
 						break;
 					case 'soundEnabled':
 						const soundEnabled = message.bool ?? true;
@@ -776,44 +778,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 						break;
 					case 'getSystemPrompt':
 						try {
-							const {
-								apiConfiguration,
-								customModePrompts,
-								customInstructions,
-								preferredLanguage,
-								browserViewportSize,
-								diffEnabled,
-								mcpEnabled,
-								fuzzyMatchThreshold,
-								experimentalDiffStrategy,
-							} = await this.getState();
-
-							// Create diffStrategy based on current model and settings
-							const diffStrategy = getDiffStrategy(
-								apiConfiguration.apiModelId || apiConfiguration.openRouterModelId || '',
-								fuzzyMatchThreshold,
-								experimentalDiffStrategy,
-							);
-							const cwd =
-								vscode.workspace.workspaceFolders?.map((folder) => folder.uri.fsPath).at(0) || '';
-
-							const mode = message.mode ?? defaultModeSlug;
-							const customModes = await this.customModesManager.getCustomModes();
-
-							const systemPrompt = await SYSTEM_PROMPT(
-								this.context,
-								cwd,
-								apiConfiguration.openRouterModelInfo?.supportsComputerUse ?? false,
-								mcpEnabled ? this.mcpHub : undefined,
-								diffStrategy,
-								browserViewportSize ?? '900x600',
-								mode,
-								customModePrompts,
-								customModes,
-								customInstructions,
-								preferredLanguage,
-								diffEnabled,
-							);
+							const systemPrompt = await SYSTEM_PROMPT();
 
 							await this.postMessageToWebview({
 								type: 'systemPrompt',
@@ -1107,9 +1072,11 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		apiConversationHistory: Anthropic.MessageParam[]
 	}> {
 		const history = ((await this.getGlobalState('taskHistory')) as HistoryItem[] | undefined) || [];
+
 		const historyItem = history.find((item) => item.id === id);
 		if (historyItem) {
-			const taskDirPath = path.join(this.context.globalStorageUri.fsPath, 'tasks', id);
+			const taskDirRoot: string = await this.globalState.get('taskDirRoot') ?? '.';
+			const taskDirPath = path.join(taskDirRoot, 'tasks', id);
 			const apiConversationHistoryFilePath = path.join(taskDirPath, GlobalFileNames.apiConversationHistory);
 			const uiMessagesFilePath = path.join(taskDirPath, GlobalFileNames.uiMessages);
 			const fileExists = await fileExistsAtPath(apiConversationHistoryFilePath);
@@ -1198,7 +1165,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		const state = await this.getState();
 		const { taskHistory, lastShownAnnouncementId, ...restState } = state;
 		return {
-			version: this.context.extension?.packageJSON?.version ?? '',
+			version: process.env?.version ?? '',
 			uriScheme: vscode.env.uriScheme,
 			clineMessages: this.cline?.clineMessages || [],
 			taskHistory: (taskHistory || [])

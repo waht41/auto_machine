@@ -51,5 +51,5 @@ export type IGlobalState = {
   experimentalDiffStrategy: boolean;
   autoApprovalEnabled?: boolean;
   customModes?: any[];
-  taskDirectory?: string;
+  taskDirRoot?: string;
 }
