@@ -2,7 +2,7 @@ import { GlobalState } from '@core/storage/global-state';
 import path from 'path';
 import { configPath } from '@core/storage/common';
 import { SecretStorage } from '@core/storage/secret';
-import { GlobalStateKey, SecretKey } from '@core/webview/type';
+import { SecretKey } from '@core/webview/type';
 import { ApiConfiguration } from '@/shared/api';
 import { IGlobalState, secretKeys } from '@core/storage/type';
 import { defaultModeSlug } from '@/shared/modes';
@@ -57,7 +57,7 @@ export class ConfigService {
 	}
 
 	public async getApiConfig(): Promise<ApiConfiguration> {
-		const apiConfig = await this._state.get<ApiConfiguration>('apiConfiguration');
+		const apiConfig = await this._state.get('apiConfiguration');
 		const secrets = await this.getSecrets();
 		return { ...apiConfig, ...secrets };
 	}
@@ -93,11 +93,11 @@ export class ConfigService {
 		await this._secrets.remove(key);
 	}
 
-	public async setGlobalState(key: GlobalStateKey, value: unknown) {
+	public async setGlobalState<T extends keyof IGlobalState>(key: T, value: IGlobalState[T]) {
 		await this._state.set(key, value);
 	}
 
-	public async getGlobalState(key: GlobalStateKey) {
+	public async getGlobalState(key: keyof IGlobalState) {
 		return this._state.get(key);
 	}
 

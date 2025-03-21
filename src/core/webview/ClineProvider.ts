@@ -28,13 +28,14 @@ import { configPath, createIfNotExists, getAssetPath } from '@core/storage/commo
 import { ApprovalMiddleWrapper } from '@core/internal-implementation/middleware';
 import { getToolCategory } from '@core/tool-adapter/getToolCategory';
 import { AllowedToolTree } from '@core/tool-adapter/AllowedToolTree';
-import { GlobalStateKey, SecretKey } from '@core/webview/type';
+import { SecretKey } from '@core/webview/type';
 import ApiProviderManager from '@core/manager/ApiProviderManager';
 import { MessageService } from '@core/services/MessageService';
 import { ConfigService } from '@core/services/ConfigService';
 import { safeExecuteMiddleware } from '@executors/middleware';
 import { GlobalFileNames } from '@core/webview/const';
 import process from 'node:process';
+import { IGlobalState } from '@core/storage/type';
 
 /*
 https://github.com/microsoft/vscode-webview-ui-toolkit-samples/blob/main/default/weather-webview/src/providers/WeatherViewProvider.ts
@@ -199,7 +200,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 	}
 
 	private async setUpAllowedTools(){
-		const allowedTools = await this.globalState.get<string[]>('allowedCommands');
+		const allowedTools = this.globalState.get('allowedCommands');
 		this.allowedToolTree.setAllowedTools(allowedTools?? []);
 	}
 
@@ -796,11 +797,11 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		uiMessagesFilePath: string
 		apiConversationHistory: Anthropic.MessageParam[]
 	}> {
-		const history = ((await this.getGlobalState('taskHistory')) as HistoryItem[] | undefined) || [];
+		const history = this.globalState.get('taskHistory') || [];
 
 		const historyItem = history.find((item) => item.id === id);
 		if (historyItem) {
-			const taskDirRoot: string = await this.globalState.get('taskDirRoot') ?? './tasks';
+			const taskDirRoot: string = this.globalState.get('taskDirRoot') ?? './tasks';
 			const taskDirPath = path.join(taskDirRoot, 'tasks', id);
 			const apiConversationHistoryFilePath = path.join(taskDirPath, GlobalFileNames.apiConversationHistory);
 			const uiMessagesFilePath = path.join(taskDirPath, GlobalFileNames.uiMessages);
@@ -872,8 +873,8 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 
 	async deleteTaskFromState(id: string) {
 		// Remove the task from history
-		const taskHistory = ((await this.getGlobalState('taskHistory')) as HistoryItem[]) || [];
-		const updatedTaskHistory = taskHistory.filter((task) => task.id !== id);
+		const taskHistory = await this.getGlobalState('taskHistory');
+		const updatedTaskHistory = taskHistory?.filter((task) => task.id !== id);
 		await this.updateGlobalState('taskHistory', updatedTaskHistory);
 
 		// Notify the webview that the task has been deleted
@@ -916,12 +917,12 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 
 	// global
 
-	async updateGlobalState(key: GlobalStateKey, value: unknown) {
+	async updateGlobalState(key: keyof IGlobalState, value: unknown) {
 		await this.globalState.set(key, value);
 	}
 
-	async getGlobalState(key: GlobalStateKey) {
-		return await this.globalState.get(key);
+	async getGlobalState<T extends keyof IGlobalState>(key: T) : Promise<IGlobalState[T]> {
+		return this.globalState.get(key);
 	}
 
 	// secrets
@@ -949,7 +950,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		}
 
 		for (const key in this.globalState.keys()) {
-			await this.globalState.set(key, undefined);
+			await this.globalState.set(key as keyof IGlobalState, undefined);
 		}
 		const secretKeys: SecretKey[] = [
 			'apiKey',
