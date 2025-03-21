@@ -1,7 +1,7 @@
 import { ApiHandler } from '@/api';
 import { ApiStream, ApiStreamChunk } from '@/api/transform/stream';
 import { SYSTEM_PROMPT } from '@core/prompts/system';
-import { IApiConversationHistory } from '@core/manager/type';
+import { IApiConversationHistory, IApiConversationItem } from '@core/manager/type';
 import fs from 'fs/promises';
 import { Anthropic } from '@anthropic-ai/sdk';
 import path from 'path';
@@ -16,6 +16,9 @@ import { findLastIndex } from '@/shared/array';
 import { HistoryItem } from '@/shared/HistoryItem';
 import { DeepReadonly } from '@/utils/type';
 import { GlobalFileNames } from '@core/webview/const';
+import cloneDeep from 'clone-deep';
+import TextBlockParam = Anthropic.TextBlockParam;
+import { isArray } from 'lodash';
 
 
 export class StreamChatManager {
@@ -25,6 +28,7 @@ export class StreamChatManager {
 	clineMessages: ClineMessage[] = [];
 	readonly endHint = 'roo stop the conversion, should resume?';
 	private messageId = 0;
+	private apiHistoryId = 0;
 
 	constructor(private taskId: string, private api: ApiHandler, private taskDir: string, private onSaveClineMessages: () => Promise<void>) {
 	}
@@ -45,7 +49,7 @@ export class StreamChatManager {
 	}
 
 	private async getTaskDirectory(): Promise<string> {
-		await fs.mkdir(this.taskDir, {recursive: true});
+		await fs.mkdir(this.taskDir, { recursive: true });
 		return this.taskDir;
 	}
 
@@ -59,9 +63,76 @@ export class StreamChatManager {
 	}
 
 	async addToApiConversationHistory(message: Anthropic.MessageParam) {
-		const messageWithTs = {...message, ts: Date.now()};
-		this.apiConversationHistory.push(messageWithTs);
+		const messageWithMeta = this.addConversationMetadata(message);
+		this.apiConversationHistory.push(messageWithMeta);
 		await this.saveApiConversationHistory();
+	}
+
+	private isTextBlock(content: unknown): content is TextBlockParam {
+		const candidate = content as TextBlockParam;
+		return candidate?.type === 'text';
+	}
+
+	private addConversationMetadata(message: Anthropic.MessageParam): IApiConversationItem {
+		let content = cloneDeep(message.content);
+		if (typeof content === 'string') {
+			content = `${this.getMeta()}\n${content}`;
+		}
+		if (isArray(content)) {
+			content = content.map(block => {
+				if (this.isTextBlock(block)) {
+					block.text = `${this.getMeta()}\n${block.text}`;
+				}
+				return block;
+			});
+		}
+		return { ...message, content, ts: Date.now() };
+	}
+
+	private getMeta() {
+		return `<meta>historyId:${++this.apiHistoryId}</meta>`;
+	}
+
+	private extractMeta(content: Anthropic.MessageParam['content']): Record<string, string> {
+		let metaString = '';
+		const metaRegex = /<meta>(.*?)<\/meta>/;
+
+		if (typeof content === 'string') {
+			const match = content.match(metaRegex);
+			metaString = match?.[1] || '';
+		} else if (Array.isArray(content)) {
+			for (const block of content) {
+				if (this.isTextBlock(block)) {
+					const match = block.text.match(metaRegex);
+					if (match) {
+						metaString = match[1];
+						break;
+					}
+				}
+			}
+		}
+
+		return metaString.split(',')
+			.reduce((acc: Record<string, string>, pair) => {
+				const [key, value] = pair.split(':').map(s => s.trim());
+				if (key && value) acc[key] = value;
+				return acc;
+			}, {});
+	}
+
+	public getHistoryContentWithId(historyId: number): Anthropic.MessageParam | null {
+		for (const item of this.apiConversationHistory) {
+			const meta = this.extractMeta(item.content);
+			const itemHistoryId = parseInt(meta.historyId, 10);
+
+			if (!isNaN(itemHistoryId) && itemHistoryId === historyId) {
+				return {
+					role: item.role,
+					content: item.content
+				};
+			}
+		}
+		return null;
 	}
 
 	private async saveApiConversationHistory() {

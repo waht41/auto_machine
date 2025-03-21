@@ -274,6 +274,10 @@ export class Cline {
 		return this.streamChatManager.getMessageId();
 	}
 
+	public getHistoryContentWithId(historyId: number) {
+		return this.streamChatManager.getHistoryContentWithId(historyId);
+	}
+
 	async sayP({
 		sayType,
 		text,
@@ -585,16 +589,7 @@ export class Cline {
 	}
 
 	private toolDescription (block: ToolUse): string {
-		switch (block.name) {
-			case 'external':
-				return `[${block.name} for '${block.params.request}']`;
-			case 'file':
-				return `[${block.name} for '${block.params.path}']`;
-			case 'ask':
-				return `[${block.name} for '${block.params.askType}']`;
-			default:
-				return `[${block.name}]`;
-		}
+		return 'use tool \n'+yaml.dump(block);
 	}
 
 	private async pushToolResult (content: ToolResponse, block: ToolUse) {
