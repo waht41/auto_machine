@@ -1,5 +1,5 @@
 import { ClineProvider } from '@core/webview/ClineProvider';
-import { MockExtensionContext, MockWebviewView } from '../../vscode';
+import { MockWebviewView } from '../../vscode';
 
 /**
  * 客户端处理器，负责处理与客户端相关的业务逻辑
@@ -7,13 +7,11 @@ import { MockExtensionContext, MockWebviewView } from '../../vscode';
 export class ClientHandler {
 	private cp: ClineProvider;
 	private webview: MockWebviewView;
-	private context: MockExtensionContext;
 
 	constructor(sendToMainProcess: (message: any) => void) {
 		this.webview = new MockWebviewView('mock', sendToMainProcess);
-		this.context = new MockExtensionContext();
 		//@ts-ignore
-		this.cp = new ClineProvider(this.context, sendToMainProcess);
+		this.cp = new ClineProvider(sendToMainProcess);
 		//@ts-ignore
 		this.cp.resolveWebviewView(this.webview);
 	}

@@ -25,7 +25,6 @@ import { ToolUse } from './assistant-message';
 import { formatResponse } from './prompts/responses';
 import { truncateHalfConversation } from './sliding-window';
 import { ClineProvider } from './webview/ClineProvider';
-import { BrowserSession } from '@/services/browser/BrowserSession';
 import { McpHub } from '@operation/MCP';
 import crypto from 'crypto';
 import { CommandRunner } from '@executors/runner';
@@ -67,8 +66,6 @@ export class Cline {
 	api: ApiHandler;
 	private terminalManager: TerminalManager;
 	private urlContentFetcher: UrlContentFetcher;
-	private browserSession: BrowserSession;
-	private didEditFile: boolean = false;
 	customInstructions?: string;
 	diffStrategy?: DiffStrategy;
 	diffEnabled: boolean = false;
@@ -115,8 +112,7 @@ export class Cline {
 		this.taskId = historyItem ? historyItem.id : crypto.randomUUID();
 		this.api = buildApiHandler(apiConfiguration);
 		this.terminalManager = new TerminalManager();
-		this.urlContentFetcher = new UrlContentFetcher(provider.context);
-		this.browserSession = new BrowserSession(provider.context);
+		this.urlContentFetcher = new UrlContentFetcher('./storage'); //todo 待删
 		this.customInstructions = customInstructions;
 		this.diffEnabled = enableDiff ?? false;
 		this.fuzzyMatchThreshold = fuzzyMatchThreshold ?? 1.0;
@@ -460,7 +456,6 @@ export class Cline {
 		this.abort = true; // will stop any autonomously running promises
 		this.terminalManager.disposeAll();
 		this.urlContentFetcher.closeBrowser();
-		this.browserSession.closeBrowser();
 	}
 
 	async attemptApiRequest(previousApiReqIndex: number): Promise<ApiStream> {

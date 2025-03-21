@@ -1,4 +1,3 @@
-import * as vscode from 'vscode';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { Browser, Page, launch } from 'puppeteer-core';
@@ -14,16 +13,14 @@ interface PCRStats {
 }
 
 export class UrlContentFetcher {
-	private context: vscode.ExtensionContext;
 	private browser?: Browser;
 	private page?: Page;
 
-	constructor(context: vscode.ExtensionContext) {
-		this.context = context;
+	constructor(private storagePath: string) {
 	}
 
 	private async ensureChromiumExists(): Promise<PCRStats> {
-		const globalStoragePath = this.context?.globalStorageUri?.fsPath;
+		const globalStoragePath = this.storagePath;
 		if (!globalStoragePath) {
 			throw new Error('Global storage uri is invalid');
 		}

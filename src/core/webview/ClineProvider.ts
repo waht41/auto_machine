@@ -57,7 +57,6 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 	private configService : ConfigService;
 
 	constructor(
-		readonly context: vscode.ExtensionContext,
     private sendToMainProcess: (message: any) => void
 	) {
 		createIfNotExists(configPath);
