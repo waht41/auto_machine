@@ -1,4 +1,5 @@
 import fs from 'fs';
+import cloneDeep from 'clone-deep';
 
 export class Memento {
 	private cache: Map<string, unknown>;
@@ -41,7 +42,7 @@ export class Memento {
 	}
 
 	get(key: string, defaultValue?: unknown) {
-		return this.cache.has(key) ? this.cache.get(key) : defaultValue;
+		return this.cache.has(key) ? cloneDeep(this.cache.get(key)) : defaultValue;
 	}
 
 	update(key: string, value: unknown): Thenable<void> {

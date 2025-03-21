@@ -36,6 +36,7 @@ import { safeExecuteMiddleware } from '@executors/middleware';
 import { GlobalFileNames } from '@core/webview/const';
 import process from 'node:process';
 import { IGlobalState } from '@core/storage/type';
+import logger from '@/utils/logger';
 
 /*
 https://github.com/microsoft/vscode-webview-ui-toolkit-samples/blob/main/default/weather-webview/src/providers/WeatherViewProvider.ts
@@ -798,11 +799,12 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		apiConversationHistory: Anthropic.MessageParam[]
 	}> {
 		const history = this.globalState.get('taskHistory') || [];
+		logger.debug('getTaskWithId history: ', history, 'id:',id);
 
 		const historyItem = history.find((item) => item.id === id);
 		if (historyItem) {
 			const taskDirRoot: string = this.globalState.get('taskDirRoot') ?? './tasks';
-			const taskDirPath = path.join(taskDirRoot, 'tasks', id);
+			const taskDirPath = path.join(taskDirRoot, id);
 			const apiConversationHistoryFilePath = path.join(taskDirPath, GlobalFileNames.apiConversationHistory);
 			const uiMessagesFilePath = path.join(taskDirPath, GlobalFileNames.uiMessages);
 			const fileExists = await fileExistsAtPath(apiConversationHistoryFilePath);
@@ -921,7 +923,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		await this.globalState.set(key, value);
 	}
 
-	async getGlobalState<T extends keyof IGlobalState>(key: T) : Promise<IGlobalState[T]> {
+	async getGlobalState<T extends keyof IGlobalState>(key: T)  {
 		return this.globalState.get(key);
 	}
 

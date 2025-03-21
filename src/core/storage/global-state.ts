@@ -19,7 +19,7 @@ export class GlobalState {
 		return history;
 	}
 
-	get<T extends keyof IGlobalState>(key: T): IGlobalState[T] {
+	get<T extends keyof IGlobalState>(key: T) {
 		return this.memento.get(key) as IGlobalState[T];
 	}
 
