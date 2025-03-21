@@ -5,33 +5,7 @@ import { SecretStorage } from '@core/storage/secret';
 import { SecretKey } from '@core/webview/type';
 import { ApiConfiguration } from '@/shared/api';
 import { IGlobalState, secretKeys } from '@core/storage/type';
-import { defaultModeSlug } from '@/shared/modes';
 import { GlobalFileNames } from '@core/webview/const';
-
-const defaultApiConfig = {
-	apiConfiguration: {
-		apiProvider: 'openrouter',
-	},
-	alwaysAllowMcp: false,
-	soundEnabled: false,
-	diffEnabled: true,
-	browserViewportSize: '900x600',
-	screenshotQuality: 75,
-	fuzzyMatchThreshold: 1.0,
-	writeDelayMs: 1000,
-	terminalOutputLineLimit: 500,
-	mode: defaultModeSlug,
-	preferredLanguage: 'en',
-	mcpEnabled: true,
-	requestDelaySeconds: 10,
-	currentApiConfigName: 'default',
-	listApiConfigMeta: [],
-	modeApiConfigs: {},
-	customModePrompts: {},
-	customSupportPrompts: {},
-	experimentalDiffStrategy: false,
-	autoApprovalEnabled: false,
-};
 
 export class ConfigService {
 	private static _instance: ConfigService;
@@ -53,7 +27,7 @@ export class ConfigService {
 			this.getSecrets()
 		]);
 		globalStates.apiConfiguration = {...globalStates.apiConfiguration, ...secrets};
-		return {...defaultApiConfig, ...globalStates};
+		return globalStates;
 	}
 
 	public async getApiConfig(): Promise<ApiConfiguration> {

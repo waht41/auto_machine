@@ -159,7 +159,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 			mode,
 			customInstructions: globalInstructions,
 			experimentalDiffStrategy,
-			taskDirRoot = './tasks',
+			taskDirRoot,
 		} = await this.getState();
 		const modePrompt = customModePrompts?.[mode] as PromptComponent;
 		const effectiveInstructions = [globalInstructions, modePrompt?.customInstructions].filter(Boolean).join('\n\n');
@@ -178,7 +178,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 				experimentalDiffStrategy,
 				middleWares: [safeExecuteMiddleware, ApprovalMiddleWrapper(this.allowedToolTree)],
 				mcpHub: this.mcpHub,
-				taskParentDir: taskDirRoot
+				taskParentDir: taskDirRoot,
 			}
 		);
 		await this.cline.init();
@@ -803,7 +803,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 
 		const historyItem = history.find((item) => item.id === id);
 		if (historyItem) {
-			const taskDirRoot: string = this.globalState.get('taskDirRoot') ?? './tasks';
+			const taskDirRoot: string = this.globalState.get('taskDirRoot');
 			const taskDirPath = path.join(taskDirRoot, id);
 			const apiConversationHistoryFilePath = path.join(taskDirPath, GlobalFileNames.apiConversationHistory);
 			const uiMessagesFilePath = path.join(taskDirPath, GlobalFileNames.uiMessages);

@@ -52,8 +52,8 @@ export type IGlobalState = {
   experimentalDiffStrategy: boolean;
   autoApprovalEnabled?: boolean;
   customModes?: any[];
-  taskDirRoot?: string;
-  openRouterModelInfo: ModelInfo;
-  glamaModelInfo: ModelInfo;
+  taskDirRoot: string;
+  openRouterModelInfo?: ModelInfo;
+  glamaModelInfo?: ModelInfo;
 
 }
