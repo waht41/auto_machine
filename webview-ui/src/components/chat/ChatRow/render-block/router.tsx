@@ -28,9 +28,6 @@ const componentRoutes: RouteNode = {
 	}
 };
 
-// 调试模式标志
-const isDevMode = process.env.NODE_ENV === 'development';
-
 /**
  * 解析组件 - 根据消息类型和子类型返回对应的组件
  * @param message 消息对象
@@ -43,11 +40,6 @@ export const resolveComponent = (message: ClineMessage): ComponentRenderer => {
 	}
 
 	const type = message.type;
-
-	// 调试输出
-	if (isDevMode) {
-		console.log(`[MessageRouter] 尝试解析组件: type=${type}, subType=${message.say || message.ask || '未知'}`);
-	}
 
 	// 检查类型是否存在
 	if (!type || !componentRoutes[type]) {
@@ -80,11 +72,6 @@ export const resolveComponent = (message: ClineMessage): ComponentRenderer => {
 	if (typeof component !== 'function') {
 		console.warn(`[MessageRouter] 组件不是渲染器: ${type}.${subType}`);
 		return DefaultComponent;
-	}
-
-	// 调试输出
-	if (isDevMode) {
-		console.log(`[MessageRouter] 成功解析组件: ${type}.${subType}`);
 	}
 
 	// 返回匹配的组件

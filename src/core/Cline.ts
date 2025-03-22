@@ -709,6 +709,7 @@ export class Cline {
 		apiReq.cancelReason = cancelReason;
 		apiReq.streamingFailedMessage = streamingFailedMessage;
 		await this.updateApiReq(apiReq, lastApiReqIndex);
+		await this.providerRef.deref()?.postStateToWebview();
 
 		// signals to provider that it can retrieve the saved messages from disk, as abortTask can not be awaited on in nature
 		this.abortComplete = true;

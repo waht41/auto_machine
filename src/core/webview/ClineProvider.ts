@@ -877,7 +877,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 	async postStateToWebview() {
 		const state = await this.getStateToPostToWebview();
 		// @ts-ignore
-		this.postMessageToWebview({ type: 'state', state });
+		await this.postMessageToWebview({ type: 'state', state });
 	}
 
 	async getStateToPostToWebview() {
