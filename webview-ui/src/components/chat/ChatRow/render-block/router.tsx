@@ -92,7 +92,7 @@ export const resolveComponent = (message: ClineMessage): ComponentRenderer => {
 };
 
 
-export function renderMessage(prop: DefaultComponentProps): React.ReactNode {
+export function MessageComponent(prop: DefaultComponentProps): React.ReactNode {
 	// 解析组件
 	const Component = resolveComponent(prop.message);
 

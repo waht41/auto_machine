@@ -2,9 +2,9 @@ import deepEqual from 'fast-deep-equal';
 import React, { memo, useEffect, useMemo, useRef } from 'react';
 import { useSize } from 'react-use';
 import { ClineMessage, ClineSayTool } from '@/shared/ExtensionMessage';
-import renderSpecialTool from '../../special-tool';
+import { ToolComponent } from '../../special-tool';
 import { Tool } from '../../special-tool/type';
-import { renderMessage } from '@webview-ui/components/chat/ChatRow/render-block/router';
+import { MessageComponent } from '@webview-ui/components/chat/ChatRow/render-block/router';
 
 interface ChatRowProps {
 	message: ClineMessage
@@ -67,8 +67,9 @@ export const ChatRowContent = (prop: ChatRowContentProps) => {
 	}, [message.ask, message.say, message.text]);
 
 	if (tool) {
-		return renderSpecialTool(tool as unknown as Tool);
+		const toolProp = tool as unknown as Tool;
+		return <ToolComponent {...toolProp}/>;
 	}
 
-	return renderMessage(prop);
+	return <MessageComponent {...prop}/>;
 };

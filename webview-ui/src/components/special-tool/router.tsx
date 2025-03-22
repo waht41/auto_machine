@@ -131,7 +131,7 @@ export function registerToolComponent(
 }
 
 // 主渲染函数
-export const renderTool = (tool: BaseTool): React.ReactNode => {
+export const ToolComponent = (tool: BaseTool): React.ReactNode => {
 	// 调试输出
 	if (isDevMode) {
 		console.log('[ComponentRouter] 开始渲染工具:', tool);
