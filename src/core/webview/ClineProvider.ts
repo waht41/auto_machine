@@ -67,13 +67,12 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		this.workspaceTracker = new WorkspaceTracker(this);
 		this.mcpHub = new McpHub(path.join(configPath,GlobalFileNames.mcpSettings),this.postMessageToWebview.bind(this));
 		this.configService = ConfigService.getInstance();
-		this.init();
 	}
 
 	async init() {
+		await this.configService.init();
 		await this.setUpAllowedTools();
 		await this.mcpHub?.initialize();
-		await this.postMessageToWebview({ type: 'allowedTools', allowedTools:this.allowedToolTree.getAllowedTools() });
 	}
 
 	public get globalState() { // todo waht 临时方案，待删
@@ -789,7 +788,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		uiMessagesFilePath: string
 		apiConversationHistory: Anthropic.MessageParam[]
 	}> {
-		const history = this.globalState.get('taskHistory') || [];
+		const history = this.configService.getTaskHistory();
 		logger.debug('getTaskWithId history: ', history, 'id:',id);
 
 		const historyItem = history.find((item) => item.id === id);
@@ -866,9 +865,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 
 	async deleteTaskFromState(id: string) {
 		// Remove the task from history
-		const taskHistory = await this.getGlobalState('taskHistory');
-		const updatedTaskHistory = taskHistory?.filter((task) => task.id !== id);
-		await this.updateGlobalState('taskHistory', updatedTaskHistory);
+		await this.configService.deleteTaskHistory(id);
 
 		// Notify the webview that the task has been deleted
 		await this.postStateToWebview();
@@ -882,7 +879,8 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 
 	async getStateToPostToWebview() {
 		const state = await this.getState();
-		const { taskHistory, lastShownAnnouncementId, ...restState } = state;
+		const { lastShownAnnouncementId, ...restState } = state;
+		const taskHistory = this.configService.getTaskHistory();
 		return {
 			version: process.env?.version ?? '',
 			uriScheme: vscode.env.uriScheme,
@@ -904,8 +902,8 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		return await this.configService.getConfig();
 	}
 
-	async updateTaskHistory(item: HistoryItem): Promise<HistoryItem[]> {
-		return await this.globalState.updateTaskHistory(item);
+	async updateTaskHistory(item: HistoryItem) {
+		await this.configService.addTaskHistory(item);
 	}
 
 	// global
