@@ -1,5 +1,5 @@
 import React from 'react';
-import { ClineMessage } from '@/shared/ExtensionMessage';
+import { ClineAsk, ClineMessage, ClineSay } from '@/shared/ExtensionMessage';
 import { DefaultComponent } from './DefaultComponent';
 import { ReasoningComponent } from './ReasoningComponent';
 import { ApiRequestComponent } from './ApiRequestComponent';
@@ -19,12 +19,12 @@ const componentRoutes: RouteNode = {
 		text: TextComponent,
 		user_feedback: UserFeedbackComponent,
 		error: ErrorComponent,
-		completion_result: CompletionResultComponent,
+		completion_result: CompletionResultComponent
 	},
 	ask: {
 		mistake_limit_reached: MistakeLimitReachedComponent,
 		completion_result: CompletionResultComponent,
-		followup: FollowupComponent,
+		followup: FollowupComponent
 	}
 };
 
@@ -42,7 +42,7 @@ export const resolveComponent = (message: ClineMessage): ComponentRenderer => {
 		return DefaultComponent;
 	}
 
-	const type: string = message.type;
+	const type = message.type;
 
 	// 调试输出
 	if (isDevMode) {
@@ -56,22 +56,26 @@ export const resolveComponent = (message: ClineMessage): ComponentRenderer => {
 	}
 
 	// 获取子类型
-	let subType  = '';
+	let subType: ClineAsk | ClineSay | undefined;
+	let component: ComponentRenderer | undefined;
 	if (type === 'say') {
-		subType = message.say || '';
+		subType = message.say;
+		if (subType) {
+			component = componentRoutes['say'][subType];
+		}
 	} else if (type === 'ask') {
-		subType = message.ask || '';
+		subType = message.ask;
+		if (subType) {
+			component = componentRoutes['ask'][subType];
+		}
 	}
 
 	// 检查子类型是否存在
-	if (!subType || !componentRoutes[type][subType]) {
+	if (!component) {
 		console.warn(`[MessageRouter] 未找到子类型: ${type}.${subType}`);
 		return DefaultComponent;
 	}
 
-	// 获取组件
-	const component = componentRoutes[type][subType];
-  
 	// 检查是否为组件渲染器
 	if (typeof component !== 'function') {
 		console.warn(`[MessageRouter] 组件不是渲染器: ${type}.${subType}`);
@@ -91,7 +95,7 @@ export const resolveComponent = (message: ClineMessage): ComponentRenderer => {
 export function renderMessage(prop: DefaultComponentProps): React.ReactNode {
 	// 解析组件
 	const Component = resolveComponent(prop.message);
-  
+
 	// 渲染组件
 	return <Component {...prop} />;
 }
