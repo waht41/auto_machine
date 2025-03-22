@@ -8,6 +8,7 @@ import { DeepReadonly } from '@/utils/type';
 import { IUIMessage } from '@core/services/type';
 
 export class UIMessageService {
+	readonly endHint = 'roo stop the conversion, should resume?';
 	clineMessages: ClineMessage[] = [];
 	private messageId = 0;
 	constructor(private taskDirectory: string, private onSaveClineMessages: () => Promise<void>) {
@@ -21,6 +22,11 @@ export class UIMessageService {
 		this.clineMessages = await this.getSavedClineMessages();
 		this.messageId = this.clineMessages.reduce((maxId, { messageId }) =>
 			messageId != null ? Math.max(maxId, messageId) : maxId, this.messageId);
+	}
+
+	public async cleanHistory() {
+		this.clineMessages = [];
+		await this.saveClineMessages();
 	}
 
 	private async getSavedUIMessage(): Promise<IUIMessage>{

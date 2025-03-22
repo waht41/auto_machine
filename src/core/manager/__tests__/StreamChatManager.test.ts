@@ -1,6 +1,7 @@
 import { StreamChatManager } from '../StreamChatManager';
 import { ApiHandler } from '@/api';
-import { IApiConversationItem } from '../type';
+
+import { IApiConversationItem } from '@core/services/type';
 
 // 模拟依赖
 jest.mock('fs/promises', () => ({

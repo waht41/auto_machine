@@ -33,13 +33,13 @@ import process from 'node:process';
 import { toUserContent, UserContent } from '@core/prompts/utils';
 import { Command, Middleware } from '@executors/types';
 import { StreamChatManager } from '@core/manager/StreamChatManager';
-import { IApiConversationHistory } from '@core/manager/type';
 import { IInternalContext } from '@core/internal-implementation/type';
 import { ProcessingState } from '@core/handlers/type';
 import { BlockProcessHandler } from '@core/handlers/BlockProcessHandler';
 import logger from '@/utils/logger';
 import yaml from 'js-yaml';
 import { parseXml } from '@/utils/xml';
+import { IApiConversationHistory } from '@core/services/type';
 
 const cwd = process.cwd();
 
