@@ -8,8 +8,12 @@ class IPCWorker {
 	private clientHandler = new ClientHandler(this.sendToMainProcess.bind(this));
 
 	constructor() {
-		this.setupEventListeners();
-		console.log('Hello worker process started again！！！!');
+		this.clientHandler.init().then(
+			() => {
+				this.setupEventListeners();
+				console.log('Hello worker process started!!!');
+			}
+		).catch(console.error);
 	}
 
 	/**

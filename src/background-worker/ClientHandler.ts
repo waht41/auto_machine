@@ -10,8 +10,11 @@ export class ClientHandler {
 
 	constructor(sendToMainProcess: (message: any) => void) {
 		this.webview = new MockWebviewView('mock', sendToMainProcess);
-		//@ts-ignore
 		this.cp = new ClineProvider(sendToMainProcess);
+	}
+
+	async init(): Promise<void> {
+		await this.cp.init();
 		//@ts-ignore
 		this.cp.resolveWebviewView(this.webview);
 	}
