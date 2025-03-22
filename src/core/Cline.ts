@@ -75,8 +75,7 @@ export class Cline {
 
 	private providerRef: WeakRef<ClineProvider>;
 	private abort: boolean = false;
-	didFinishAborting = false;
-	abandoned = false;
+	abortComplete = false;
 	private diffViewProvider: DiffViewProvider;
 	private postMessageToWebview: (message: ExtensionMessage) => Promise<void>;
 
@@ -303,7 +302,7 @@ export class Cline {
 
 	async sayx(message: ClineMessage): Promise<undefined> {
 		if (this.abort) {
-			logger.error('sayx Roo Code instance aborted',message);
+			logger.debug('sayx after abort',message);
 		}
 		const lastMessage = this.streamChatManager.getLastClineMessage();
 		const isUpdatingPreviousPartial =
@@ -567,7 +566,7 @@ export class Cline {
 			const isThisBlockFinished = !block.partial || this.didRejectTool;
 			if (isThisBlockFinished){
 				this.blockProcessHandler.toNextBlock();
-				logger.debug('handleAssistantMessage', 'toNextBlock', this.blockProcessHandler.getCurrentMessageId());
+				logger.debug('handleAssistantMessage toNextBlock', this.blockProcessHandler.getCurrentMessageId());
 			}
 			if (isThisBlockFinished && blockPositionState.last) {
 				// its okay that we increment if !didCompleteReadingStream, it'll just return bc out of bounds and as streaming continues it will call presentAssitantMessage if a new block is ready. if streaming is finished then we set isThisStreamEnd to true when out of bounds. This gracefully allows the stream to continue on and all potential content blocks be presented.
@@ -602,7 +601,7 @@ export class Cline {
 		}
 		const texts = this.userMessageContent.filter((block) => block.type === 'text');
 		const textStrings = texts.map((block) => block.text);
-		logger.debug('handleAssistantMessage','pushToolResult',textStrings);
+		logger.debug('handleAssistantMessage pushToolResult',textStrings);
 		await this.sayP({
 			sayType: 'text',
 			text: textStrings.join('\n'),
@@ -727,8 +726,9 @@ export class Cline {
 		if (lastMessage && lastMessage.partial) {
 			// lastMessage.ts = Date.now() DO NOT update ts since it is used as a key for virtuoso list
 			lastMessage.partial = false;
+			await this.sayP({sayType: 'text', text: lastMessage.text, partial: false, messageId: lastMessage.messageId});
 			// instead of streaming partialMessage events, we do a save and post like normal to persist to disk
-			console.log('updating partial message', lastMessage);
+			console.log('abort last message', lastMessage);
 		}
 
 		// Let assistant know their response was interrupted for when task is resumed
@@ -755,13 +755,13 @@ export class Cline {
 		await this.streamChatManager.saveClineMessages();
 
 		// signals to provider that it can retrieve the saved messages from disk, as abortTask can not be awaited on in nature
-		this.didFinishAborting = true;
+		this.abortComplete = true;
 	}
 
 	private async handleStreamError(error: Error, assistantMessage: string, apiReq: ClineApiReqInfo, lastApiReqIndex: number) {
 		console.error('error when receive chunk: ', error);
 		// abandoned happens when extension is no longer waiting for the cline instance to finish aborting (error is thrown here when any function in the for loop throws due to this.abort)
-		if (!this.abandoned) {
+		if (!this.abortComplete) {
 			this.isCurrentStreamEnd = true;
 			this.blockProcessHandler.markPartialBlockAsComplete();
 			this.abortTask(); // if the stream failed, there's various states the task could be in (i.e. could have streamed some tools the user may have executed), so we just resort to replicating a cancel task
@@ -841,7 +841,7 @@ export class Cline {
 				// 处理终止条件
 				if (this.abort) {
 					console.log('aborting stream...');
-					if (!this.abandoned) {
+					if (!this.abortComplete) {
 						// only need to gracefully abort if this instance isn't abandoned (sometimes openrouter stream hangs, in which case this would affect future instances of cline)
 						await this.abortStream('user_cancelled', streamState.assistantMessage, streamState.apiReq, lastApiReqIndex);
 					}
