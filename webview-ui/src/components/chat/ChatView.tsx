@@ -17,7 +17,6 @@ import { useExtensionState } from '../../context/ExtensionStateContext';
 import { vscode } from '../../utils/vscode';
 import HistoryPreview from '../history/HistoryPreview';
 import Announcement from './Announcement';
-import BrowserSessionRow from './BrowserSessionRow';
 import ChatRow from './ChatRow/ChatRow';
 import ChatTextArea from './ChatTextArea';
 import TaskHeader from './TaskHeader';
@@ -158,16 +157,6 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 					}
 					break;
 				case 'say':
-					// don't want to reset since there could be a "say" after an "ask" while ask is waiting for response
-					switch (lastMessage.say) {
-						case 'api_req_started':
-						case 'task':
-						case 'error':
-						case 'text':
-						case 'completion_result':
-						case 'tool':
-							break;
-					}
 					break;
 			}
 		}
@@ -188,24 +177,32 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 	}, [task?.ts]);
 
 	const isStreaming = useMemo(() => {
-		const isLastAsk = !!modifiedMessages.at(-1)?.ask; // checking clineAsk isn't enough since messages effect may be called again for a tool for example, set clineAsk to its value, and if the next message is not an ask then it doesn't reset. This is likely due to how much more often we're updating messages as compared to before, and should be resolved with optimizations as it's likely a rendering bug. but as a final guard for now, the cancel button will show if the last message is not an ask
-		const isToolCurrentlyAsking =
-			isLastAsk && clineAsk !== undefined && enableButtons && primaryButtonText !== undefined;
-		if (isToolCurrentlyAsking) {
-			return false;
-		}
+		const lastMessage = modifiedMessages.at(-1);
+		const lastMessageIsAsk = !!lastMessage?.ask;
 
-		const isLastMessagePartial = modifiedMessages.at(-1)?.partial === true;
-		if (isLastMessagePartial) {
-			return true;
-		} else {
-			const lastApiReqStarted = findLast(modifiedMessages, (message) => message.say === 'api_req_started');
-			if (lastApiReqStarted && lastApiReqStarted.text != null && lastApiReqStarted.say === 'api_req_started') {
-				const cost = JSON.parse(lastApiReqStarted.text).cost;
-				if (cost === undefined) {
-					// api request has not finished yet
-					return true;
-				}
+		// 判断工具是否处于主动提问状态
+		const isToolActive = lastMessageIsAsk &&
+			clineAsk !== undefined &&
+			enableButtons &&
+			primaryButtonText !== undefined;
+		if (isToolActive) return false;
+
+		// 检查最后一条消息是否为流式传输中的部分响应
+		if (lastMessage?.partial) return true;
+
+		// 检查未完成的API请求
+		const lastApiRequest = findLast(
+			modifiedMessages,
+			(msg) => msg.say === 'api_req_started'
+		);
+
+		if (lastApiRequest?.text) {
+			try {
+				const { cost } = JSON.parse(lastApiRequest.text);
+				// 当cost未定义时表示请求尚未完成
+				return cost === undefined;
+			} catch (e) {
+				console.error('Invalid API request JSON:', lastApiRequest.text);
 			}
 		}
 
@@ -521,64 +518,11 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 		setWasStreaming(isStreaming);
 	}, [isStreaming, lastMessage, wasStreaming, isAutoApproved]);
 
-	const isBrowserSessionMessage = (message: ClineMessage): boolean => {
-		// which of visible messages are browser session messages, see above
-		if (message.type === 'ask') {
-			return ['browser_action_launch'].includes(message.ask!);
-		}
-		if (message.type === 'say') {
-			return ['api_req_started', 'text', 'browser_action', 'browser_action_result'].includes(message.say!);
-		}
-		return false;
-	};
-
 	const groupedMessages = useMemo(() => {
 		const result: (ClineMessage | ClineMessage[])[] = [];
-		let currentGroup: ClineMessage[] = [];
-		let isInBrowserSession = false;
-
-		const endBrowserSession = () => {
-			if (currentGroup.length > 0) {
-				result.push([...currentGroup]);
-				currentGroup = [];
-				isInBrowserSession = false;
-			}
-		};
-
 		visibleMessages.forEach((message) => {
-			if (isInBrowserSession) {
-				// end session if api_req_started is cancelled
-
-				if (message.say === 'api_req_started') {
-					// get last api_req_started in currentGroup to check if it's cancelled. If it is then this api req is not part of the current browser session
-					const lastApiReqStarted = [...currentGroup].reverse().find((m) => m.say === 'api_req_started');
-					if (lastApiReqStarted?.text != null) {
-						const info = JSON.parse(lastApiReqStarted.text);
-						const isCancelled = info.cancelReason != null;
-						if (isCancelled) {
-							endBrowserSession();
-							result.push(message);
-							return;
-						}
-					}
-				}
-
-				if (isBrowserSessionMessage(message)) {
-					currentGroup.push(message);
-				} else {
-					// complete existing browser session if any
-					endBrowserSession();
-					result.push(message);
-				}
-			} else {
-				result.push(message);
-			}
+			result.push(message);
 		});
-
-		// Handle case where browser session is the last group
-		if (currentGroup.length > 0) {
-			result.push([...currentGroup]);
-		}
 
 		return result;
 	}, [visibleMessages]);
@@ -709,23 +653,7 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 		(index: number, messageOrGroup: ClineMessage | ClineMessage[]) => {
 			// browser session group
 			if (Array.isArray(messageOrGroup)) {
-				return (
-					<BrowserSessionRow
-						messages={messageOrGroup}
-						isLast={index === groupedMessages.length - 1}
-						lastModifiedMessage={modifiedMessages.at(-1)}
-						onHeightChange={handleRowHeightChange}
-						isStreaming={isStreaming}
-						// Pass handlers for each message in the group
-						isExpanded={(messageTs: number) => expandedRows[messageTs] ?? false}
-						onToggleExpand={(messageTs: number) => {
-							setExpandedRows((prev) => ({
-								...prev,
-								[messageTs]: !prev[messageTs],
-							}));
-						}}
-					/>
-				);
+				return null;
 			}
 
 			// regular message
