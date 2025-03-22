@@ -668,50 +668,6 @@ export class Cline {
 		return parsedUserContent;
 	}
 
-	async handleAssistantMessageComplete(assistantMessage: string) {
-		// now add to apiconversationhistory
-		// need to save assistant responses to file before proceeding to tool use since user can exit at any moment and we wouldn't be able to save the assistant's response
-		if (this.abort) {
-			return true;
-		}
-		let didEndLoop = false;
-		if (assistantMessage.length > 0) {
-			await this.streamChatManager.addToApiConversationHistory({
-				role: 'assistant',
-				content: [{type: 'text', text: assistantMessage}],
-			});
-
-			// if the model did not tool use, then we need to tell it to either use a tool or attempt_completion
-			// const didToolUse = this.assistantMessageContent.some((block) => block.type === "tool_use")
-			if (!this.didGetNewMessage) {
-				await this.askP({
-					askType: 'followup',
-					text: this.streamChatManager.endHint,
-					partial: false,
-					noReturn: true,
-				});
-				return true;
-			} else if (this.asking) {
-				this.asking = false;
-				return true; // 不管asking，直接返回
-			} else {
-				didEndLoop = await this.recursivelyMakeClineRequests(this.userMessageContent);
-			}
-		} else {
-			// if there's no assistant_responses, that means we got no text or tool_use content blocks from API which we should assume is an error
-			await this.sayP({
-				sayType: 'error',
-				text: 'Unexpected API Response: The language model did not provide any assistant messages. This may indicate an issue with the API or the model\'s output.'
-			});
-			await this.streamChatManager.addToApiConversationHistory({
-				role: 'assistant',
-				content: [{type: 'text', text: 'Failure: I did not provide a response.'}],
-			});
-		}
-
-		return didEndLoop;
-	}
-
 	updateApiReq(apiReq: ClineApiReqInfo, lastApiReqIndex: number) {
 		this.clineMessages[lastApiReqIndex].text = JSON.stringify(apiReq);
 	}
@@ -823,6 +779,17 @@ export class Cline {
 		return newState;
 	}
 
+	private initializeApiReq(index: number): ClineApiReqInfo {
+		const apiReq = JSON.parse(this.clineMessages[index].text || '{}');
+		return {
+			...apiReq,
+			tokensIn: 0,
+			tokensOut: 0,
+			cacheWrites: 0,
+			cacheReads: 0
+		};
+	}
+
 	async handleStreamingMessage(previousApiReqIndex: number, lastApiReqIndex: number) {
 		let streamState: ProcessingState = {
 			reasoningMessage: '',
@@ -857,19 +824,55 @@ export class Cline {
 			await this.handleStreamError(error, streamState.assistantMessage, streamState.apiReq, lastApiReqIndex);
 		}
 
-		await this.finalizeProcessing(streamState, lastApiReqIndex);
-		return this.handleAssistantMessageComplete(streamState.assistantMessage);
+		return this.handleAssistantMessageComplete(streamState, lastApiReqIndex);
 	}
 
-	private initializeApiReq(index: number): ClineApiReqInfo {
-		const apiReq = JSON.parse(this.clineMessages[index].text || '{}');
-		return {
-			...apiReq,
-			tokensIn: 0,
-			tokensOut: 0,
-			cacheWrites: 0,
-			cacheReads: 0
-		};
+	async handleAssistantMessageComplete(streamState: ProcessingState, lastApiReqIndex: number) {
+		await this.finalizeProcessing(streamState, lastApiReqIndex);
+		const assistantMessage = streamState.assistantMessage;
+		// now add to apiconversationhistory
+		// need to save assistant responses to file before proceeding to tool use since user can exit at any moment and we wouldn't be able to save the assistant's response
+		if (this.abort) {
+			return true;
+		}
+		let didEndLoop = false;
+		if (assistantMessage.length > 0) {
+			await this.streamChatManager.addToApiConversationHistory({
+				role: 'assistant',
+				content: [{type: 'text', text: assistantMessage}],
+			});
+
+			// if the model did not tool use, then we need to tell it to either use a tool or attempt_completion
+			// const didToolUse = this.assistantMessageContent.some((block) => block.type === "tool_use")
+			if (!this.didGetNewMessage) {
+				await this.askP({
+					askType: 'followup',
+					text: this.streamChatManager.endHint,
+					partial: false,
+					noReturn: true,
+				});
+				return true;
+			}
+
+			if (this.asking) {
+				this.asking = false;
+				return true; // 不管asking，直接返回
+			}
+
+			didEndLoop = await this.recursivelyMakeClineRequests(this.userMessageContent);
+		} else {
+			// if there's no assistant_responses, that means we got no text or tool_use content blocks from API which we should assume is an error
+			await this.sayP({
+				sayType: 'error',
+				text: 'Unexpected API Response: The language model did not provide any assistant messages. This may indicate an issue with the API or the model\'s output.'
+			});
+			await this.streamChatManager.addToApiConversationHistory({
+				role: 'assistant',
+				content: [{type: 'text', text: 'Failure: I did not provide a response.'}],
+			});
+		}
+
+		return didEndLoop;
 	}
 
 	private async finalizeProcessing(state: ProcessingState, index: number) {
