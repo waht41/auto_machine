@@ -18,7 +18,7 @@ import { vscode } from '../../utils/vscode';
 import HistoryPreview from '../history/HistoryPreview';
 import Announcement from './Announcement';
 import BrowserSessionRow from './BrowserSessionRow';
-import ChatRow from './ChatRow';
+import ChatRow from './ChatRow/ChatRow';
 import ChatTextArea from './ChatTextArea';
 import TaskHeader from './TaskHeader';
 import AutoApproveMenu from './AutoApproveMenu';

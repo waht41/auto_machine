@@ -1,6 +1,6 @@
 import React from 'react';
-import { ProgressIndicator } from '@webview-ui/components/chat/ChatRow';
 import { cancelledColor, errorColor, normalColor, successColor } from '@webview-ui/components/common/styles';
+import { ProgressIndicator } from '@webview-ui/components/chat/ChatRow/ProgressIndicator';
 
 export type ChatStatus =
 	| 'CANCELLED'

@@ -30,7 +30,7 @@ jest.mock('../BrowserSessionRow', () => ({
 	},
 }));
 
-jest.mock('../ChatRow', () => ({
+jest.mock('../ChatRow/ChatRow', () => ({
 	__esModule: true,
 	default: function MockChatRow({ message }: { message: any }) {
 		return <div data-testid="chat-row">{JSON.stringify(message)}</div>;
