@@ -23,7 +23,6 @@ import { setSoundEnabled, setSoundVolume } from '@/utils/sound';
 import { singleCompletionHandler } from '@/utils/single-completion-handler';
 import { searchCommits } from '@/utils/git';
 import { supportPrompt } from '@/shared/support-prompt';
-import { GlobalState } from '@core/storage/global-state';
 import { configPath, createIfNotExists, getAssetPath } from '@core/storage/common';
 import { ApprovalMiddleWrapper } from '@core/internal-implementation/middleware';
 import { getToolCategory } from '@core/tool-adapter/getToolCategory';
@@ -67,7 +66,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		ClineProvider.activeInstances.add(this);
 		this.workspaceTracker = new WorkspaceTracker(this);
 		this.mcpHub = new McpHub(path.join(configPath,GlobalFileNames.mcpSettings),this.postMessageToWebview.bind(this));
-		this.configService = ConfigService.getInstance(new GlobalState(path.join(configPath, GlobalFileNames.globalState)));
+		this.configService = ConfigService.getInstance();
 		this.init();
 	}
 
@@ -77,7 +76,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		await this.postMessageToWebview({ type: 'allowedTools', allowedTools:this.allowedToolTree.getAllowedTools() });
 	}
 
-	public get globalState(): GlobalState{ // todo waht 临时方案，待删
+	public get globalState() { // todo waht 临时方案，待删
 		return this.configService.getState();
 	}
 
@@ -290,7 +289,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 						break;
 					case 'apiConfiguration':
 						if (message.apiConfiguration) {
-							await this.globalState.set('apiConfiguration',message.apiConfiguration);
+							await this.configService.updateApiConfig(message.apiConfiguration);
 						}
 						await this.postStateToWebview();
 						break;
@@ -718,11 +717,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 					case 'upsertApiConfiguration':
 						if (message.text && message.apiConfiguration) {
 							try {
-
-								await Promise.all([
-									await this.globalState.set('apiConfiguration',message.apiConfiguration),
-								]);
-
+								await this.configService.updateApiConfig(message.apiConfiguration);
 								await this.postStateToWebview();
 							} catch (error) {
 								console.error('Error create new api configuration:', error);

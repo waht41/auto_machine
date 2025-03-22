@@ -10,13 +10,14 @@ import { GlobalFileNames } from '@core/webview/const';
 export class ConfigService {
 	private static _instance: ConfigService;
 	private _secrets = new SecretStorage(path.join(configPath, GlobalFileNames.secrets));
+	private _state = new GlobalState(path.join(configPath, GlobalFileNames.globalState));
 
-	private constructor(private _state: GlobalState) {
+	private constructor() {
 	}
 
-	public static getInstance(state: GlobalState): ConfigService {
+	public static getInstance(): ConfigService {
 		if (!ConfigService._instance) {
-			ConfigService._instance = new ConfigService(state);
+			ConfigService._instance = new ConfigService();
 		}
 		return ConfigService._instance;
 	}
@@ -31,7 +32,7 @@ export class ConfigService {
 	}
 
 	public async getApiConfig(): Promise<ApiConfiguration> {
-		const apiConfig = await this._state.get('apiConfiguration');
+		const apiConfig = this._state.get('apiConfiguration');
 		const secrets = await this.getSecrets();
 		return { ...apiConfig, ...secrets };
 	}
