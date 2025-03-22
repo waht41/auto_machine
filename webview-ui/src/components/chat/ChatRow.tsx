@@ -15,6 +15,8 @@ import McpToolRow from '../mcp/McpToolRow';
 import { highlightMentions } from './TaskHeader';
 import renderSpecialTool from '../special-tool';
 import { Tool } from '../special-tool/type';
+import { errorColor, headerStyle, normalColor, pStyle, successColor } from '../common/styles';
+import { ChatStatus, StatusIcon, StatusText } from '@webview-ui/components/chat/Header';
 
 interface ChatRowProps {
 	message: ClineMessage
@@ -101,11 +103,6 @@ export const ChatRowContent = ({
 
 	const type = message.type === 'ask' ? message.ask : message.say;
 
-	const normalColor = 'var(--vscode-foreground)';
-	const errorColor = 'var(--vscode-errorForeground)';
-	const successColor = 'var(--vscode-charts-green)';
-	const cancelledColor = 'var(--vscode-descriptionForeground)';
-
 	const [icon, title] = useMemo(() => {
 		switch (type) {
 			case 'error':
@@ -155,53 +152,25 @@ export const ChatRowContent = ({
 						style={{ color: successColor, marginBottom: '-1.5px' }}></span>,
 					<span style={{ color: successColor, fontWeight: 'bold' }}>Task Completed</span>,
 				];
-			case 'api_req_started':
-				const getIconSpan = (iconName: string, color: string) => (
-					<div
-						style={{
-							width: 16,
-							height: 16,
-							display: 'flex',
-							alignItems: 'center',
-							justifyContent: 'center',
-						}}>
-						<span
-							className={`codicon codicon-${iconName}`}
-							style={{
-								color,
-								fontSize: 16,
-								marginBottom: '-1.5px',
-							}}></span>
-					</div>
-				);
+			case 'api_req_started': {
+				// 根据条件确定当前状态
+				const determineStatus = (): ChatStatus => {
+					if (apiReqCancelReason) {
+						return apiReqCancelReason === 'user_cancelled'
+							? 'CANCELLED'
+							: 'STREAMING_FAILED';
+					}
+					if (cost) return 'SUCCESS';
+					if (apiRequestFailedMessage) return 'FAILED';
+					return 'IN_PROGRESS';
+				};
+
+				const currentStatus = determineStatus();
 				return [
-					apiReqCancelReason != null ? (
-						apiReqCancelReason === 'user_cancelled' ? (
-							getIconSpan('error', cancelledColor)
-						) : (
-							getIconSpan('error', errorColor)
-						)
-					) : cost != null ? (
-						getIconSpan('check', successColor)
-					) : apiRequestFailedMessage ? (
-						getIconSpan('error', errorColor)
-					) : (
-						<ProgressIndicator />
-					),
-					apiReqCancelReason != null ? (
-						apiReqCancelReason === 'user_cancelled' ? (
-							<span style={{ color: normalColor, fontWeight: 'bold' }}>API Request Cancelled</span>
-						) : (
-							<span style={{ color: errorColor, fontWeight: 'bold' }}>API Streaming Failed</span>
-						)
-					) : cost != null ? (
-						<span style={{ color: normalColor, fontWeight: 'bold' }}>API Request</span>
-					) : apiRequestFailedMessage ? (
-						<span style={{ color: errorColor, fontWeight: 'bold' }}>API Request Failed</span>
-					) : (
-						<span style={{ color: normalColor, fontWeight: 'bold' }}>API Request...</span>
-					),
+					<StatusIcon key="icon" status={currentStatus} />,
+					<StatusText key="text" status={currentStatus} />,
 				];
+			}
 			case 'followup':
 				return [
 					<span
@@ -213,20 +182,6 @@ export const ChatRowContent = ({
 				return [null, null];
 		}
 	}, [type, isCommandExecuting, message, isMcpServerResponding, apiReqCancelReason, cost, apiRequestFailedMessage]);
-
-	const headerStyle: React.CSSProperties = {
-		display: 'flex',
-		alignItems: 'center',
-		gap: '10px',
-		marginBottom: '10px',
-	};
-
-	const pStyle: React.CSSProperties = {
-		margin: 0,
-		whiteSpace: 'pre-wrap',
-		wordBreak: 'break-word',
-		overflowWrap: 'anywhere',
-	};
 
 	const tool = useMemo(() => {
 		if (message.ask === 'tool' || message.say === 'tool') {

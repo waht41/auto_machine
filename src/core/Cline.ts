@@ -303,7 +303,7 @@ export class Cline {
 
 	async sayx(message: ClineMessage): Promise<undefined> {
 		if (this.abort) {
-			throw new Error('Roo Code instance aborted');
+			logger.error('sayx Roo Code instance aborted',message);
 		}
 		const lastMessage = this.streamChatManager.getLastClineMessage();
 		const isUpdatingPreviousPartial =
@@ -499,7 +499,8 @@ export class Cline {
 		// eslint-disable-next-line no-constant-condition
 		while (true) {
 			if (this.abort) {
-				throw new Error('Roo Code instance aborted');
+				this.streamChatManager.endStream();
+				return;
 			}
 
 			if (this.blockProcessHandler.checkProcessingLock()) {
