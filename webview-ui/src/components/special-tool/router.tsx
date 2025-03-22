@@ -70,7 +70,7 @@ export const resolveComponent = (tool: BaseTool): ComponentRenderer => {
 	// 根据路径查找组件
 	let currentRoute: RouteNode = componentRoutes;
 	for (let i = 0; i < routePath.length; i++) {
-		const segment = routePath[i];
+		const segment = routePath[i] as string;
 		if (!currentRoute || typeof currentRoute === 'function' || !currentRoute[segment]) {
 			console.warn(`[ComponentRouter] 路由路径不存在: ${routePath.slice(0, i + 1).join('/')}`);
 			return DefaultComponent;
