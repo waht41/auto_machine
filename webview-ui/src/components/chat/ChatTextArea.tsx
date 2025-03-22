@@ -14,7 +14,6 @@ import ContextMenu from './ContextMenu';
 import Thumbnails from '../common/Thumbnails';
 import { vscode } from '../../utils/vscode';
 import { WebviewMessage } from '@/shared/WebviewMessage';
-import { Mode } from '@/shared/modes';
 
 interface ChatTextAreaProps {
 	inputValue: string
@@ -27,8 +26,6 @@ interface ChatTextAreaProps {
 	onSelectImages: () => void
 	shouldDisableImages: boolean
 	onHeightChange?: (height: number) => void
-	mode: Mode
-	setMode: (value: Mode) => void
 }
 
 const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(

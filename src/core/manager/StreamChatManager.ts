@@ -206,6 +206,7 @@ export class StreamChatManager {
 			const firstChunk = await iterator.next();
 			yield firstChunk.value;
 		} catch (error) {
+			console.error(error);
 			throw new Error('API request failed');
 		}
 
