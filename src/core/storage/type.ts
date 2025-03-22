@@ -1,6 +1,5 @@
 import { ApiConfiguration, ModelInfo } from '@/shared/api';
 import { SecretKey } from '@core/webview/type';
-import { HistoryItem } from '@/shared/HistoryItem';
 
 export type ISecret = {
   apiKey?: string;
@@ -26,7 +25,6 @@ export type IGlobalState = {
   apiConfiguration: ApiConfiguration;
   lastShownAnnouncementId?: string;
   customInstructions?: string;
-  taskHistory?: HistoryItem[];
   allowedCommands?: string[];
   soundEnabled?: boolean;
   soundVolume?: number;

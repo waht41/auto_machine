@@ -5,5 +5,6 @@ export const GlobalFileNames = {
 	openRouterModels: 'openrouter_models.json',
 	mcpSettings: 'mcp_settings.json',
 	globalState: 'auto_machine_global_state.json',
-	secrets: 'auto_machine_secrets.json'
+	secrets: 'auto_machine_secrets.json',
+	taskHistory: 'task_history.json',
 };

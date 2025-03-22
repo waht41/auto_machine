@@ -1,4 +1,3 @@
-import { HistoryItem } from '@/shared/HistoryItem';
 import { Memento } from '@core/storage/memo';
 import { IGlobalState } from '@core/storage/type';
 import { defaultModeSlug } from '@/shared/modes';
@@ -6,18 +5,6 @@ export class GlobalState {
 	private memento: Memento;
 	constructor(statePath: string) {
 		this.memento = new Memento(statePath);
-	}
-	async updateTaskHistory(item: HistoryItem): Promise<HistoryItem[]> {
-		const history = this.get('taskHistory') || [];
-		const existingItemIndex = history.findIndex((h) => h.id === item.id);
-
-		if (existingItemIndex !== -1) {
-			history[existingItemIndex] = item;
-		} else {
-			history.push(item);
-		}
-		await this.set('taskHistory', history);
-		return history;
 	}
 
 	get<T extends keyof IGlobalState>(key: T) {

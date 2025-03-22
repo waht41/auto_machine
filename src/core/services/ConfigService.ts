@@ -6,13 +6,20 @@ import { SecretKey } from '@core/webview/type';
 import { ApiConfiguration } from '@/shared/api';
 import { IGlobalState, secretKeys } from '@core/storage/type';
 import { GlobalFileNames } from '@core/webview/const';
+import { TaskHistoryStorage } from '@core/storage/taskHistory';
+import { HistoryItem } from '@/shared/HistoryItem';
 
 export class ConfigService {
 	private static _instance: ConfigService;
 	private _secrets = new SecretStorage(path.join(configPath, GlobalFileNames.secrets));
 	private _state = new GlobalState(path.join(configPath, GlobalFileNames.globalState));
+	private _taskHistory: TaskHistoryStorage = new TaskHistoryStorage(this._state.get('taskDirRoot'));
 
 	private constructor() {
+	}
+
+	async init() {
+		await this._taskHistory.init();
 	}
 
 	public static getInstance(): ConfigService {
@@ -78,5 +85,17 @@ export class ConfigService {
 
 	public getState() {
 		return this._state;
+	}
+
+	public getTaskHistory() {
+		return this._taskHistory.getTaskHistory();
+	}
+
+	public addTaskHistory(item: HistoryItem) {
+		return this._taskHistory.addTaskHistory(item);
+	}
+
+	public async deleteTaskHistory(id: string) {
+		await this._taskHistory.deleteTaskHistory(id);
 	}
 }
