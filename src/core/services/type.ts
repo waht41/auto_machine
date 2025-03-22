@@ -1,7 +1,8 @@
-import { ClineMessage } from '@/shared/ExtensionMessage';
+import { ClineApiReqInfo, ClineMessage } from '@/shared/ExtensionMessage';
 import { Anthropic } from '@anthropic-ai/sdk';
 
 export interface IUIMessage {
+	apiReqInfo?: ClineApiReqInfo;
 	clineMessages: ClineMessage[];
 }
 

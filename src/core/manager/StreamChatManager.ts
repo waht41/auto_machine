@@ -6,7 +6,7 @@ import { Anthropic } from '@anthropic-ai/sdk';
 import path from 'path';
 import { ProcessingState } from '@core/handlers/type';
 import { calculateApiCost } from '@/utils/cost';
-import { ClineMessage } from '@/shared/ExtensionMessage';
+import { ClineApiReqInfo, ClineMessage } from '@/shared/ExtensionMessage';
 import { getApiMetrics } from '@/shared/getApiMetrics';
 import { findLastIndex } from '@/shared/array';
 import { HistoryItem } from '@/shared/HistoryItem';
@@ -21,8 +21,8 @@ export class StreamChatManager {
 	private uiMessageService: UIMessageService;
 	private apiHistoryService: ApiConversationHistoryService;
 
-	constructor(private api: ApiHandler, private taskDir: string, private onSaveClineMessages: () => Promise<void>) {
-		this.uiMessageService = new UIMessageService(this.taskDir, this.onSaveClineMessages);
+	constructor(private api: ApiHandler, private taskDir: string, private onSaveUIMessages: () => Promise<void>) {
+		this.uiMessageService = new UIMessageService(this.taskDir, this.onSaveUIMessages);
 		this.apiHistoryService = new ApiConversationHistoryService(this.taskDir);
 	}
 
@@ -223,5 +223,9 @@ export class StreamChatManager {
 
 	public async setLastMessage(message: ClineMessage) {
 		await this.uiMessageService.setLastMessage(message);
+	}
+
+	public async updateApiRequest(apiReq: ClineApiReqInfo){
+		await this.uiMessageService.updateApiRequest(apiReq);
 	}
 }

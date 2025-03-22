@@ -1,4 +1,4 @@
-import { ClineMessage } from '@/shared/ExtensionMessage';
+import { ClineApiReqInfo, ClineMessage } from '@/shared/ExtensionMessage';
 import path from 'path';
 import { GlobalFileNames } from '@core/webview/const';
 import { fileExistsAtPath } from '@/utils/fs';
@@ -9,17 +9,21 @@ import { IUIMessage } from '@core/services/type';
 
 export class UIMessageService {
 	readonly endHint = 'roo stop the conversion, should resume?';
-	clineMessages: ClineMessage[] = [];
+	private uiMessage: IUIMessage = {clineMessages:[]};
 	private messageId = 0;
-	constructor(private taskDirectory: string, private onSaveClineMessages: () => Promise<void>) {
+	constructor(private taskDirectory: string, private onSaveUIMessages: () => Promise<void>) {
 	}
-	public async getSavedClineMessages(): Promise<ClineMessage[]> {
-		const uiMessage = await this.getSavedUIMessage();
-		return uiMessage.clineMessages;
+
+	public get clineMessages() {
+		return this.uiMessage.clineMessages;
+	}
+
+	public set clineMessages(clineMessages: ClineMessage[]) {
+		this.uiMessage.clineMessages = clineMessages;
 	}
 
 	public async loadHistory(){
-		this.clineMessages = await this.getSavedClineMessages();
+		this.uiMessage = await this.getSavedUIMessage();
 		this.messageId = this.clineMessages.reduce((maxId, { messageId }) =>
 			messageId != null ? Math.max(maxId, messageId) : maxId, this.messageId);
 	}
@@ -42,11 +46,11 @@ export class UIMessageService {
 		return {clineMessages: []};
 	}
 
-	private async saveUIMessage(uiMessage: IUIMessage){
+	private async saveUIMessage(){
 		try {
 			const filePath = path.join(this.taskDirectory, GlobalFileNames.uiMessages);
-			await fs.writeFile(filePath, JSON.stringify(uiMessage));
-			await this.onSaveClineMessages();
+			await fs.writeFile(filePath, JSON.stringify(this.uiMessage));
+			await this.onSaveUIMessages();
 		} catch (error) {
 			console.error('Failed to ui messages:', error);
 		}
@@ -54,8 +58,7 @@ export class UIMessageService {
 
 	public async saveClineMessages() {
 		try {
-			await this.saveUIMessage({clineMessages: this.clineMessages});
-			await this.onSaveClineMessages();
+			await this.saveUIMessage();
 		} catch (error) {
 			console.error('Failed to save cline messages:', error);
 		}
@@ -94,5 +97,10 @@ export class UIMessageService {
 		}
 		this.clineMessages[this.clineMessages.length - 1] = message;
 		await this.saveClineMessages();
+	}
+
+	async updateApiRequest(apiReq: ClineApiReqInfo){
+		this.uiMessage.apiReqInfo = apiReq;
+		await this.saveUIMessage();
 	}
 }

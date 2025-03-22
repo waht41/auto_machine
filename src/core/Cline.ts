@@ -668,8 +668,9 @@ export class Cline {
 		return parsedUserContent;
 	}
 
-	updateApiReq(apiReq: ClineApiReqInfo, lastApiReqIndex: number) {
+	async updateApiReq(apiReq: ClineApiReqInfo, lastApiReqIndex: number) {
 		this.clineMessages[lastApiReqIndex].text = JSON.stringify(apiReq);
+		await this.streamChatManager.updateApiRequest(apiReq);
 	}
 
 	private async abortStream(cancelReason: ClineApiReqCancelReason, assistantMessage: string, apiReq: ClineApiReqInfo, lastApiReqIndex: number, streamingFailedMessage?: string) {
@@ -707,8 +708,7 @@ export class Cline {
 		// update api_req_started to have cancelled and cost, so that we can display the cost of the partial stream
 		apiReq.cancelReason = cancelReason;
 		apiReq.streamingFailedMessage = streamingFailedMessage;
-		this.updateApiReq(apiReq, lastApiReqIndex);
-		await this.streamChatManager.saveClineMessages();
+		await this.updateApiReq(apiReq, lastApiReqIndex);
 
 		// signals to provider that it can retrieve the saved messages from disk, as abortTask can not be awaited on in nature
 		this.abortComplete = true;
@@ -884,8 +884,7 @@ export class Cline {
 		}
 		await pWaitFor(() => this.isCurrentStreamEnd); // wait for the last block to be presented
 
-		this.updateApiReq(state.apiReq, index);
-		await this.streamChatManager.saveClineMessages();
+		await this.updateApiReq(state.apiReq, index);
 		await this.providerRef.deref()?.postStateToWebview();
 	}
 
