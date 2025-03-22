@@ -119,7 +119,7 @@ export class Cline {
 		this.diffViewProvider = new DiffViewProvider(cwd);
 		this.mcpHub = mcpHub;
 		this.taskDir = path.join(taskParentDir, this.taskId);
-		this.streamChatManager = new StreamChatManager(this.taskId, this.api, this.taskDir, this.postTaskHistory.bind(this));
+		this.streamChatManager = new StreamChatManager(this.api, this.taskDir, this.postTaskHistory.bind(this));
 		registerInternalImplementation(this.executor);
 		for (const middleware of middleWares) {
 			this.executor.use(middleware);

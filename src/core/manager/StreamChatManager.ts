@@ -12,28 +12,36 @@ import { ClineMessage } from '@/shared/ExtensionMessage';
 import { getApiMetrics } from '@/shared/getApiMetrics';
 import { findLastIndex } from '@/shared/array';
 import { HistoryItem } from '@/shared/HistoryItem';
-import { DeepReadonly } from '@/utils/type';
 import { GlobalFileNames } from '@core/webview/const';
 import cloneDeep from 'clone-deep';
 import TextBlockParam = Anthropic.TextBlockParam;
 import { isArray } from 'lodash';
+import { UIMessageService } from '@core/services/UIMessageService';
 
 
 export class StreamChatManager {
 	apiConversationHistory: IApiConversationHistory = [];
 	didCompleteReadingStream = false;
 
-	clineMessages: ClineMessage[] = [];
 	readonly endHint = 'roo stop the conversion, should resume?';
 	readonly metaRegex = /<meta[\s\S]*?<\/meta>/gi;
-	private messageId = 0;
 	private apiHistoryId = 0;
+	private uiMessageService: UIMessageService;
 
-	constructor(private taskId: string, private api: ApiHandler, private taskDir: string, private onSaveClineMessages: () => Promise<void>) {
+	constructor(private api: ApiHandler, private taskDir: string, private onSaveClineMessages: () => Promise<void>) {
+		this.uiMessageService = new UIMessageService(this.taskDir, this.onSaveClineMessages);
 	}
 
 	async init() {
 		await this.resumeHistory();
+	}
+
+	public get clineMessages() {
+		return this.uiMessageService.clineMessages;
+	}
+
+	public set clineMessages(clineMessages: ClineMessage[]) {
+		this.uiMessageService.clineMessages = clineMessages;
 	}
 
 	public resetStream() {
@@ -181,7 +189,7 @@ export class StreamChatManager {
 				)
 			];
 		return {
-			id: this.taskId,
+			id: path.basename(this.taskDir),
 			ts: lastRelevantMessage.ts,
 			task: taskMessage.text ?? '',
 			tokensIn: apiMetrics.totalTokensIn,
@@ -275,42 +283,23 @@ export class StreamChatManager {
 		}
 	}
 
-	public async getSavedClineMessages(): Promise<ClineMessage[]> {
-		const filePath = path.join(await this.getTaskDirectory(), GlobalFileNames.uiMessages);
-		if (await fileExistsAtPath(filePath)) {
-			return JSON.parse(await fs.readFile(filePath, 'utf8'));
-		}
-		return [];
-	}
 
 	public async saveClineMessages() {
-		try {
-			const filePath = path.join(await this.getTaskDirectory(), GlobalFileNames.uiMessages);
-			await fs.writeFile(filePath, JSON.stringify(this.clineMessages));
-			await this.onSaveClineMessages();
-		} catch (error) {
-			console.error('Failed to save cline messages:', error);
-		}
+		await this.uiMessageService.saveClineMessages();
 	}
 
 	public async overwriteClineMessages(newMessages: ClineMessage[]) {
-		this.clineMessages = newMessages;
-		await this.saveClineMessages();
+		await this.uiMessageService.overwriteClineMessages(newMessages);
 	}
 
 	async addToClineMessages(message: ClineMessage) {
-		this.clineMessages.push(message);
-		await this.saveClineMessages();
+		await this.uiMessageService.addToClineMessages(message);
 	}
 
 	public async resumeHistory() {
-		[this.clineMessages, this.apiConversationHistory] = await Promise.all([
-			this.getSavedClineMessages(),
-			this.getSavedApiConversationHistory()
-		]);
+		this.apiConversationHistory = await this.getSavedApiConversationHistory();
+		await this.uiMessageService.loadHistory();
 		this.removeEndHintMessages();
-		this.messageId = this.clineMessages.reduce((maxId, { messageId }) =>
-			messageId != null ? Math.max(maxId, messageId) : maxId, this.messageId);
 	}
 
 	private removeEndHintMessages() {
@@ -320,27 +309,18 @@ export class StreamChatManager {
 	}
 
 	public getNewMessageId() {
-		return ++this.messageId;
+		return this.uiMessageService.getNewMessageId();
 	}
 
 	public getMessageId() {
-		return this.messageId;
+		return this.uiMessageService.getMessageId();
 	}
 
 	public getLastClineMessage() {
-		const lastMessage = this.clineMessages.at(-1);
-		if (!lastMessage) {
-			return null;
-		}
-		return lastMessage as DeepReadonly<ClineMessage>;
+		return this.uiMessageService.getLastClineMessage();
 	}
 
 	public async setLastMessage(message: ClineMessage) {
-		if (this.clineMessages.length < 1) { // first message is always the task say, so we need at least 2 messages
-			console.error('cline message too short', this.clineMessages);
-			return;
-		}
-		this.clineMessages[this.clineMessages.length - 1] = message;
-		await this.saveClineMessages();
+		await this.uiMessageService.setLastMessage(message);
 	}
 }
