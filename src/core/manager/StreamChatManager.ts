@@ -10,8 +10,6 @@ import { ProcessingState } from '@core/handlers/type';
 import { calculateApiCost } from '@/utils/cost';
 import { ClineMessage } from '@/shared/ExtensionMessage';
 import { getApiMetrics } from '@/shared/getApiMetrics';
-import { combineApiRequests } from '@/shared/combineApiRequests';
-import { combineCommandSequences } from '@/shared/combineCommandSequences';
 import { findLastIndex } from '@/shared/array';
 import { HistoryItem } from '@/shared/HistoryItem';
 import { DeepReadonly } from '@/utils/type';
@@ -173,7 +171,7 @@ export class StreamChatManager {
 		if (!this.clineMessages.length) {
 			return null;
 		}
-		const apiMetrics = getApiMetrics(combineApiRequests(combineCommandSequences(this.clineMessages.slice(1))));
+		const apiMetrics = getApiMetrics(this.clineMessages.slice(1));
 		const taskMessage = this.clineMessages[0]; // first message is always the task say
 		const lastRelevantMessage =
 			this.clineMessages[
