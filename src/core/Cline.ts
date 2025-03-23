@@ -626,7 +626,7 @@ export class Cline {
 
 	private parseCommand(command: Command) {
 		const parsedCommand: Command = { ...command };
-		if (command.content) {
+		if (command.content && typeof command.content === 'string') {
 			parsedCommand.content = this.replaceVariable(command.content as string);
 			logger.debug('parseCommand content: ', parsedCommand);
 		}

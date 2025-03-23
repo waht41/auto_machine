@@ -9,6 +9,16 @@ import { ExtensionStateContextProvider, useExtensionState } from './context/Exte
 import { vscode } from './utils/vscode';
 import McpView from './components/mcp/McpView';
 import PromptsView from './components/prompts/PromptsView';
+import { Spin } from 'antd';
+import styled from 'styled-components';
+
+const LoadingContainer = styled.div`
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	height: 100vh;
+	width: 100%;
+`;
 
 const AppContent = () => {
 	const { didHydrateState, showWelcome, shouldShowAnnouncement } = useExtensionState();
@@ -68,7 +78,11 @@ const AppContent = () => {
 	}, [shouldShowAnnouncement]);
 
 	if (!didHydrateState) {
-		return null;
+		return (
+			<LoadingContainer>
+				<Spin size="large" tip="加载中..." />
+			</LoadingContainer>
+		);
 	}
 
 	return (
