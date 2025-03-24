@@ -1,28 +1,18 @@
 import { Anthropic } from '@anthropic-ai/sdk';
 import fs from 'fs/promises';
-import pWaitFor from 'p-wait-for';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { generateMarkdown } from '@/integrations/misc/export-markdown';
-import { openFile, openImage } from '@/integrations/misc/open-file';
-import { selectImages } from '@/integrations/misc/process-images';
 import { getTheme } from '@/integrations/theme/getTheme';
 import WorkspaceTracker from '../../integrations/workspace/WorkspaceTracker';
 import { McpHub } from '@operation/MCP';
-import { ApiConfiguration } from '@/shared/api';
-import { findLast } from '@/shared/array';
 import { ExtensionMessage } from '@/shared/ExtensionMessage';
 import { HistoryItem } from '@/shared/HistoryItem';
 import { WebviewMessage } from '@/shared/WebviewMessage';
 import { PromptComponent } from '@/shared/modes';
-import { SYSTEM_PROMPT } from '../prompts/system';
 import { fileExistsAtPath } from '@/utils/fs';
 import { Cline } from '../Cline';
-import { openMention } from '../mentions';
-import { setSoundEnabled, setSoundVolume } from '@/utils/sound';
-import { singleCompletionHandler } from '@/utils/single-completion-handler';
-import { searchCommits } from '@/utils/git';
-import { supportPrompt } from '@/shared/support-prompt';
+import { setSoundEnabled } from '@/utils/sound';
 import { configPath, createIfNotExists, getAssetPath } from '@core/storage/common';
 import { ApprovalMiddleWrapper } from '@core/internal-implementation/middleware';
 import { getToolCategory } from '@core/tool-adapter/getToolCategory';
@@ -36,6 +26,7 @@ import { GlobalFileNames } from '@core/webview/const';
 import process from 'node:process';
 import { IGlobalState } from '@core/storage/type';
 import logger from '@/utils/logger';
+import { handlers } from '@core/webview/handlers';
 
 /*
 https://github.com/microsoft/vscode-webview-ui-toolkit-samples/blob/main/default/weather-webview/src/providers/WeatherViewProvider.ts
@@ -47,15 +38,15 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 	private static activeInstances: Set<ClineProvider> = new Set();
 	private disposables: vscode.Disposable[] = [];
 	private view?: vscode.WebviewView | vscode.WebviewPanel;
-	private cline?: Cline;
-	private workspaceTracker?: WorkspaceTracker;
+	cline?: Cline;
+	workspaceTracker?: WorkspaceTracker;
 	mcpHub?: McpHub;
-	private latestAnnouncementId = 'jan-21-2025-custom-modes'; // update to some unique identifier when we add a new announcement
-	private toolCategories = getToolCategory(path.join(getAssetPath(),'external-prompt'));
-	private allowedToolTree = new AllowedToolTree([],this.toolCategories);
-	private apiManager : ApiProviderManager;
-	private readonly messageService : MessageService;
-	private configService : ConfigService;
+	latestAnnouncementId = 'jan-21-2025-custom-modes'; // update to some unique identifier when we add a new announcement
+	toolCategories = getToolCategory(path.join(getAssetPath(),'external-prompt'));
+	allowedToolTree = new AllowedToolTree([],this.toolCategories);
+	apiManager : ApiProviderManager;
+	readonly messageService : MessageService;
+	configService : ConfigService;
 
 	constructor(
     private sendToMainProcess: (message: any) => void
@@ -100,10 +91,6 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		this.mcpHub?.dispose();
 		this.mcpHub = undefined;
 		ClineProvider.activeInstances.delete(this);
-	}
-
-	public static getVisibleInstance(): ClineProvider | undefined {
-		return findLast(Array.from(this.activeInstances), (instance) => instance.view?.visible === true);
 	}
 
 	resolveWebviewView(
@@ -213,551 +200,19 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 	private setWebviewMessageListener(webview: vscode.Webview) {
 		webview.onDidReceiveMessage(
 			async (message: WebviewMessage) => {
-				switch (message.type) {
-					case 'webviewDidLaunch':
-						await this.postMessageToWebview({ type: 'toolCategories', toolCategories: this.toolCategories });
-						await this.postMessageToWebview({ type: 'allowedTools', allowedTools:this.allowedToolTree.getAllowedTools() });
-
-						this.postStateToWebview();
-						this.workspaceTracker?.initializeFilePaths(); // don't await
-						getTheme().then((theme) =>
-							this.postMessageToWebview({ type: 'theme', text: JSON.stringify(theme) }),
-						);
-						// post last cached models in case the call to endpoint fails
-						this.apiManager.readOpenRouterModels().then((openRouterModels) => {
-							if (openRouterModels) {
-								this.postMessageToWebview({ type: 'openRouterModels', openRouterModels });
-							}
-						});
-						// gui relies on model info to be up-to-date to provide the most accurate pricing, so we need to fetch the latest details on launch.
-						// we do this for all users since many users switch between api providers and if they were to switch back to openrouter it would be showing outdated model info if we hadn't retrieved the latest at this point
-						// (see normalizeApiConfiguration > openrouter)
-						this.apiManager.refreshOpenRouterModels().then(async (openRouterModels) => {
-							if (openRouterModels) {
-								// update model info in state (this needs to be done here since we don't want to update state while settings is open, and we may refresh models there)
-								const { apiConfiguration } = await this.getState();
-								if (apiConfiguration.openRouterModelId) {
-									await this.updateGlobalState(
-										'openRouterModelInfo',
-										openRouterModels[apiConfiguration.openRouterModelId],
-									);
-									await this.postStateToWebview();
-								}
-							}
-						});
-						this.apiManager.readGlamaModels().then((glamaModels) => {
-							if (glamaModels) {
-								this.postMessageToWebview({ type: 'glamaModels', glamaModels });
-							}
-						});
-						this.apiManager.refreshGlamaModels().then(async (glamaModels) => {
-							if (glamaModels) {
-								// update model info in state (this needs to be done here since we don't want to update state while settings is open, and we may refresh models there)
-								const { apiConfiguration } = await this.getState();
-								if (apiConfiguration.glamaModelId) {
-									await this.updateGlobalState(
-										'glamaModelInfo',
-										glamaModels[apiConfiguration.glamaModelId],
-									);
-									await this.postStateToWebview();
-								}
-							}
-						});
-
-						break;
-					case 'newTask':
-						// Code that should run in response to the hello message command
-						//vscode.window.showInformationMessage(message.text!)
-
-						// Send a message to our webview.
-						// You can send any JSON serializable data.
-						// Could also do this in extension .ts
-						//this.postMessageToWebview({ type: "text", text: `Extension: ${Date.now()}` })
-						// initializing new instance of Cline will make sure that any agentically running promises in old instance don't affect our new task. this essentially creates a fresh slate for the new task
-						await this.initClineWithTask(message.text, message.images);
-						break;
-					case 'resumeTask':
-						if (this.cline){
-							const { historyItem } = await this.getTaskWithId(this.cline.taskId);
-							console.log('[waht] history item', historyItem);
-							await this.initClineWithHistoryItem(Object.assign(historyItem, {newMessage: message.text, newImages: message.images}));
-						} else {
-							await this.initClineWithTask(message.text, message.images);
-						}
-
-						break;
-					case 'apiConfiguration':
-						if (message.apiConfiguration) {
-							await this.configService.updateApiConfig(message.apiConfiguration);
-						}
-						await this.postStateToWebview();
-						break;
-					case 'alwaysAllowMcp':
-						await this.updateGlobalState('alwaysAllowMcp', message.bool);
-						await this.postStateToWebview();
-						break;
-					case 'clearTask':
-						// newTask will start a new task with a given task text, while clear task resets the current session and allows for a new task to be started
-						await this.clearTask();
-						await this.postStateToWebview();
-						break;
-					case 'didShowAnnouncement':
-						await this.updateGlobalState('lastShownAnnouncementId', this.latestAnnouncementId);
-						await this.postStateToWebview();
-						break;
-					case 'selectImages':
-						const images = await selectImages();
-						await this.postMessageToWebview({ type: 'selectedImages', images });
-						break;
-					case 'exportCurrentTask':
-						const currentTaskId = this.cline?.taskId;
-						if (currentTaskId) {
-							this.exportTaskWithId(currentTaskId);
-						}
-						break;
-					case 'showTaskWithId':
-						this.showTaskWithId(message.text!);
-						break;
-					case 'deleteTaskWithId':
-						this.deleteTaskWithId(message.text!);
-						break;
-					case 'exportTaskWithId':
-						this.exportTaskWithId(message.text!);
-						break;
-					case 'resetState':
-						await this.resetState();
-						break;
-					case 'requestOllamaModels':
-						const ollamaModels = await this.apiManager.getOllamaModels(message.text);
-						this.postMessageToWebview({ type: 'ollamaModels', ollamaModels });
-						break;
-					case 'requestLmStudioModels':
-						const lmStudioModels = await this.apiManager.getLmStudioModels(message.text);
-						this.postMessageToWebview({ type: 'lmStudioModels', lmStudioModels });
-						break;
-					case 'requestVsCodeLmModels':
-						const vsCodeLmModels = await this.getVsCodeLmModels();
-						this.postMessageToWebview({ type: 'vsCodeLmModels', vsCodeLmModels });
-						break;
-					case 'refreshGlamaModels':
-						await this.apiManager.refreshGlamaModels();
-						break;
-					case 'refreshOpenRouterModels':
-						await this.apiManager.refreshOpenRouterModels();
-						break;
-					case 'refreshOpenAiModels':
-						if (message?.values?.baseUrl && message?.values?.apiKey) {
-							const openAiModels = await this.apiManager.getOpenAiModels(
-								message?.values?.baseUrl,
-								message?.values?.apiKey,
-							);
-							this.postMessageToWebview({ type: 'openAiModels', openAiModels });
-						}
-						break;
-					case 'openImage':
-						openImage(message.text!);
-						break;
-					case 'openFile':
-						openFile(message.text!, message.values as { create?: boolean; content?: string });
-						break;
-					case 'openMention':
-						openMention(message.text);
-						break;
-					case 'cancelTask':
-						if (this.cline) {
-							const { historyItem } = await this.getTaskWithId(this.cline.taskId);
-							this.cline.abortTask();
-							await pWaitFor(() => this.cline === undefined || this.cline.abortComplete, {
-								timeout: 3_000,
-							}).catch(() => {
-								console.error('Failed to abort task');
-							});
-							await this.initClineWithHistoryItem(historyItem); // clears task again, so we need to abortTask manually above
-							// await this.postStateToWebview() // new Cline instance will post state when it's ready. having this here sent an empty messages array to webview leading to virtuoso having to reload the entire list
-						}
-
-						break;
-					case 'allowedCommands':
-						await this.globalState.set('allowedCommands', message.commands);
-						// Also update workspace settings
-						await vscode.workspace
-							.getConfiguration('roo-cline')
-							.update('allowedCommands', message.commands, vscode.ConfigurationTarget.Global);
-						break;
-					case 'openMcpSettings': {
-						const mcpSettingsFilePath = await this.mcpHub?.getMcpSettingsFilePath();
-						if (mcpSettingsFilePath) {
-							this.postMessageToWebview({
-								type: 'electron', payload: {
-									type: 'openFile',
-									filePath: mcpSettingsFilePath
-								}
-							});
-							// openFile(mcpSettingsFilePath)
-						}
-						break;
-					}
-
-					case 'restartMcpServer': {
-						try {
-							await this.mcpHub?.restartConnection(message.text!);
-						} catch (error) {
-							console.error(`Failed to retry connection for ${message.text}:`, error);
-						}
-						break;
-					}
-					case 'toggleToolAlwaysAllow': {
-						try {
-							await this.mcpHub?.toggleToolAlwaysAllow(
-								message.serverName!,
-								message.toolName!,
-								message.alwaysAllow!,
-							);
-						} catch (error) {
-							console.error(`Failed to toggle auto-approve for tool ${message.toolName}:`, error);
-						}
-						break;
-					}
-					case 'toggleMcpServer': {
-						try {
-							await this.mcpHub?.toggleServerDisabled(message.serverName!, message.disabled!);
-						} catch (error) {
-							console.error(`Failed to toggle MCP server ${message.serverName}:`, error);
-						}
-						break;
-					}
-					case 'mcpEnabled':
-						const mcpEnabled = message.bool ?? true;
-						await this.updateGlobalState('mcpEnabled', mcpEnabled);
-						await this.postStateToWebview();
-						break;
-					case 'playSound':
-						// if (message.audioType) {
-						// 	const soundPath = path.join(this.context.extensionPath, 'audio', `${message.audioType}.wav`);
-						// 	playSound(soundPath);
-						// }
-						//todo waht 考虑要不要加声音
-						break;
-					case 'soundEnabled':
-						const soundEnabled = message.bool ?? true;
-						await this.updateGlobalState('soundEnabled', soundEnabled);
-						setSoundEnabled(soundEnabled); // Add this line to update the sound utility
-						await this.postStateToWebview();
-						break;
-					case 'soundVolume':
-						const soundVolume = message.value ?? 0.5;
-						await this.updateGlobalState('soundVolume', soundVolume);
-						setSoundVolume(soundVolume);
-						await this.postStateToWebview();
-						break;
-					case 'diffEnabled':
-						const diffEnabled = message.bool ?? true;
-						await this.updateGlobalState('diffEnabled', diffEnabled);
-						await this.postStateToWebview();
-						break;
-					case 'browserViewportSize':
-						const browserViewportSize = message.text ?? '900x600';
-						await this.updateGlobalState('browserViewportSize', browserViewportSize);
-						await this.postStateToWebview();
-						break;
-					case 'fuzzyMatchThreshold':
-						await this.updateGlobalState('fuzzyMatchThreshold', message.value);
-						await this.postStateToWebview();
-						break;
-					case 'alwaysApproveResubmit':
-						await this.updateGlobalState('alwaysApproveResubmit', message.bool ?? false);
-						await this.postStateToWebview();
-						break;
-					case 'requestDelaySeconds':
-						await this.updateGlobalState('requestDelaySeconds', message.value ?? 5);
-						await this.postStateToWebview();
-						break;
-					case 'preferredLanguage':
-						await this.updateGlobalState('preferredLanguage', message.text);
-						await this.postStateToWebview();
-						break;
-					case 'writeDelayMs':
-						await this.updateGlobalState('writeDelayMs', message.value);
-						await this.postStateToWebview();
-						break;
-					case 'terminalOutputLineLimit':
-						await this.updateGlobalState('terminalOutputLineLimit', message.value);
-						await this.postStateToWebview();
-						break;
-					case 'updateSupportPrompt':
-						try {
-							if (Object.keys(message?.values ?? {}).length === 0) {
-								return;
-							}
-
-							const existingPrompts = (await this.getGlobalState('customSupportPrompts')) || {};
-
-							const updatedPrompts = {
-								...existingPrompts,
-								...message.values,
-							};
-
-							await this.updateGlobalState('customSupportPrompts', updatedPrompts);
-							await this.postStateToWebview();
-						} catch (error) {
-							console.error('Error update support prompt:', error);
-							vscode.window.showErrorMessage('Failed to update support prompt');
-						}
-						break;
-					case 'resetSupportPrompt':
-						try {
-							if (!message?.text) {
-								return;
-							}
-
-							const existingPrompts = ((await this.getGlobalState('customSupportPrompts')) ||
-								{}) as Record<string, unknown>;
-
-							const updatedPrompts = {
-								...existingPrompts,
-							};
-
-							updatedPrompts[message.text] = undefined;
-
-							await this.updateGlobalState('customSupportPrompts', updatedPrompts);
-							await this.postStateToWebview();
-						} catch (error) {
-							console.error('Error reset support prompt:', error);
-							vscode.window.showErrorMessage('Failed to reset support prompt');
-						}
-						break;
-					case 'updatePrompt':
-						if (message.promptMode && message.customPrompt !== undefined) {
-							const existingPrompts = (await this.getGlobalState('customModePrompts')) || {};
-
-							const updatedPrompts = {
-								...existingPrompts,
-								[message.promptMode]: message.customPrompt,
-							};
-
-							await this.updateGlobalState('customModePrompts', updatedPrompts);
-
-							// Get current state and explicitly include customModePrompts
-							const currentState = await this.getState();
-
-							const stateWithPrompts = {
-								...currentState,
-								customModePrompts: updatedPrompts,
-							};
-
-							// Post state with prompts
-							this.view?.webview.postMessage({
-								type: 'state',
-								state: stateWithPrompts,
-							});
-						}
-						break;
-					case 'deleteMessage': {
-						const answer = await vscode.window.showInformationMessage(
-							'What would you like to delete?',
-							{ modal: true },
-							'Just this message',
-							'This and all subsequent messages',
-						);
-						if (
-							(answer === 'Just this message' || answer === 'This and all subsequent messages') &&
-							this.cline &&
-							typeof message.value === 'number' &&
-							message.value
-						) {
-							const timeCutoff = message.value - 1000; // 1 second buffer before the message to delete
-							const messageIndex = this.cline.clineMessages.findIndex(
-								(msg) => msg.ts && msg.ts >= timeCutoff,
-							);
-							const apiConversationHistoryIndex = this.cline.apiConversationHistory.findIndex(
-								(msg) => msg.ts && msg.ts >= timeCutoff,
-							);
-
-							if (messageIndex !== -1) {
-								const { historyItem } = await this.getTaskWithId(this.cline.taskId);
-
-								if (answer === 'Just this message') {
-									// Find the next user message first
-									const nextUserMessage = this.cline.clineMessages
-										.slice(messageIndex + 1)
-										.find((msg) => msg.type === 'say' && msg.say === 'user_feedback');
-
-									// Handle UI messages
-									if (nextUserMessage) {
-										// Find absolute index of next user message
-										const nextUserMessageIndex = this.cline.clineMessages.findIndex(
-											(msg) => msg === nextUserMessage,
-										);
-										// Keep messages before current message and after next user message
-										await this.cline.overwriteClineMessages([
-											...this.cline.clineMessages.slice(0, messageIndex),
-											...this.cline.clineMessages.slice(nextUserMessageIndex),
-										]);
-									} else {
-										// If no next user message, keep only messages before current message
-										await this.cline.overwriteClineMessages(
-											this.cline.clineMessages.slice(0, messageIndex),
-										);
-									}
-
-									// Handle API messages
-									if (apiConversationHistoryIndex !== -1) {
-										if (nextUserMessage && nextUserMessage.ts) {
-											// Keep messages before current API message and after next user message
-											await this.cline.overwriteApiConversationHistory([
-												...this.cline.apiConversationHistory.slice(
-													0,
-													apiConversationHistoryIndex,
-												),
-												...this.cline.apiConversationHistory.filter(
-													(msg) => msg.ts && msg.ts >= nextUserMessage.ts,
-												),
-											]);
-										} else {
-											// If no next user message, keep only messages before current API message
-											await this.cline.overwriteApiConversationHistory(
-												this.cline.apiConversationHistory.slice(0, apiConversationHistoryIndex),
-											);
-										}
-									}
-								} else if (answer === 'This and all subsequent messages') {
-									// Delete this message and all that follow
-									await this.cline.overwriteClineMessages(
-										this.cline.clineMessages.slice(0, messageIndex),
-									);
-									if (apiConversationHistoryIndex !== -1) {
-										await this.cline.overwriteApiConversationHistory(
-											this.cline.apiConversationHistory.slice(0, apiConversationHistoryIndex),
-										);
-									}
-								}
-
-								await this.initClineWithHistoryItem(historyItem);
-							}
-						}
-						break;
-					}
-					case 'screenshotQuality':
-						await this.updateGlobalState('screenshotQuality', message.value);
-						await this.postStateToWebview();
-						break;
-					case 'enhancementApiConfigId':
-						await this.updateGlobalState('enhancementApiConfigId', message.text);
-						await this.postStateToWebview();
-						break;
-					case 'autoApprovalEnabled':
-						await this.updateGlobalState('autoApprovalEnabled', message.bool ?? false);
-						await this.postStateToWebview();
-						break;
-					case 'enhancePrompt':
-						if (message.text) {
-							try {
-								const {
-									apiConfiguration,
-									customSupportPrompts,
-								} = await this.getState();
-
-								// Try to get enhancement config first, fall back to current config
-								const configToUse: ApiConfiguration = apiConfiguration;
-								const enhancedPrompt = await singleCompletionHandler(
-									configToUse,
-									supportPrompt.create(
-										'ENHANCE',
-										{
-											userInput: message.text,
-										},
-										customSupportPrompts,
-									),
-								);
-
-								await this.postMessageToWebview({
-									type: 'enhancedPrompt',
-									text: enhancedPrompt,
-								});
-							} catch (error) {
-								console.error('Error enhancing prompt:', error);
-								vscode.window.showErrorMessage('Failed to enhance prompt');
-								await this.postMessageToWebview({
-									type: 'enhancedPrompt',
-								});
-							}
-						}
-						break;
-					case 'getSystemPrompt':
-						try {
-							const systemPrompt = await SYSTEM_PROMPT();
-
-							await this.postMessageToWebview({
-								type: 'systemPrompt',
-								text: systemPrompt,
-								mode: message.mode,
-							});
-						} catch (error) {
-							console.error('Error getting system prompt:', error);
-							vscode.window.showErrorMessage('Failed to get system prompt');
-						}
-						break;
-					case 'searchCommits': {
-						const cwd = vscode.workspace.workspaceFolders?.map((folder) => folder.uri.fsPath).at(0);
-						if (cwd) {
-							try {
-								const commits = await searchCommits(message.query || '', cwd);
-								await this.postMessageToWebview({
-									type: 'commitSearchResults',
-									commits,
-								});
-							} catch (error) {
-								console.error('Error searching commits:', error);
-								vscode.window.showErrorMessage('Failed to search commits');
-							}
-						}
-						break;
-					}
-					case 'upsertApiConfiguration':
-						if (message.text && message.apiConfiguration) {
-							try {
-								await this.configService.updateApiConfig(message.apiConfiguration);
-								await this.postStateToWebview();
-							} catch (error) {
-								console.error('Error create new api configuration:', error);
-								vscode.window.showErrorMessage('Failed to create api configuration');
-							}
-						}
-						break;
-					case 'experimentalDiffStrategy':
-						await this.updateGlobalState('experimentalDiffStrategy', message.bool ?? false);
-						// Update diffStrategy in current Cline instance if it exists
-						if (this.cline) {
-							await this.cline.updateDiffStrategy(message.bool ?? false);
-						}
-						await this.postStateToWebview();
-						break;
-					case 'updateMcpTimeout':
-						if (message.serverName && typeof message.timeout === 'number') {
-							try {
-								await this.mcpHub?.updateServerTimeout(message.serverName, message.timeout);
-							} catch (error) {
-								console.error(`Failed to update timeout for ${message.serverName}:`, error);
-								vscode.window.showErrorMessage('Failed to update server timeout');
-							}
-						}
-						break;
-					case 'answer':
-						this.cline?.receiveAnswer(message.payload);
-						break;
-					case 'userApproval':
-						this.cline?.receiveApproval(message.payload);
-						break;
-					case 'setAllowedTools':
-						this.setAllowedTools(message.toolId!);
-						break;
+				if (Object.keys(handlers).includes(message.type)){
+					await handlers[message.type](this,message);
+					return;
+				} else {
+					console.error('Unknown message type:', message.type);
+					logger.error('onDidReceiveMessage Unknown message type:', message.type);
 				}
 			},
 			null,
 			this.disposables,
 		);
 	}
-	private async setAllowedTools(toolId: string| string[]) {
+	async setAllowedTools(toolId: string| string[]) {
 		const newCommands = this.allowedToolTree.setAllowedTools(toolId);
 
 		await this.globalState.set('allowedCommands', newCommands);
@@ -769,7 +224,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 
 
 	// VSCode LM API
-	private async getVsCodeLmModels() {
+	async getVsCodeLmModels() {
 		try {
 			const models = await vscode.lm.selectChatModels({});
 			return models || [];
