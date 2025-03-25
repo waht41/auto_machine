@@ -10,19 +10,25 @@
 ### 一键安装体验
 
 • 独立桌面应用（基于Electron）
+
 • 摆脱Python环境依赖
+
 • 无需繁琐的配置
 
 ### ⚡ 智能交互革新
 
 • **YAML驱动的工具箱**：人类与AI的信息交流桥梁
+
 • **渐进式上下文**：按需获取信息，动态prompt加载
 
 ### 🛠️ 开箱即用的能力
 
 • 文件系统智能操作
+
 • 浏览器自动化控制
+
 • 多步骤任务规划（开发中）
+
 
 ## 🌐 技术架构
 
@@ -79,7 +85,9 @@ path: ./download/favicon.ico  # 保存到当前目录下的download文件夹中
 
 [![GitHub Stars](https://img.shields.io/github/stars/waht41/auto_machine?style=for-the-badge)](https://github.com/waht41/auto_machine/stargazers)
 [![Download Counter](https://img.shields.io/github/downloads/waht41/auto_machine/total?style=for-the-badge)](https://github.com/waht41/auto_machine/releases)
+
 👉 [立即获取最新版本](https://github.com/waht41/auto_machine/releases)  
+
 💡 遇到问题？[提交Issue](https://github.com/waht41/auto_machine/issues) 加入技术讨论
 
 ---
