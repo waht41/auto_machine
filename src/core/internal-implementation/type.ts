@@ -15,6 +15,18 @@ export type IBaseCommand = {type:'base'} & ({
 } | {
     cmd: 'think'; //某些思考模型自带的，模型不会主动调用
     content: string;
+} | PlanCommand)
+
+export type PlanCommand = {cmd:'plan'} & ({
+  action: 'start';
+  content: string[];
+}| {
+  action: 'adjust';
+  reason: string;
+  content: string[];
+  currentStep: number;
+} | {
+  action: 'complete_step';
 })
 
 export type IAskCommand = {type:'ask'; uuid: string, result?: string} & ({

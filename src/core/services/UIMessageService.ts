@@ -9,7 +9,7 @@ import { IUIMessage } from '@core/services/type';
 
 export class UIMessageService {
 	readonly endHint = 'roo stop the conversion, should resume?';
-	private uiMessage: IUIMessage = {clineMessages:[]};
+	private uiMessage: IUIMessage = {clineMessages:[], task: ''};
 	private messageId = 0;
 	constructor(private taskDirectory: string, private onSaveUIMessages: () => Promise<void>) {
 	}
@@ -43,7 +43,7 @@ export class UIMessageService {
 				console.error(e);
 			}
 		}
-		return {clineMessages: []};
+		return {clineMessages: [], task: ''};
 	}
 
 	private async saveUIMessage(){
@@ -80,6 +80,15 @@ export class UIMessageService {
 
 	public getMessageId() {
 		return this.messageId;
+	}
+
+	public getState(key: keyof IUIMessage) {
+		return this.uiMessage[key];
+	}
+
+	public async setState<T extends keyof IUIMessage>(key: T, value: IUIMessage[T]) {
+		this.uiMessage[key] = value;
+		await this.saveUIMessage();
 	}
 
 	public getLastClineMessage() {

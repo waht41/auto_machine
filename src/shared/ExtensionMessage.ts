@@ -4,7 +4,7 @@ import { ApiConfiguration, ApiProvider, ModelInfo } from './api';
 import { HistoryItem } from './HistoryItem';
 import { McpServer } from './mcp';
 import { GitCommit } from '../utils/git';
-import { Mode, CustomModePrompts, ModeConfig } from './modes';
+import { CustomModePrompts, Mode, ModeConfig } from './modes';
 import { CustomSupportPrompts } from './support-prompt';
 import { IToolCategory } from '@core/tool-adapter/type';
 
@@ -150,6 +150,7 @@ export type ClineSay =
 	| 'user_feedback'
 	| 'tool'
 	| 'command'
+	| 'plan'
 
 export interface ClineSayTool {
 	tool: ''

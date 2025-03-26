@@ -275,6 +275,14 @@ export class Cline {
 		return this.streamChatManager.getHistoryTextWithId(historyId)?.replace(this.streamChatManager.metaRegex, '');
 	}
 
+	public setPlan(steps: string[], currentStep: number = 1) {
+		this.streamChatManager.setPlan(steps, currentStep -1 );
+	}
+
+	public nextStep() {
+		return this.streamChatManager.nextStep();
+	}
+
 	async sayP({
 		sayType,
 		text,

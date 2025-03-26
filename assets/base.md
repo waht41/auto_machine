@@ -8,6 +8,7 @@ configuration:
   tools:
     base:
       log: 用于记录日志
+      plan: 用于拆解复杂任务，推荐计划使用工具时提前plan
     ask:
       description: 用于请求用户回复。 askType包括[ask_followup_question, ask_multiple_choice, ask_choice,attempt_completion]
 
@@ -27,6 +28,10 @@ examples:
     cmd: log
     title: 用户反馈 # 会自动添加时间
     content: 用户对方案表示满意
+  - tool: base
+    cmd: plan
+    action: start
+    content: ["1.首先应该在浏览器搜索关键字","2.判断这些信息中那一条可能有帮助","3.点开网页查看详细信息","4.信息x正是所需"]
 ```
 
 # external

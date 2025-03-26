@@ -12,6 +12,7 @@ import { findLastIndex } from '@/shared/array';
 import { HistoryItem } from '@/shared/HistoryItem';
 import { UIMessageService } from '@core/services/UIMessageService';
 import { ApiConversationHistoryService } from '@core/services/ApiConversationHistoryService';
+import { PlanService } from '@core/services/planService';
 
 
 export class StreamChatManager {
@@ -20,15 +21,30 @@ export class StreamChatManager {
 
 	private uiMessageService: UIMessageService;
 	private apiHistoryService: ApiConversationHistoryService;
+	private planService: PlanService = new PlanService();
+
 
 	constructor(private api: ApiHandler, private taskDir: string, private onSaveUIMessages: () => Promise<void>) {
 		this.uiMessageService = new UIMessageService(this.taskDir, this.onSaveUIMessages);
-		this.apiHistoryService = new ApiConversationHistoryService(this.taskDir);
+		this.apiHistoryService = new ApiConversationHistoryService(this.taskDir, this.getExtraMeta.bind(this));
 	}
 
 	async init() {
 		await fs.mkdir(this.taskDir, {recursive: true});
 		await this.resumeHistory();
+	}
+
+	setPlan(steps: string[], currentStep: number) {
+		this.planService.setPlan(steps, currentStep);
+	}
+
+	nextStep() {
+		return this.planService.nextStep();
+	}
+
+	private getExtraMeta() {
+		const currentStep = this.planService.getCurrentStep();
+		return currentStep ? `currentStep: ${currentStep}` : '';
 	}
 
 	public get metaRegex() {

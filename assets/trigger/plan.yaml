@@ -1,0 +1,20 @@
+adjust:
+  description: 根据已有信息，调整plan的step
+  params:
+    reason: 调整原因
+    content: 调整后的plan内容
+    currentStep: 调整之后的step，从1开始
+  example:
+    - tool: base
+      cmd: plan
+      action: adjust
+      reason: "github.com找不到对应的书籍，我可能需要去zLibrary看看"
+      content: ["1.打开浏览器","2.前往zLibrary搜索书籍","3.下载书籍","4.分析书籍内容"]
+      currentStep: 2
+
+complete_step:
+    description: 标记plan的当前step为已完成
+    example:
+      - tool: base
+        cmd: plan
+        action: complete_step

@@ -13,7 +13,7 @@ export class ApiConversationHistoryService{
 	apiConversationHistory: IApiConversationHistory = [];
 	readonly metaRegex = /<meta[\s\S]*?<\/meta>/gi;
 	private apiHistoryId = 0;
-	constructor(private taskDir: string) {
+	constructor(private taskDir: string, private getExtraMeta?: () => string) {
 	}
 
 	async loadHistory(){
@@ -61,8 +61,15 @@ export class ApiConversationHistoryService{
 		return { ...message, content, ts: Date.now() };
 	}
 
+	private getHistoryIdMeta() {
+		return `historyId:${++this.apiHistoryId}`;
+	}
+
 	private getMeta() {
-		return `<meta>historyId:${++this.apiHistoryId}</meta>`;
+		if (this.getExtraMeta) {
+			return `<meta>${this.getHistoryIdMeta()},${this.getExtraMeta()}</meta>`;
+		}
+		return `<meta>${this.getHistoryIdMeta()}</meta>`;
 	}
 
 	private extractMeta(content: Anthropic.MessageParam['content']): Record<string, string> {
