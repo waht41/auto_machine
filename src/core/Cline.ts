@@ -630,7 +630,7 @@ export class Cline {
 	async applyCommand(command: Command, context?: IInternalContext): Promise<string | null> {
 		console.log('[waht] try apply tool', command);
 		if (this.executor.executorNames.includes(command.type)) {
-			return await this.executor.runCommand(this.parseCommand(command), context) as string ?? 'no result return';
+			return await this.executor.runCommand(this.parseCommand(command), context) as string | null;
 		}
 		console.log('[waht]', 'no executor found for', command.type);
 		return null;

@@ -24,20 +24,20 @@ async function startPlan(command: Extract<PlanCommand, { action: 'start' }>, con
 	await cline.setPlan(command.content);
 	const triggerPlanPath = path.join(getAssetPath(), 'trigger','plan.yaml');
 	const triggerContent = await file.readFile(triggerPlanPath, 'utf8');
-	return yamlWrap(triggerContent) + '\n' + `current step: ${cline.getStep(0)}`;
+	return yamlWrap(triggerContent) + '\n' + `you should: ${cline.getStep(0)} now`;
 }
 
 async function adjustPlan(command: Extract<PlanCommand, { action: 'adjust' }>, context: IInternalContext) {
 	const cline = context.cline;
 	await cline.setPlan(command.content, command.currentStep);
-	return command.reason;
+	return `you just just adjust plan because, ${command.reason}, now you should: ${cline.getStep(command.currentStep)}`;
 }
 
 async function nextStep(command: Extract<PlanCommand, { action: 'complete_step' }>, context: IInternalContext) {
 	const cline = context.cline;
 	const nextStep = await cline.nextStep();
 	if (nextStep){
-		return 'next step: ' + nextStep;
+		return 'now you need to do something for next step: ' + nextStep;
 	}
-	return 'no more step, stop plan';
+	return 'no more step, stop the plan or do some finishing work that you think is necessary';
 }

@@ -13,15 +13,13 @@ export class PlanService {
 	getStep(index: number) {
 		if (index >= this.steps.length) {
 			logger.error(`getPlan index: ${index} out of range, plan`, this.steps);
-			return 'get step error, index out of range';
+			return null;
 		}
 		return this.steps[index];
 	}
 
 	nextStep() {
-		if (++this.currentStep === this.steps.length) {
-			return 'no more steps';
-		} if (this.currentStep > this.steps.length) {
+		if (this.currentStep >= this.steps.length) {
 			return null;
 		}
 		return this.steps[this.currentStep];
