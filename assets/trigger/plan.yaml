@@ -13,7 +13,7 @@ adjust:
       currentStep: 2
 
 complete_step:
-    description: 标记plan的当前step为已完成
+    description: 标记plan的当前step为已完成，进入下一个step。  当所有step都完成时，便不可再进行plan相关操作
     example:
       - tool: base
         cmd: plan

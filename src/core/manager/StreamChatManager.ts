@@ -34,17 +34,27 @@ export class StreamChatManager {
 		await this.resumeHistory();
 	}
 
-	setPlan(steps: string[], currentStep: number) {
+	async setPlan(steps: string[], currentStep: number) {
 		this.planService.setPlan(steps, currentStep);
+		await this.uiMessageService.setState('plan',this.planService.getPlanSnapshot());
 	}
 
-	nextStep() {
-		return this.planService.nextStep();
+	async nextStep() {
+		const currentStepContent =  this.planService.nextStep();
+		if (currentStepContent){
+			await this.uiMessageService.setState('plan',this.planService.getPlanSnapshot());
+		}
+		return currentStepContent;
+	}
+
+	getStep(index: number) {
+		return this.planService.getStep(index);
 	}
 
 	private getExtraMeta() {
-		const currentStep = this.planService.getCurrentStep();
-		return currentStep ? `currentStep: ${currentStep}` : '';
+		return '';
+		// const currentStep = this.planService.getCurrentStep();
+		// return currentStep ? `currentStep: ${currentStep}` : '';
 	}
 
 	public get metaRegex() {
@@ -216,6 +226,10 @@ export class StreamChatManager {
 	public async resumeHistory() {
 		await this.apiHistoryService.loadHistory();
 		await this.uiMessageService.loadHistory();
+		const planSnapshot = this.uiMessageService.getState('plan');
+		if (planSnapshot){
+			this.planService.setPlan(planSnapshot.steps, planSnapshot.currentStep);
+		}
 		this.removeEndHintMessages();
 	}
 

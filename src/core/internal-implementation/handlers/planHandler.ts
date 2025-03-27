@@ -21,21 +21,23 @@ export function handlePlanCommand(command: PlanCommand, context: IInternalContex
 
 async function startPlan(command: Extract<PlanCommand, { action: 'start' }>, context: IInternalContext) {
 	const cline = context.cline;
-	cline.setPlan(command.content);
+	await cline.setPlan(command.content);
 	const triggerPlanPath = path.join(getAssetPath(), 'trigger','plan.yaml');
 	const triggerContent = await file.readFile(triggerPlanPath, 'utf8');
-	// await cline.sayP({sayType: 'plan', text: command.content, partial: false});
-	return yamlWrap(triggerContent);
+	return yamlWrap(triggerContent) + '\n' + `current step: ${cline.getStep(0)}`;
 }
 
-function adjustPlan(command: Extract<PlanCommand, { action: 'adjust' }>, context: IInternalContext) {
+async function adjustPlan(command: Extract<PlanCommand, { action: 'adjust' }>, context: IInternalContext) {
 	const cline = context.cline;
-	cline.setPlan(command.content, command.currentStep);
+	await cline.setPlan(command.content, command.currentStep);
 	return command.reason;
 }
 
-function nextStep(command: Extract<PlanCommand, { action: 'complete_step' }>, context: IInternalContext) {
+async function nextStep(command: Extract<PlanCommand, { action: 'complete_step' }>, context: IInternalContext) {
 	const cline = context.cline;
-	cline.nextStep();
-	return 'start next step';
+	const nextStep = await cline.nextStep();
+	if (nextStep){
+		return 'next step: ' + nextStep;
+	}
+	return 'no more step, stop plan';
 }

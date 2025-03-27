@@ -275,12 +275,16 @@ export class Cline {
 		return this.streamChatManager.getHistoryTextWithId(historyId)?.replace(this.streamChatManager.metaRegex, '');
 	}
 
-	public setPlan(steps: string[], currentStep: number = 1) {
-		this.streamChatManager.setPlan(steps, currentStep -1 );
+	public async setPlan(steps: string[], currentStep: number = 1) {
+		await this.streamChatManager.setPlan(steps, currentStep -1 );
 	}
 
-	public nextStep() {
-		return this.streamChatManager.nextStep();
+	public getStep(index: number) {
+		return this.streamChatManager.getStep(index);
+	}
+
+	public async nextStep() {
+		return await this.streamChatManager.nextStep();
 	}
 
 	async sayP({

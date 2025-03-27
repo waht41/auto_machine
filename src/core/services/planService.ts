@@ -19,15 +19,17 @@ export class PlanService {
 	}
 
 	nextStep() {
-		if (this.currentStep + 1 === this.steps.length) {
+		if (++this.currentStep === this.steps.length) {
 			return 'no more steps';
+		} if (this.currentStep > this.steps.length) {
+			return null;
 		}
-		return this.steps[++this.currentStep];
+		return this.steps[this.currentStep];
 	}
 
 	getCurrentStep() {
-		if (this.steps.length === 0) {
-			return '';
+		if (this.steps.length === 0 || this.currentStep >= this.steps.length) {
+			return null;
 		}
 		return this.getStep(this.currentStep);
 	}

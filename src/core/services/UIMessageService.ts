@@ -82,7 +82,7 @@ export class UIMessageService {
 		return this.messageId;
 	}
 
-	public getState(key: keyof IUIMessage) {
+	public getState<T extends keyof IUIMessage>(key: T) : IUIMessage[T] {
 		return this.uiMessage[key];
 	}
 
