@@ -2,6 +2,7 @@ import file from 'fs/promises';
 import path from 'path';
 import { CommandExecutor } from '@executors/types';
 import { getAssetPath } from '@core/storage/common';
+import { yamlWrap } from '@core/internal-implementation/utils';
 
 export class ExternalCommandExecutor implements CommandExecutor {
 	async execute(command: ExternalCommand) {
@@ -13,7 +14,7 @@ export class ExternalCommandExecutor implements CommandExecutor {
 					file.readFile(path.join(getAssetPath(), 'external-prompt', `${fileName}.yaml`), 'utf8')
 				)
 			);
-			return '```yaml\n' + prompts.join('\n---\n') + '\n```'; // 使用 YAML 分隔符分隔多个文件的内容
+			return yamlWrap(prompts); // 使用 YAML 分隔符分隔多个文件的内容
 		} catch (e) {
 			const msg = `Failed to open External "${command.request}"`;
 			console.error(msg);
