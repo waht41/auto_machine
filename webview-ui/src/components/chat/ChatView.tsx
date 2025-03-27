@@ -30,6 +30,87 @@ interface ChatViewProps {
 
 export const MAX_IMAGES_PER_MESSAGE = 20; // Anthropic limits to 20 images
 
+const ChatViewContainer = styled.div<{ isHidden: boolean }>`
+	height: 100%;
+	width: 100%;
+	display: ${props => props.isHidden ? 'none' : 'flex'};
+	flex-direction: column;
+	overflow: hidden;
+`;
+
+const ScrollContainer = styled.div`
+	flex: 1 1 auto;
+	display: flex;
+	min-height: 0;
+`;
+
+const VirtuosoContainer = styled(Virtuoso<ClineMessage, unknown>)`
+	flex: 1 1 auto;
+	height: 100%;
+	overflow-y: scroll; /* always show scrollbar */
+`;
+
+const FooterContainer = styled.div`
+	height: 5px;
+`;
+
+const WelcomeContainer = styled.div`
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	justify-content: flex-start;
+	flex: 1;
+	padding: 20px;
+	overflow-y: auto;
+	min-height: 0;
+`;
+
+const WelcomeContent = styled.div`
+	max-width: 600px;
+	flex-shrink: 0;
+`;
+
+const ScrollToBottomContainer = styled.div`
+	display: flex;
+	padding: 10px 15px 0px 15px;
+`;
+
+const ButtonsContainer = styled.div<{ opacity: number }>`
+	opacity: ${props => props.opacity};
+	display: flex;
+	padding: ${props => props.opacity > 0 ? '10px 15px 0px 15px' : '0px 15px 0px 15px'};
+`;
+
+const PrimaryButton = styled(VSCodeButton)<{ hasSecondary: boolean }>`
+	flex: ${props => props.hasSecondary ? 1 : 2};
+	margin-right: ${props => props.hasSecondary ? '6px' : '0'};
+`;
+
+const SecondaryButton = styled(VSCodeButton)<{ isStreaming: boolean }>`
+	flex: ${props => props.isStreaming ? 2 : 1};
+	margin-left: ${props => props.isStreaming ? 0 : '6px'};
+`;
+
+const ScrollToBottomButton = styled.div`
+	background-color: color-mix(in srgb, var(--vscode-toolbar-hoverBackground) 55%, transparent);
+	border-radius: 3px;
+	overflow: hidden;
+	cursor: pointer;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	flex: 1;
+	height: 25px;
+
+	&:hover {
+		background-color: color-mix(in srgb, var(--vscode-toolbar-hoverBackground) 75%, transparent);
+	}
+
+	&:active {
+		background-color: color-mix(in srgb, var(--vscode-toolbar-hoverBackground) 95%, transparent);
+	}
+`;
+
 const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryView }: ChatViewProps) => {
 	const {
 		version,
@@ -62,7 +143,6 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 	const disableAutoScrollRef = useRef(false);
 	const [showScrollToBottom, setShowScrollToBottom] = useState(false);
 	const [isAtBottom, setIsAtBottom] = useState(false);
-
 
 	// UI layout depends on the last 2 messages
 	// (since it relies on the content of these messages, we are deep comparing. i.e. the button state after hitting button sets enableButtons to false, and this effect otherwise would have to true again even if messages didn't change
@@ -533,17 +613,7 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 	);
 
 	return (
-		<div
-			style={{
-				position: 'fixed',
-				top: 0,
-				left: 0,
-				right: 0,
-				bottom: 0,
-				display: isHidden ? 'none' : 'flex',
-				flexDirection: 'column',
-				overflow: 'hidden',
-			}}>
+		<ChatViewContainer isHidden={isHidden}>
 			{task ? (
 				<TaskHeader
 					task={task}
@@ -557,17 +627,9 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 					onClose={handleTaskCloseButtonClick}
 				/>
 			) : (
-				<div
-					style={{
-						flex: '1 1 0', // flex-grow: 1, flex-shrink: 1, flex-basis: 0
-						minHeight: 0,
-						overflowY: 'auto',
-						display: 'flex',
-						flexDirection: 'column',
-						paddingBottom: '10px',
-					}}>
+				<WelcomeContainer>
 					{showAnnouncement && <Announcement version={version} hideAnnouncement={hideAnnouncement} />}
-					<div style={{ padding: '0 20px', flexShrink: 0 }}>
+					<WelcomeContent>
 						<h2>What can I do for you?</h2>
 						<p>
 							Thanks to the latest breakthroughs in agentic coding capabilities, I can handle complex
@@ -575,24 +637,20 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 							use the browser (after you grant permission). I can even use MCP to create new tools
 							and extend my own capabilities.
 						</p>
-					</div>
+					</WelcomeContent>
 					{taskHistory.length > 0 && <HistoryPreview showHistoryView={showHistoryView} />}
-				</div>
+				</WelcomeContainer>
 			)}
 
 			{task && (
 				<>
-					<div style={{ flexGrow: 1, display: 'flex' }} ref={scrollContainerRef}>
-						<Virtuoso
+					<ScrollContainer ref={scrollContainerRef}>
+						<VirtuosoContainer
 							ref={virtuosoRef}
 							key={task.ts} // trick to make sure virtuoso re-renders when task changes, and we use initialTopMostItemIndex to start at the bottom
 							className="scrollable"
-							style={{
-								flexGrow: 1,
-								overflowY: 'scroll', // always show scrollbar
-							}}
 							components={{
-								Footer: () => <div style={{ height: 5 }} />, // Add empty padding at the bottom
+								Footer: () => <FooterContainer />, // Add empty padding at the bottom
 							}}
 							// increasing top by 3_000 to prevent jumping around when user collapses a row
 							increaseViewportBy={{ top: 3_000, bottom: Number.MAX_SAFE_INTEGER }} // hack to make sure the last message is always rendered to get truly perfect scroll to bottom animation when new messages are added (Number.MAX_SAFE_INTEGER is safe for arithmetic operations, which is all virtuoso uses this value for in src/sizeRangeSystem.ts)
@@ -608,13 +666,9 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 							atBottomThreshold={10} // anything lower causes issues with followOutput
 							initialTopMostItemIndex={visibleMessages.length - 1}
 						/>
-					</div>
+					</ScrollContainer>
 					{showScrollToBottom ? (
-						<div
-							style={{
-								display: 'flex',
-								padding: '10px 15px 0px 15px',
-							}}>
+						<ScrollToBottomContainer>
 							<ScrollToBottomButton
 								onClick={() => {
 									scrollToBottomSmooth();
@@ -622,44 +676,35 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 								}}>
 								<span className="codicon codicon-chevron-down" style={{ fontSize: '18px' }}></span>
 							</ScrollToBottomButton>
-						</div>
+						</ScrollToBottomContainer>
 					) : (
-						<div
-							style={{
-								opacity:
-									primaryButtonText || secondaryButtonText || isStreaming
-										? enableButtons || (isStreaming && !didClickCancel)
-											? 1
-											: 0.5
-										: 0,
-								display: 'flex',
-								padding: `${primaryButtonText || secondaryButtonText || isStreaming ? '10' : '0'}px 15px 0px 15px`,
-							}}>
+						<ButtonsContainer
+							opacity={
+								primaryButtonText || secondaryButtonText || isStreaming
+									? enableButtons || (isStreaming && !didClickCancel)
+										? 1
+										: 0.5
+									: 0
+							}>
 							{primaryButtonText && !isStreaming && (
-								<VSCodeButton
+								<PrimaryButton
 									appearance="primary"
 									disabled={!enableButtons}
-									style={{
-										flex: secondaryButtonText ? 1 : 2,
-										marginRight: secondaryButtonText ? '6px' : '0',
-									}}
+									hasSecondary={!!secondaryButtonText}
 									onClick={handlePrimaryButtonClick}>
 									{primaryButtonText}
-								</VSCodeButton>
+								</PrimaryButton>
 							)}
 							{(secondaryButtonText || isStreaming) && (
-								<VSCodeButton
+								<SecondaryButton
 									appearance="secondary"
 									disabled={!enableButtons && !(isStreaming && !didClickCancel)}
-									style={{
-										flex: isStreaming ? 2 : 1,
-										marginLeft: isStreaming ? 0 : '6px',
-									}}
+									isStreaming={isStreaming}
 									onClick={handleSecondaryButtonClick}>
 									{isStreaming ? 'Cancel' : secondaryButtonText}
-								</VSCodeButton>
+								</SecondaryButton>
 							)}
-						</div>
+						</ButtonsContainer>
 					)}
 				</>
 			)}
@@ -683,28 +728,8 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 					}
 				}}
 			/>
-		</div>
+		</ChatViewContainer>
 	);
 };
-
-const ScrollToBottomButton = styled.div`
-	background-color: color-mix(in srgb, var(--vscode-toolbar-hoverBackground) 55%, transparent);
-	border-radius: 3px;
-	overflow: hidden;
-	cursor: pointer;
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	flex: 1;
-	height: 25px;
-
-	&:hover {
-		background-color: color-mix(in srgb, var(--vscode-toolbar-hoverBackground) 90%, transparent);
-	}
-
-	&:active {
-		background-color: color-mix(in srgb, var(--vscode-toolbar-hoverBackground) 70%, transparent);
-	}
-`;
 
 export default ChatView;
