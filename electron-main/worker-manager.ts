@@ -6,14 +6,14 @@ import chokidar from 'chokidar';
 import { Stats } from 'fs';
 import { IpcHandler } from './ipc-handler';
 
-// const logStream = fs.createWriteStream( 'work_manager.log', { flags: 'a' });
-// const writeLog = (...message   : any[]) => {
-//     const logMessage = message.map(item => typeof item === 'object' ? JSON.stringify(item) : String(item)).join(' ');
-//     logStream.write(logMessage+'\n');
-// }
-
 export const getAssetsPath = (): string => {
-	return join(process.cwd(), 'resources','assets');
+	// 生产环境下使用 process.resourcesPath 获取资源目录
+	if (app.isPackaged) {
+		return join(process.resourcesPath, 'assets');
+	} else {
+		// 开发环境下基于项目根目录定位资源
+		return join(app.getAppPath(), 'resources', 'assets');
+	}
 };
 
 export class WorkerManager {
@@ -48,10 +48,6 @@ export class WorkerManager {
 		}
 
 		return this.worker;
-	}
-
-	private setupWorkerMessageHandlers(worker: ChildProcess) {
-		// 不再需要在这里处理消息，由 IpcHandler 负责
 	}
 
 	private startWorker() {
@@ -105,8 +101,6 @@ export class WorkerManager {
 			this.restartAttempts = 0;
 			console.log('[main] Worker process started successfully');
 		});
-
-		this.setupWorkerMessageHandlers(this.worker);
 
 		return this.worker;
 	}
