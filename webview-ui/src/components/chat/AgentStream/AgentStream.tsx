@@ -1,11 +1,11 @@
 import React from 'react';
 import styled from 'styled-components';
 import { Card, Timeline, Typography, Tag } from 'antd';
+import { useClineMessageStore } from '@webview-ui/store/clineMessageStore';
 
 const { Title, Text } = Typography;
 
 const StreamContainer = styled.div`
-  height: 100%;
   overflow-y: auto;
   padding: 16px;
 `;
@@ -55,11 +55,12 @@ const mockStreamData = [
 ];
 
 const AgentStream = () => {
+	const task = useClineMessageStore().getTask();
 	return (
 		<StreamContainer>
 			<StreamHeader>
 				<Title level={4}>执行流程</Title>
-				<Text type="secondary">实时展示AI处理过程</Text>
+				<Text type="secondary">{task}</Text>
 			</StreamHeader>
       
 			<StreamCard>
