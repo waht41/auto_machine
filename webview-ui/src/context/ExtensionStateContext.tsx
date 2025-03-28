@@ -17,6 +17,7 @@ import { checkExistKey } from '../../../src/shared/checkExistApiConfig';
 import { Mode, CustomModePrompts, defaultModeSlug, defaultPrompts, ModeConfig } from '../../../src/shared/modes';
 import { CustomSupportPrompts } from '../../../src/shared/support-prompt';
 import { IToolCategory } from '@core/tool-adapter/type';
+import { useClineMessageStore } from '../store/clineMessageStore';
 
 export interface ExtensionStateContextType extends ExtensionState {
 	didHydrateState: boolean
@@ -160,6 +161,10 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 						...prevState,
 						...newState,
 					}));
+					// 同步clineMessages到zustand store
+					if (newState.clineMessages) {
+						useClineMessageStore.getState().setClineMessages(newState.clineMessages);
+					}
 					const config = newState.apiConfiguration;
 					const hasKey = checkExistKey(config);
 					setShowWelcome(!hasKey);
@@ -184,6 +189,8 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 						if (lastIndex !== -1) {
 							const newClineMessages = [...prevState.clineMessages];
 							newClineMessages[lastIndex] = partialMessage;
+							// 同步更新的消息到zustand store
+							useClineMessageStore.getState().updateClineMessage(partialMessage);
 							return { ...prevState, clineMessages: newClineMessages };
 						}
 						return prevState;
