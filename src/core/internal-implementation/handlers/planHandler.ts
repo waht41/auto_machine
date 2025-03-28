@@ -29,8 +29,8 @@ async function startPlan(command: Extract<PlanCommand, { action: 'start' }>, con
 
 async function adjustPlan(command: Extract<PlanCommand, { action: 'adjust' }>, context: IInternalContext) {
 	const cline = context.cline;
-	await cline.setPlan(command.content, command.currentStep);
-	return `you just just adjust plan because, ${command.reason}, now you should: ${cline.getStep(command.currentStep)}`;
+	await cline.setPlan(command.content, command.currentStep); // todo AI start from 1, but cline start from 0. that may cause confusion
+	return `you just adjust plan because: ${command.reason},\n now you should: ${cline.getStep(command.currentStep -1)}`;
 }
 
 async function nextStep(command: Extract<PlanCommand, { action: 'complete_step' }>, context: IInternalContext) {
