@@ -9,8 +9,8 @@ import McpView from './components/mcp/McpView';
 import PromptsView from './components/prompts/PromptsView';
 import { Spin } from 'antd';
 import styled from 'styled-components';
-import MainBoard from '@webview-ui/components/mainBoard';
 import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import Home from '@webview-ui/components/Home';
 
 const LoadingContainer = styled.div`
 	display: flex;
@@ -69,11 +69,7 @@ const AppContent = () => {
 
 	return (
 		<Routes>
-			<Route path="/" element={
-				<MainBoard
-					isChatViewHidden={isChatViewHidden}
-				/>
-			} />
+			<Route path="/" element={<Home isChatViewHidden={isChatViewHidden}/>} />
 			<Route path="/settings" element={<SettingsView onDone={() => navigate('/')} />} />
 			<Route path="/history" element={<HistoryView onDone={() => navigate('/')} />} />
 			<Route path="/mcp" element={<McpView onDone={() => navigate('/')} />} />
