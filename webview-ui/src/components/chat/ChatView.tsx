@@ -12,14 +12,13 @@ import { findLast } from '@/shared/array';
 import { getApiMetrics } from '@/shared/getApiMetrics';
 import { useExtensionState } from '../../context/ExtensionStateContext';
 import { vscode } from '../../utils/vscode';
-import HistoryPreview from '../history/HistoryPreview';
-import Announcement from './Announcement';
 import ChatRow from './ChatRow/ChatRow';
 import ChatTextArea from './ChatTextArea';
 import TaskHeader from './TaskHeader';
 import AutoApproveMenu from './AutoApproveMenu';
 import { normalizeApiConfiguration } from '@webview-ui/components/settings/ApiOptions/utils';
 import { VSCodeButton } from '@vscode/webview-ui-toolkit/react';
+import ChatHistory from '@webview-ui/components/chat/ChatHistory';
 
 interface ChatViewProps {
 	isHidden: boolean
@@ -52,22 +51,6 @@ const VirtuosoContainer = styled(Virtuoso<ClineMessage, unknown>)`
 
 const FooterContainer = styled.div`
 	height: 5px;
-`;
-
-const WelcomeContainer = styled.div`
-	display: flex;
-	flex-direction: column;
-	align-items: flex-start;
-	justify-content: flex-start;
-	flex: 1;
-	padding: 20px;
-	overflow-y: auto;
-	min-height: 0;
-`;
-
-const WelcomeContent = styled.div`
-	max-width: 600px;
-	flex-shrink: 0;
 `;
 
 const ScrollToBottomContainer = styled.div`
@@ -111,11 +94,9 @@ const ScrollToBottomButton = styled.div`
 	}
 `;
 
-const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryView }: ChatViewProps) => {
+const ChatView = ({ isHidden }: ChatViewProps) => {
 	const {
-		version,
 		clineMessages: messages,
-		taskHistory,
 		apiConfiguration,
 		toolCategories,
 		allowedTools
@@ -614,36 +595,21 @@ const ChatView = ({ isHidden, showAnnouncement, hideAnnouncement, showHistoryVie
 
 	return (
 		<ChatViewContainer isHidden={isHidden}>
-			{task ? (
-				<TaskHeader
-					task={task}
-					tokensIn={apiMetrics.totalTokensIn}
-					tokensOut={apiMetrics.totalTokensOut}
-					doesModelSupportPromptCache={selectedModelInfo.supportsPromptCache}
-					cacheWrites={apiMetrics.totalCacheWrites}
-					cacheReads={apiMetrics.totalCacheReads}
-					totalCost={apiMetrics.totalCost}
-					contextTokens={apiMetrics.contextTokens}
-					onClose={handleTaskCloseButtonClick}
-				/>
-			) : (
-				<WelcomeContainer>
-					{showAnnouncement && <Announcement version={version} hideAnnouncement={hideAnnouncement} />}
-					<WelcomeContent>
-						<h2>What can I do for you?</h2>
-						<p>
-							Thanks to the latest breakthroughs in agentic coding capabilities, I can handle complex
-							software development tasks. With tools that let me create & edit files,
-							use the browser (after you grant permission). I can even use MCP to create new tools
-							and extend my own capabilities.
-						</p>
-					</WelcomeContent>
-					{taskHistory.length > 0 && <HistoryPreview showHistoryView={showHistoryView} />}
-				</WelcomeContainer>
-			)}
+			{!task && <ChatHistory/>}
 
 			{task && (
 				<>
+					<TaskHeader
+						task={task}
+						tokensIn={apiMetrics.totalTokensIn}
+						tokensOut={apiMetrics.totalTokensOut}
+						doesModelSupportPromptCache={selectedModelInfo.supportsPromptCache}
+						cacheWrites={apiMetrics.totalCacheWrites}
+						cacheReads={apiMetrics.totalCacheReads}
+						totalCost={apiMetrics.totalCost}
+						contextTokens={apiMetrics.contextTokens}
+						onClose={handleTaskCloseButtonClick}
+					/>
 					<ScrollContainer ref={scrollContainerRef}>
 						<VirtuosoContainer
 							ref={virtuosoRef}
