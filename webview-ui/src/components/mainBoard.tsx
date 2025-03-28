@@ -4,9 +4,9 @@ import ChatView from '@webview-ui/components/chat/ChatView';
 import AgentStream from '@webview-ui/components/AgentStream/AgentStream';
 import { vscode } from '@webview-ui/utils/vscode';
 import { useExtensionState } from '@webview-ui/context/ExtensionStateContext';
+import { useNavigate } from 'react-router-dom';
 
 interface IProp {
-	onShowHistoryView: () => void;
 	isChatViewHidden: boolean;
 }
 
@@ -29,21 +29,24 @@ const AgentStreamContainer = styled.div`
 `;
 
 const MainBoard = (prop: IProp) => {
-	const { onShowHistoryView, isChatViewHidden } = prop;
+	const { isChatViewHidden } = prop;
 	const [showAnnouncement, setShowAnnouncement] = useState(false);
 	const { shouldShowAnnouncement } = useExtensionState();
+	const navigate = useNavigate();
+
 	useEffect(() => {
 		if (shouldShowAnnouncement) {
 			setShowAnnouncement(true);
 			vscode.postMessage({ type: 'didShowAnnouncement' });
 		}
 	}, [shouldShowAnnouncement]);
+
 	return (
 		<MainContainer>
 			<ChatViewContainer>
 				<ChatView
 					showHistoryView={() => {
-						onShowHistoryView();
+						navigate('/history');
 					}}
 					isHidden={isChatViewHidden}
 					showAnnouncement={showAnnouncement}

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useEvent } from 'react-use';
 import { ExtensionMessage } from '@/shared/ExtensionMessage';
 import HistoryView from './components/history/HistoryView';
@@ -10,6 +10,7 @@ import PromptsView from './components/prompts/PromptsView';
 import { Spin } from 'antd';
 import styled from 'styled-components';
 import MainBoard from '@webview-ui/components/mainBoard';
+import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 
 const LoadingContainer = styled.div`
 	display: flex;
@@ -21,10 +22,8 @@ const LoadingContainer = styled.div`
 
 const AppContent = () => {
 	const { didHydrateState, showWelcome } = useExtensionState();
-	const [showSettings, setShowSettings] = useState(false);
-	const [showHistory, setShowHistory] = useState(false);
-	const [showMcp, setShowMcp] = useState(false);
-	const [showPrompts, setShowPrompts] = useState(false);
+	const navigate = useNavigate();
+	const location = useLocation();
 
 	const handleMessage = useCallback((e: MessageEvent) => {
 		const message: ExtensionMessage = e.data;
@@ -32,43 +31,26 @@ const AppContent = () => {
 			case 'action':
 				switch (message.action!) {
 					case 'settingsButtonClicked':
-						setShowSettings(true);
-						setShowHistory(false);
-						setShowMcp(false);
-						setShowPrompts(false);
+						navigate('/settings');
 						break;
 					case 'historyButtonClicked':
-						setShowSettings(false);
-						setShowHistory(true);
-						setShowMcp(false);
-						setShowPrompts(false);
+						navigate('/history');
 						break;
 					case 'mcpButtonClicked':
-						setShowSettings(false);
-						setShowHistory(false);
-						setShowMcp(true);
-						setShowPrompts(false);
+						navigate('/mcp');
 						break;
 					case 'promptsButtonClicked':
-						setShowSettings(false);
-						setShowHistory(false);
-						setShowMcp(false);
-						setShowPrompts(true);
+						navigate('/prompts');
 						break;
 					case 'chatButtonClicked':
-						setShowSettings(false);
-						setShowHistory(false);
-						setShowMcp(false);
-						setShowPrompts(false);
+						navigate('/');
 						break;
 				}
 				break;
 		}
-	}, []);
+	}, [navigate]);
 
 	useEvent('message', handleMessage);
-
-
 
 	if (!didHydrateState) {
 		return (
@@ -78,28 +60,26 @@ const AppContent = () => {
 		);
 	}
 
+	if (showWelcome) {
+		return <WelcomeView />;
+	}
+
+	// 判断当前路由是否是聊天页面之外的页面
+	const isChatViewHidden = location.pathname !== '/';
+
 	return (
-		<>
-			{showWelcome ? (
-				<WelcomeView />
-			) : (
-				<>
-					{showSettings && <SettingsView onDone={() => setShowSettings(false)} />}
-					{showHistory && <HistoryView onDone={() => setShowHistory(false)} />}
-					{showMcp && <McpView onDone={() => setShowMcp(false)} />}
-					{showPrompts && <PromptsView onDone={() => setShowPrompts(false)} />}
-					{/* Do not conditionally load ChatView, it's expensive and there's state we don't want to lose (user input, disableInput, askResponse promise, etc.) */}
-					<MainBoard
-						onShowHistoryView={() => {
-							setShowSettings(false);
-							setShowMcp(false);
-							setShowPrompts(false);
-							setShowHistory(true);
-						}}
-						isChatViewHidden={showSettings || showHistory || showMcp || showPrompts} />
-				</>
-			)}
-		</>
+		<Routes>
+			<Route path="/" element={
+				<MainBoard
+					isChatViewHidden={isChatViewHidden}
+				/>
+			} />
+			<Route path="/settings" element={<SettingsView onDone={() => navigate('/')} />} />
+			<Route path="/history" element={<HistoryView onDone={() => navigate('/')} />} />
+			<Route path="/mcp" element={<McpView onDone={() => navigate('/')} />} />
+			<Route path="/prompts" element={<PromptsView onDone={() => navigate('/')} />} />
+			<Route path="*" element={<Navigate to="/" replace />} />
+		</Routes>
 	);
 };
 
@@ -118,7 +98,9 @@ const App = () => {
 
 	return (
 		<ExtensionStateContextProvider>
-			<AppContent />
+			<HashRouter>
+				<AppContent />
+			</HashRouter>
 		</ExtensionStateContextProvider>
 	);
 };
