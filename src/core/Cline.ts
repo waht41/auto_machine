@@ -615,7 +615,7 @@ export class Cline {
 		const textStrings = texts.map((block) => block.text);
 		logger.debug('handleAssistantMessage pushToolResult',textStrings);
 		await this.sayP({
-			sayType: 'text',
+			sayType: 'agent_stream',
 			text: textStrings.join('\n'),
 			partial: false,
 		});

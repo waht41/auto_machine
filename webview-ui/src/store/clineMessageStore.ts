@@ -23,6 +23,8 @@ interface IClineMessageStore {
   getLatestMessage: () => ClineMessage | undefined;
   getLatestUserMessage: () => ClineMessage | undefined;
   getLatestAssistantMessage: () => ClineMessage | undefined;
+	getChatMessages: () => ClineMessage[];
+	getAgentStreamMessages: () => ClineMessage[];
   
   // 初始化方法，用于设置消息处理器
   init: () => void;
@@ -100,6 +102,14 @@ export const useClineMessageStore = create<IClineMessageStore>((set, get) => ({
 			}
 		}
 		return undefined;
+	},
+
+	getChatMessages: () => {
+		return get().clineMessages.filter(item => item.say !== 'agent_stream');
+	},
+
+	getAgentStreamMessages: () => {
+		return get().clineMessages.filter(item => item.say === 'agent_stream');
 	},
   
 	// 初始化方法，设置消息处理器

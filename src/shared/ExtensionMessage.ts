@@ -150,6 +150,7 @@ export type ClineSay =
 	| 'tool'
 	| 'command'
 	| 'plan'
+	| 'agent_stream'
 
 export interface ClineSayTool {
 	tool: ''
