@@ -9,3 +9,13 @@ export const {
 	BACKGROUND_MESSAGE,
 	APP_MESSAGE
 } = MESSAGE_EVENTS;
+
+
+export const APP_MESSAGE_EVENTS = {
+	/** 跳转到AgentStream */
+	AGENT_STREAM_JUMP: 'jump-to-agent-stream',
+} as const;
+
+export const {
+	AGENT_STREAM_JUMP
+} = APP_MESSAGE_EVENTS;

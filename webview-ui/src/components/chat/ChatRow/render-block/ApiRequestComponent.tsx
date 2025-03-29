@@ -4,6 +4,8 @@ import CodeAccordian from '@webview-ui/components/common/CodeAccordian';
 import { DefaultComponentProps } from './types';
 import { ClineApiReqInfo } from '@/shared/ExtensionMessage';
 import { StatusIcon, StatusText, ChatStatus } from '@webview-ui/components/chat/ChatRow/Header';
+import messageBus from '@webview-ui/store/messageBus';
+import { AGENT_STREAM_JUMP, APP_MESSAGE } from '@webview-ui/store/const';
 
 /**
  * 渲染API请求组件
@@ -37,6 +39,20 @@ export const ApiRequestComponent = ({ message, isExpanded, onToggleExpand }: Def
 	const icon = <StatusIcon status={currentStatus} />;
 	const title = <StatusText status={currentStatus} />;
 
+	// 处理跳转到AgentStream
+	const handleJumpToAgentStream = (e: React.MouseEvent) => {
+		e.stopPropagation(); // 防止触发展开/折叠
+		
+		// 获取当前消息的时间戳
+		const currentTs = message.ts;
+		
+		// 使用messageBus发送跳转事件
+		messageBus.emit(APP_MESSAGE, {
+			type: AGENT_STREAM_JUMP,
+			timestamp: currentTs
+		});
+	};
+
 	return (
 		<>
 			<div
@@ -51,7 +67,8 @@ export const ApiRequestComponent = ({ message, isExpanded, onToggleExpand }: Def
 					WebkitUserSelect: 'none',
 					MozUserSelect: 'none',
 					msUserSelect: 'none',
-				}}>
+				}}
+				onClick={onToggleExpand}>
 				<div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexGrow: 1 }}>
 					{icon}
 					{title}
@@ -59,7 +76,29 @@ export const ApiRequestComponent = ({ message, isExpanded, onToggleExpand }: Def
             ${Number(cost || 0)?.toFixed(4)}
 					</VSCodeBadge>
 				</div>
-				<span className={`codicon codicon-chevron-${isExpanded ? 'up' : 'down'}`}></span>
+				<div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+					<div 
+						onClick={handleJumpToAgentStream}
+						title="jump to correspond agent stream"
+						style={{
+							display: 'flex',
+							alignItems: 'center',
+							justifyContent: 'center',
+							padding: '2px',
+							borderRadius: '3px',
+							cursor: 'pointer',
+							color: 'var(--vscode-foreground)',
+							opacity: 0.7,
+							transition: 'opacity 0.2s',
+							marginRight: '8px',
+						}}
+						onMouseOver={(e) => (e.currentTarget.style.opacity = '1')}
+						onMouseOut={(e) => (e.currentTarget.style.opacity = '0.7')}
+					>
+						<span className="codicon codicon-arrow-right" style={{ fontSize: '14px' }}></span>
+					</div>
+					<span className={`codicon codicon-chevron-${isExpanded ? 'up' : 'down'}`}></span>
+				</div>
 			</div>
 			{((cost == null && apiRequestFailedMessage) || apiReqStreamingFailedMessage) && (
 				<>

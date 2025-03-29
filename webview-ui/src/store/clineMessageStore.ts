@@ -3,7 +3,7 @@ import { ClineMessage } from '@/shared/ExtensionMessage';
 import { findLastIndex } from '@/shared/array';
 import messageBus from './messageBus';
 import { BACKGROUND_MESSAGE } from '@webview-ui/store/const';
-import { ClineMessageState, MessageHandler } from '@webview-ui/store/type';
+import { ClineMessageState, BackGroundMessageHandler } from '@webview-ui/store/type';
 
 // 定义消息存储的状态类型
 interface IClineMessageStore {
@@ -133,11 +133,11 @@ export const useClineMessageStore = create<IClineMessageStore>((set, get) => ({
 		};
     
 		// 使用消息总线订阅扩展消息
-		messageBus.on(BACKGROUND_MESSAGE, handleExtensionMessage as MessageHandler);
+		messageBus.on(BACKGROUND_MESSAGE, handleExtensionMessage as BackGroundMessageHandler);
     
 		// 返回清理函数
 		return () => {
-			messageBus.off(BACKGROUND_MESSAGE, handleExtensionMessage as MessageHandler);
+			messageBus.off(BACKGROUND_MESSAGE, handleExtensionMessage as BackGroundMessageHandler);
 		};
 	}
 }));

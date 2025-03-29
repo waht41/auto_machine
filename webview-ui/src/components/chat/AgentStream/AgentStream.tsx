@@ -1,9 +1,13 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 import styled from 'styled-components';
 import { Card, Typography, Tag } from 'antd';
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 import { useClineMessageStore } from '@webview-ui/store/clineMessageStore';
 import MarkdownBlock from '@webview-ui/components/common/MarkdownBlock';
+import { scrollToNearestTs, findNearestMessageIndex } from '../utils/scrollSync';
+import messageBus from '@webview-ui/store/messageBus';
+import { AGENT_STREAM_JUMP, APP_MESSAGE } from '@webview-ui/store/const';
+import { AgentStreamJumpState, AppMessageHandler } from '@webview-ui/store/type';
 
 const { Title, Text } = Typography;
 
@@ -25,6 +29,30 @@ const ItemCard = styled(Card)`
   
   &:last-child {
     margin-bottom: 16px;
+  }
+  
+  /* 添加卡片动画效果 */
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+  }
+  
+  /* 添加滚动到视图时的高亮效果 */
+  &.highlight {
+    animation: highlight 1.5s ease-out;
+  }
+  
+  @keyframes highlight {
+    0% {
+      background-color: rgba(24, 144, 255, 0.1);
+      box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+    }
+    100% {
+      background-color: #ffffff;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    }
   }
 `;
 
@@ -76,6 +104,14 @@ const StyledVirtuoso = styled(Virtuoso)`
   
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  
+  /* 添加滚动过渡效果 */
+  scroll-behavior: smooth;
+  
+  /* 为子元素添加动画效果 */
+  & > div {
+    transition: transform 0.3s ease-out;
+  }
 `;
 
 const MessageHeader = styled.div`
@@ -120,8 +156,9 @@ const AgentStream = () => {
 	const task = useClineMessageStore().getTask();
 	const agentStreamMessages = useClineMessageStore().getAgentStreamMessages();
 	const virtuosoRef = useRef<VirtuosoHandle | null>(null);
+	const [highlightedIndex, setHighlightedIndex] = useState<number | null>(null);
 
-	// 当消息更新时，自动滚动到底部
+	// 当获得新消息时，自动滚动到底部
 	useEffect(() => {
 		if (virtuosoRef.current && agentStreamMessages.length > 0) {
 			virtuosoRef.current.scrollToIndex({
@@ -130,7 +167,39 @@ const AgentStream = () => {
 				align: 'end',
 			});
 		}
-	}, [agentStreamMessages]);
+	}, [agentStreamMessages.length]);
+
+	// 处理从ApiRequestComponent跳转过来的事件
+	const handleJumpToAgentStream = useCallback((message: AgentStreamJumpState) => {
+		if (message.type === AGENT_STREAM_JUMP && agentStreamMessages.length > 0) {
+			const targetTs = message.timestamp;
+			
+			// 查找最接近的消息索引
+			const nearestIndex = findNearestMessageIndex(agentStreamMessages, targetTs);
+			
+			// 设置高亮索引
+			setHighlightedIndex(nearestIndex);
+			
+			// 使用scrollToNearestTs函数滚动到最接近的时间戳，使用平滑滚动
+			scrollToNearestTs(virtuosoRef, agentStreamMessages, targetTs, 'smooth');
+			
+			// 3秒后取消高亮
+			setTimeout(() => {
+				setHighlightedIndex(null);
+			}, 3000);
+		}
+	}, [agentStreamMessages]) as AppMessageHandler;
+
+	// 监听跳转事件
+	useEffect(() => {
+		// 使用messageBus监听APP_MESSAGE事件
+		messageBus.on(APP_MESSAGE, handleJumpToAgentStream);
+		
+		return () => {
+			// 组件卸载时取消监听
+			messageBus.off(APP_MESSAGE, handleJumpToAgentStream);
+		};
+	}, [handleJumpToAgentStream]);
 
 	return (
 		<StreamContainer>
@@ -147,7 +216,7 @@ const AgentStream = () => {
 					itemContent={(index) => {
 						const item = agentStreamMessages[index];
 						return (
-							<ItemCard>
+							<ItemCard className={highlightedIndex === index ? 'highlight' : ''}>
 								<MessageHeader>
 									<StyledTag color="blue">
 										{item.say === 'agent_stream' ? 'thinking' : item.say}
