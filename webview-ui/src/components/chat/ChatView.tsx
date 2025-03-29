@@ -42,6 +42,7 @@ const ScrollContainer = styled.div`
 	flex: 1 1 auto;
 	display: flex;
 	min-height: 0;
+	position: relative; /* 添加相对定位，作为绝对定位按钮的参考点 */
 `;
 
 const VirtuosoContainer = styled(Virtuoso<ClineMessage, unknown>)`
@@ -55,8 +56,34 @@ const FooterContainer = styled.div`
 `;
 
 const ScrollToBottomContainer = styled.div`
+	position: absolute;
+	bottom: 20px;
+	right: 20px;
+	z-index: 100;
+`;
+
+const ScrollToBottomButton = styled.div`
+	background-color: color-mix(in srgb, var(--vscode-toolbar-hoverBackground) 75%, transparent);
+	border-radius: 50%;
+	width: 36px;
+	height: 36px;
+	overflow: hidden;
+	cursor: pointer;
 	display: flex;
-	padding: 10px 15px 0px 15px;
+	justify-content: center;
+	align-items: center;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+
+	&:hover {
+		background-color: color-mix(in srgb, var(--vscode-toolbar-hoverBackground) 85%, transparent);
+		transform: translateY(-2px);
+		transition: transform 0.2s ease;
+	}
+
+	&:active {
+		background-color: color-mix(in srgb, var(--vscode-toolbar-hoverBackground) 95%, transparent);
+		transform: translateY(0);
+	}
 `;
 
 const ButtonsContainer = styled.div<{ opacity: number }>`
@@ -73,26 +100,6 @@ const PrimaryButton = styled(VSCodeButton)<{ hasSecondary: boolean }>`
 const SecondaryButton = styled(VSCodeButton)<{ isStreaming: boolean }>`
 	flex: ${props => props.isStreaming ? 2 : 1};
 	margin-left: ${props => props.isStreaming ? 0 : '6px'};
-`;
-
-const ScrollToBottomButton = styled.div`
-	background-color: color-mix(in srgb, var(--vscode-toolbar-hoverBackground) 55%, transparent);
-	border-radius: 3px;
-	overflow: hidden;
-	cursor: pointer;
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	flex: 1;
-	height: 25px;
-
-	&:hover {
-		background-color: color-mix(in srgb, var(--vscode-toolbar-hoverBackground) 75%, transparent);
-	}
-
-	&:active {
-		background-color: color-mix(in srgb, var(--vscode-toolbar-hoverBackground) 95%, transparent);
-	}
 `;
 
 const ChatView = ({ isHidden }: ChatViewProps) => {
@@ -633,18 +640,19 @@ const ChatView = ({ isHidden }: ChatViewProps) => {
 							atBottomThreshold={10} // anything lower causes issues with followOutput
 							initialTopMostItemIndex={visibleMessages.length - 1}
 						/>
+						{showScrollToBottom ? (
+							<ScrollToBottomContainer>
+								<ScrollToBottomButton
+									onClick={() => {
+										scrollToBottomSmooth();
+										disableAutoScrollRef.current = false;
+									}}>
+									<span className="codicon codicon-chevron-down" style={{ fontSize: '20px' }}></span>
+								</ScrollToBottomButton>
+							</ScrollToBottomContainer>
+						) : null}
 					</ScrollContainer>
-					{showScrollToBottom ? (
-						<ScrollToBottomContainer>
-							<ScrollToBottomButton
-								onClick={() => {
-									scrollToBottomSmooth();
-									disableAutoScrollRef.current = false;
-								}}>
-								<span className="codicon codicon-chevron-down" style={{ fontSize: '18px' }}></span>
-							</ScrollToBottomButton>
-						</ScrollToBottomContainer>
-					) : (
+					{!showScrollToBottom && (
 						<ButtonsContainer
 							opacity={
 								primaryButtonText || secondaryButtonText || isStreaming
