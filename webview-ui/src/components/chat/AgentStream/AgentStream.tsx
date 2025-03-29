@@ -1,58 +1,59 @@
 import React, { useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { Card, Typography, Tag } from 'antd';
-import { Virtuoso } from 'react-virtuoso';
+import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 import { useClineMessageStore } from '@webview-ui/store/clineMessageStore';
+import MarkdownBlock from '@webview-ui/components/common/MarkdownBlock';
 
 const { Title, Text } = Typography;
 
 const StreamContainer = styled.div`
-  padding: 16px;
-  height: 90%;
+  padding: 20px;
+  height: 95%;
   display: flex;
   flex-direction: column;
-  background-color: #fafafa;
+  background-color: #f5f7fa;
 `;
 
 const ItemCard = styled(Card)`
-  margin-bottom: 24px;
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  margin-bottom: 32px;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
   border: none;
-  transition: all 0.2s ease;
   background-color: #ffffff;
   overflow: hidden;
   
-  &:hover {
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
-    transform: translateY(-1px);
-  }
-  
   &:last-child {
-    margin-bottom: 12px;
+    margin-bottom: 16px;
   }
 `;
 
 const StreamHeader = styled.div`
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
+  padding: 0 8px;
 `;
 
 const TaskTitle = styled(Title)`
+  margin-bottom: 0 !important;
+  color: #1a1a1a;
 `;
 
 const TaskDescription = styled(Text)`
   font-size: 14px;
+  color: #666;
 `;
 
 const StreamBody = styled.div`
   flex: 1;
   overflow: hidden;
-  padding: 0 16px;
+  padding: 0 8px;
   display: flex;
   flex-direction: column;
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 8px;
 `;
 
 const StyledVirtuoso = styled(Virtuoso)`
@@ -81,27 +82,32 @@ const MessageHeader = styled.div`
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   border-bottom: 1px solid #f0f0f0;
-  padding-bottom: 8px;
+  padding-bottom: 10px;
 `;
 
 const StyledTag = styled(Tag)`
-  font-weight: 500;
-  padding: 2px 8px;
-  border-radius: 4px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  text-transform: uppercase;
 `;
 
 const TimeText = styled(Text)`
   font-size: 12px;
-  opacity: 0.8;
+  opacity: 0.7;
+  margin-left: auto;
 `;
 
-const MessageText = styled(Text)`
+const MessageText = styled(MarkdownBlock)`
   display: block;
-  line-height: 1.6;
+  line-height: 1.8;
   white-space: pre-wrap;
-  color: #333;
+  color: #262626;
+  font-size: 14px;
+  padding: 0 4px;
 `;
 
 // 格式化时间戳为时:分:秒格式
@@ -113,7 +119,7 @@ const formatTimestamp = (ts: number) => {
 const AgentStream = () => {
 	const task = useClineMessageStore().getTask();
 	const agentStreamMessages = useClineMessageStore().getAgentStreamMessages();
-	const virtuosoRef = useRef<any>(null);
+	const virtuosoRef = useRef<VirtuosoHandle | null>(null);
 
 	// 当消息更新时，自动滚动到底部
 	useEffect(() => {
@@ -129,7 +135,7 @@ const AgentStream = () => {
 	return (
 		<StreamContainer>
 			<StreamHeader>
-				<TaskTitle level={4}>执行流程</TaskTitle>
+				<TaskTitle level={4}>Agent Stream</TaskTitle>
 				<TaskDescription type="secondary">{task}</TaskDescription>
 			</StreamHeader>
       
@@ -148,7 +154,7 @@ const AgentStream = () => {
 									</StyledTag>
 									<TimeText type="secondary">{formatTimestamp(item.ts)}</TimeText>
 								</MessageHeader>
-								<MessageText>{item.text || ''}</MessageText>
+								<MessageText markdown={item.text || ''} />
 							</ItemCard>
 						);
 					}}
