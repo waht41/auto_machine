@@ -170,17 +170,6 @@ const AgentStream = () => {
 	const virtuosoRef = useRef<VirtuosoHandle | null>(null);
 	const [highlightedIndex, setHighlightedIndex] = useState<number | null>(null);
 
-	// 当获得新消息时，自动滚动到底部
-	useEffect(() => {
-		if (virtuosoRef.current && agentStreamMessages.length > 0) {
-			virtuosoRef.current.scrollToIndex({
-				index: agentStreamMessages.length - 1,
-				behavior: 'smooth',
-				align: 'end',
-			});
-		}
-	}, [agentStreamMessages.length]);
-
 	// 处理从ApiRequestComponent跳转过来的事件
 	const handleJumpToAgentStream = useCallback((message: AgentStreamJumpState) => {
 		if (message.type === AGENT_STREAM_JUMP && agentStreamMessages.length > 0) {
@@ -194,12 +183,6 @@ const AgentStream = () => {
 			
 			// 设置高亮索引，启动单次完整的淡入淡出动画
 			setHighlightedIndex(nearestIndex);
-			
-			// 动画持续时间为2秒，与CSS动画时间匹配
-			// 动画结束后清除高亮
-			setTimeout(() => {
-				setHighlightedIndex(null);
-			}, 2000);
 		}
 	}, [agentStreamMessages]) as AppMessageHandler;
 
