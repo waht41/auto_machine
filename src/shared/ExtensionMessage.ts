@@ -3,7 +3,7 @@
 import { ApiConfiguration, ApiProvider, ModelInfo } from './api';
 import { HistoryItem } from './HistoryItem';
 import { McpServer } from './mcp';
-import { GitCommit } from '../utils/git';
+import { GitCommit } from '@/utils/git';
 import { CustomModePrompts, Mode, ModeConfig } from './modes';
 import { CustomSupportPrompts } from './support-prompt';
 import { IToolCategory } from '@core/tool-adapter/type';
@@ -83,7 +83,6 @@ export interface ApiConfigMeta {
 
 export interface ExtensionState {
 	version: string
-	clineMessages: ClineMessage[]
 	taskHistory: HistoryItem[]
 	shouldShowAnnouncement: boolean
 	apiConfiguration?: ApiConfiguration

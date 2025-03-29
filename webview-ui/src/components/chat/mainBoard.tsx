@@ -58,6 +58,12 @@ const MainBoard = (prop: IProp) => {
 		}
 	}, [shouldShowAnnouncement]);
 
+	// 初始化clineMessageStore
+	useEffect(() => {
+		// 初始化clineMessageStore，让它自己处理消息
+		useClineMessageStore.getState().init();
+	}, []);
+
 	return (
 		<MainContainer>
 			<ChatViewContainer hasTask={hasTask}>

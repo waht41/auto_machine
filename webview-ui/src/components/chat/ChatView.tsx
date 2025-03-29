@@ -19,6 +19,7 @@ import AutoApproveMenu from './AutoApproveMenu';
 import { normalizeApiConfiguration } from '@webview-ui/components/settings/ApiOptions/utils';
 import { VSCodeButton } from '@vscode/webview-ui-toolkit/react';
 import ChatHistory from '@webview-ui/components/chat/ChatHistory';
+import { useClineMessageStore } from '@webview-ui/store/clineMessageStore';
 
 interface ChatViewProps {
 	isHidden: boolean
@@ -96,11 +97,11 @@ const ScrollToBottomButton = styled.div`
 
 const ChatView = ({ isHidden }: ChatViewProps) => {
 	const {
-		clineMessages: messages,
 		apiConfiguration,
 		toolCategories,
 		allowedTools
 	} = useExtensionState();
+	const messages = useClineMessageStore().clineMessages;
 
 	const task = useMemo(() => messages.at(0), [messages]); // leaving this less safe version here since if the first message is not a task, then the extension is in a bad state and needs to be debugged (see Cline.abort)
 	const modifiedMessages = useMemo(() => messages.slice(1), [messages]);

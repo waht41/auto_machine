@@ -10,13 +10,11 @@ import {
 } from '@/shared/api';
 import { vscode } from '../utils/vscode';
 import { convertTextMateToHljs } from '../utils/textMateToHljs';
-import { findLastIndex } from '@/shared/array';
 import { McpServer } from '@/shared/mcp';
 import { checkExistKey } from '@/shared/checkExistApiConfig';
 import { Mode, CustomModePrompts, defaultModeSlug, defaultPrompts, ModeConfig } from '@/shared/modes';
 import { CustomSupportPrompts } from '@/shared/support-prompt';
 import { IToolCategory } from '@core/tool-adapter/type';
-import { useClineMessageStore } from '../store/clineMessageStore';
 import messageBus from '../store/messageBus';
 import { BACKGROUND_MESSAGE } from '@webview-ui/store/const';
 
@@ -77,7 +75,6 @@ export const ExtensionStateContext = createContext<ExtensionStateContextType | u
 export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 	const [state, setState] = useState<ExtensionState>({
 		version: '',
-		clineMessages: [],
 		taskHistory: [],
 		shouldShowAnnouncement: false,
 		allowedCommands: [],
@@ -177,20 +174,6 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 					setFilePaths(message.filePaths ?? []);
 					break;
 				}
-				case 'partialMessage': {
-					const partialMessage = message.partialMessage!;
-					setState((prevState) => {
-						// worth noting it will never be possible for a more up-to-date message to be sent here or in normal messages post since the presentAssistantContent function uses lock
-						const lastIndex = findLastIndex(prevState.clineMessages, (msg) => msg.ts === partialMessage.ts);
-						if (lastIndex !== -1) {
-							const newClineMessages = [...prevState.clineMessages];
-							newClineMessages[lastIndex] = partialMessage;
-							return { ...prevState, clineMessages: newClineMessages };
-						}
-						return prevState;
-					});
-					break;
-				}
 				case 'glamaModels': {
 					const updatedModels = message.glamaModels ?? {};
 					setGlamaModels({
@@ -247,12 +230,6 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 
 	useEffect(() => {
 		vscode.postMessage({ type: 'webviewDidLaunch' });
-	}, []);
-
-	// 初始化clineMessageStore
-	useEffect(() => {
-		// 初始化clineMessageStore，让它自己处理消息
-		useClineMessageStore.getState().init();
 	}, []);
 
 	const contextValue: ExtensionStateContextType = {
