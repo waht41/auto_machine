@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { ClineMessage } from '@/shared/ExtensionMessage';
+import { ClineMessage, ExtensionMessage } from '../../../src/shared/ExtensionMessage';
 import { findLastIndex } from '@/shared/array';
 
 // 定义消息存储的状态类型
@@ -20,6 +20,9 @@ interface MessageState {
   getLatestMessage: () => ClineMessage | undefined;
   getLatestUserMessage: () => ClineMessage | undefined;
   getLatestAssistantMessage: () => ClineMessage | undefined;
+  
+  // 初始化方法，用于设置消息处理器
+  init: () => void;
 }
 
 // 创建zustand存储
@@ -95,4 +98,37 @@ export const useClineMessageStore = create<MessageState>((set, get) => ({
 		}
 		return undefined;
 	},
+  
+	// 初始化方法，设置消息处理器
+	init: () => {
+		// 设置消息处理器，监听来自扩展的消息
+		const handleMessage = (event: MessageEvent) => {
+			const message: ExtensionMessage = event.data;
+      
+			switch (message.type) {
+				case 'state': {
+					// 当收到state消息时，更新clineMessages
+					const newState = message.state!;
+					if (newState.clineMessages) {
+						get().setClineMessages(newState.clineMessages);
+					}
+					break;
+				}
+				case 'partialMessage': {
+					// 当收到partialMessage消息时，更新特定消息
+					const partialMessage = message.partialMessage!;
+					get().updateClineMessage(partialMessage);
+					break;
+				}
+			}
+		};
+    
+		// 添加消息事件监听器
+		window.addEventListener('message', handleMessage);
+    
+		// 返回清理函数（如果需要在组件卸载时清理）
+		return () => {
+			window.removeEventListener('message', handleMessage);
+		};
+	}
 }));
