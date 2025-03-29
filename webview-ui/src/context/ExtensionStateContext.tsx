@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { ApiConfigMeta, ExtensionMessage, ExtensionState } from '../../../src/shared/ExtensionMessage';
+import { ApiConfigMeta, ExtensionMessage, ExtensionState } from '@/shared/ExtensionMessage';
 import {
 	ApiConfiguration,
 	ModelInfo,
@@ -7,17 +7,18 @@ import {
 	glamaDefaultModelInfo,
 	openRouterDefaultModelId,
 	openRouterDefaultModelInfo,
-} from '../../../src/shared/api';
+} from '@/shared/api';
 import { vscode } from '../utils/vscode';
 import { convertTextMateToHljs } from '../utils/textMateToHljs';
-import { findLastIndex } from '../../../src/shared/array';
-import { McpServer } from '../../../src/shared/mcp';
-import { checkExistKey } from '../../../src/shared/checkExistApiConfig';
-import { Mode, CustomModePrompts, defaultModeSlug, defaultPrompts, ModeConfig } from '../../../src/shared/modes';
-import { CustomSupportPrompts } from '../../../src/shared/support-prompt';
+import { findLastIndex } from '@/shared/array';
+import { McpServer } from '@/shared/mcp';
+import { checkExistKey } from '@/shared/checkExistApiConfig';
+import { Mode, CustomModePrompts, defaultModeSlug, defaultPrompts, ModeConfig } from '@/shared/modes';
+import { CustomSupportPrompts } from '@/shared/support-prompt';
 import { IToolCategory } from '@core/tool-adapter/type';
 import { useClineMessageStore } from '../store/clineMessageStore';
 import messageBus from '../store/messageBus';
+import { BACKGROUND_MESSAGE } from '@webview-ui/store/const';
 
 export interface ExtensionStateContextType extends ExtensionState {
 	didHydrateState: boolean
@@ -236,11 +237,11 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 	// 使用消息总线订阅扩展消息
 	useEffect(() => {
 		// 订阅扩展消息
-		messageBus.on('extension-message', handleMessage);
+		messageBus.on(BACKGROUND_MESSAGE, handleMessage);
 		
 		// 清理函数
 		return () => {
-			messageBus.off('extension-message', handleMessage);
+			messageBus.off(BACKGROUND_MESSAGE, handleMessage);
 		};
 	}, [handleMessage]);
 

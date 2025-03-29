@@ -11,6 +11,7 @@ import styled from 'styled-components';
 import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import Home from '@webview-ui/components/Home';
 import messageBus from './store/messageBus';
+import { BACKGROUND_MESSAGE } from '@webview-ui/store/const';
 
 const LoadingContainer = styled.div`
 	display: flex;
@@ -52,11 +53,11 @@ const AppContent = () => {
 	// 使用消息总线订阅扩展消息
 	useEffect(() => {
 		// 订阅扩展消息
-		messageBus.on('extension-message', handleMessage);
+		messageBus.on(BACKGROUND_MESSAGE, handleMessage);
 		
 		// 清理函数
 		return () => {
-			messageBus.off('extension-message', handleMessage);
+			messageBus.off(BACKGROUND_MESSAGE, handleMessage);
 		};
 	}, [handleMessage]);
 

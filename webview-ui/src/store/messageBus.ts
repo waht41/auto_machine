@@ -1,13 +1,13 @@
 import mitt, { Emitter, Handler } from 'mitt';
 import { ExtensionMessage } from '@/shared/ExtensionMessage';
-import { MESSAGE_EVENTS } from '@webview-ui/constants/messageBus.const';
+import { APP_MESSAGE, BACKGROUND_MESSAGE } from '@webview-ui/store/const';
 
 // 定义消息事件类型
 export type MessageEvents = {
   // 扩展消息事件，用于处理从扩展传来的消息
-  [MESSAGE_EVENTS.EXTENSION_MESSAGE]: ExtensionMessage;
+  [BACKGROUND_MESSAGE]: ExtensionMessage;
   // 应用消息事件，用于处理应用内部的消息
-  [MESSAGE_EVENTS.APP_MESSAGE]: any;
+  [APP_MESSAGE]: unknown;
 };
 
 /**
@@ -39,7 +39,7 @@ class MessageBus {
 		const handleWindowMessage = (event: MessageEvent) => {
 			const message: ExtensionMessage = event.data;
 			// 将window消息转发到消息总线
-			this.emit('extension-message', message);
+			this.emit(BACKGROUND_MESSAGE, message);
 		};
 
 		// 添加全局消息事件监听器
@@ -48,7 +48,7 @@ class MessageBus {
 		// 处理Electron环境下的消息
 		let electronCleanup: (() => void) | null = null;
 		if (window.electronApi) {
-			const handleElectronMessage = (data: any) => {
+			const handleElectronMessage = (data: unknown) => {
 				try {
 					const targetOrigin = window.location.origin;
 					window.postMessage(data, targetOrigin);
@@ -109,7 +109,7 @@ class MessageBus {
    * 向扩展发送消息
    * @param message 消息内容
    */
-	sendToExtension(message: any): void {
+	sendToElectron(message: unknown): void {
 		try {
 			if (window.electronApi) {
 				// 如果是Electron环境
@@ -120,7 +120,7 @@ class MessageBus {
 				vscode.postMessage(message);
 			}
 		} catch (error) {
-			console.error('Failed to send message to extension', error);
+			console.error('Failed to send message to electron', error);
 		}
 	}
 }

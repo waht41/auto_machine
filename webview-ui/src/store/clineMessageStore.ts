@@ -1,7 +1,8 @@
 import { create } from 'zustand';
-import { ClineMessage, ExtensionMessage } from '../../../src/shared/ExtensionMessage';
+import { ClineMessage, ExtensionMessage } from '@/shared/ExtensionMessage';
 import { findLastIndex } from '@/shared/array';
 import messageBus from './messageBus';
+import { BACKGROUND_MESSAGE } from '@webview-ui/store/const';
 
 // 定义消息存储的状态类型
 interface MessageState {
@@ -123,11 +124,11 @@ export const useClineMessageStore = create<MessageState>((set, get) => ({
 		};
     
 		// 使用消息总线订阅扩展消息
-		messageBus.on('extension-message', handleExtensionMessage);
+		messageBus.on(BACKGROUND_MESSAGE, handleExtensionMessage);
     
 		// 返回清理函数
 		return () => {
-			messageBus.off('extension-message', handleExtensionMessage);
+			messageBus.off(BACKGROUND_MESSAGE, handleExtensionMessage);
 		};
 	}
 }));
