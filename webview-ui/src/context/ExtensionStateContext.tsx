@@ -17,6 +17,7 @@ import { CustomSupportPrompts } from '@/shared/support-prompt';
 import { IToolCategory } from '@core/tool-adapter/type';
 import messageBus from '../store/messageBus';
 import { BACKGROUND_MESSAGE } from '@webview-ui/store/const';
+import { MessageHandler } from '@webview-ui/store/type';
 
 export interface ExtensionStateContextType extends ExtensionState {
 	didHydrateState: boolean
@@ -220,11 +221,11 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 	// 使用消息总线订阅扩展消息
 	useEffect(() => {
 		// 订阅扩展消息
-		messageBus.on(BACKGROUND_MESSAGE, handleMessage);
+		messageBus.on(BACKGROUND_MESSAGE, handleMessage as MessageHandler);
 		
 		// 清理函数
 		return () => {
-			messageBus.off(BACKGROUND_MESSAGE, handleMessage);
+			messageBus.off(BACKGROUND_MESSAGE, handleMessage as MessageHandler);
 		};
 	}, [handleMessage]);
 

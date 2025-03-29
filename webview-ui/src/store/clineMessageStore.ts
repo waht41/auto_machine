@@ -1,11 +1,12 @@
 import { create } from 'zustand';
-import { ClineMessage, ExtensionMessage } from '@/shared/ExtensionMessage';
+import { ClineMessage } from '@/shared/ExtensionMessage';
 import { findLastIndex } from '@/shared/array';
 import messageBus from './messageBus';
 import { BACKGROUND_MESSAGE } from '@webview-ui/store/const';
+import { ClineMessageState, MessageHandler } from '@webview-ui/store/type';
 
 // 定义消息存储的状态类型
-interface MessageState {
+interface IClineMessageStore {
   // 保持与ExtensionStateContext中相同的clineMessages结构
   clineMessages: ClineMessage[];
   
@@ -28,7 +29,7 @@ interface MessageState {
 }
 
 // 创建zustand存储
-export const useClineMessageStore = create<MessageState>((set, get) => ({
+export const useClineMessageStore = create<IClineMessageStore>((set, get) => ({
 	// 初始状态
 	clineMessages: [],
   
@@ -104,19 +105,17 @@ export const useClineMessageStore = create<MessageState>((set, get) => ({
 	// 初始化方法，设置消息处理器
 	init: () => {
 		// 消息处理函数
-		const handleExtensionMessage = (message: ExtensionMessage) => {
+		const handleExtensionMessage = (message: ClineMessageState) => {
 			switch (message.type) {
 				case 'state': {
-					// 当收到state消息时，更新clineMessages
-					const newState = message.state!;
+					const newState = message.state;
 					if (newState.clineMessages) {
 						get().setClineMessages(newState.clineMessages);
 					}
 					break;
 				}
 				case 'partialMessage': {
-					// 当收到partialMessage消息时，更新特定消息
-					const partialMessage = message.partialMessage!;
+					const partialMessage = message.partialMessage;
 					get().updateClineMessage(partialMessage);
 					break;
 				}
@@ -124,11 +123,11 @@ export const useClineMessageStore = create<MessageState>((set, get) => ({
 		};
     
 		// 使用消息总线订阅扩展消息
-		messageBus.on(BACKGROUND_MESSAGE, handleExtensionMessage);
+		messageBus.on(BACKGROUND_MESSAGE, handleExtensionMessage as MessageHandler);
     
 		// 返回清理函数
 		return () => {
-			messageBus.off(BACKGROUND_MESSAGE, handleExtensionMessage);
+			messageBus.off(BACKGROUND_MESSAGE, handleExtensionMessage as MessageHandler);
 		};
 	}
 }));

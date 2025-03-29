@@ -1,11 +1,12 @@
 import mitt, { Emitter, Handler } from 'mitt';
 import { ExtensionMessage } from '@/shared/ExtensionMessage';
 import { APP_MESSAGE, BACKGROUND_MESSAGE } from '@webview-ui/store/const';
+import { BackgroundMessage } from '@webview-ui/store/type';
 
 // 定义消息事件类型
 export type MessageEvents = {
   // 扩展消息事件，用于处理从扩展传来的消息
-  [BACKGROUND_MESSAGE]: ExtensionMessage;
+  [BACKGROUND_MESSAGE]: BackgroundMessage;
   // 应用消息事件，用于处理应用内部的消息
   [APP_MESSAGE]: unknown;
 };
@@ -116,6 +117,7 @@ class MessageBus {
 				window.electronApi.send('message', message);
 			} else {
 				// 如果是VSCode Webview环境
+				// @ts-ignore
 				const vscode = acquireVsCodeApi();
 				vscode.postMessage(message);
 			}
