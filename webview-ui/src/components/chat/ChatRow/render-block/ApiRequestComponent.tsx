@@ -6,6 +6,87 @@ import { ClineApiReqInfo } from '@/shared/ExtensionMessage';
 import { StatusIcon, StatusText, ChatStatus } from '@webview-ui/components/chat/ChatRow/Header';
 import messageBus from '@webview-ui/store/messageBus';
 import { AGENT_STREAM_JUMP, APP_MESSAGE } from '@webview-ui/store/const';
+import styled from 'styled-components';
+
+// 使用styled-components定义样式组件
+const HeaderContainer = styled.div<HeaderContainerProps>`
+  display: flex;
+  align-items: center;
+  font-weight: bold;
+  margin-bottom: ${props => (props.hasError ? '10px' : '0')};
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+`;
+
+const HeaderLeft = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-grow: 1;
+`;
+
+const HeaderRight = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const JumpButton = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border-radius: 3px;
+  cursor: pointer;
+  color: var(--vscode-foreground);
+  opacity: 0.7;
+  transition: opacity 0.2s;
+  margin-right: 8px;
+  
+  &:hover {
+    opacity: 1;
+  }
+`;
+
+// 为StyledBadge定义接口
+interface StyledBadgeProps {
+  cost?: number;
+}
+
+const StyledBadge = styled(VSCodeBadge)<StyledBadgeProps>`
+  opacity: ${props => (props.cost != null && props.cost > 0 ? 1 : 0)};
+`;
+
+// 为HeaderContainer定义接口
+interface HeaderContainerProps {
+  hasError?: boolean;
+}
+
+const ErrorMessage = styled.p`
+  margin: 0 0 10px 0;
+  color: var(--vscode-errorForeground);
+`;
+
+const ExpandedContent = styled.div`
+  margin-top: 10px;
+`;
+
+const ArrowIcon = styled.span.attrs({ className: 'codicon codicon-arrow-right' })`
+  font-size: 14px;
+`;
+
+// 为ChevronIcon定义接口
+interface ChevronIconProps {
+  expanded: boolean;
+}
+
+const ChevronIcon = styled.span.attrs<ChevronIconProps>(props => ({
+	className: `codicon codicon-chevron-${props.expanded ? 'up' : 'down'}`
+}))<ChevronIconProps>``;
 
 /**
  * 渲染API请求组件
@@ -38,6 +119,8 @@ export const ApiRequestComponent = ({ message, isExpanded, onToggleExpand }: Def
 	const currentStatus = determineStatus();
 	const icon = <StatusIcon status={currentStatus} />;
 	const title = <StatusText status={currentStatus} />;
+  
+	const hasError = !!((cost == null && apiRequestFailedMessage) || apiReqStreamingFailedMessage);
 
 	// 处理跳转到AgentStream
 	const handleJumpToAgentStream = (e: React.MouseEvent) => {
@@ -55,57 +138,28 @@ export const ApiRequestComponent = ({ message, isExpanded, onToggleExpand }: Def
 
 	return (
 		<>
-			<div
-				style={{
-					display: 'flex',
-					alignItems: 'center',
-					fontWeight: 'bold',
-					marginBottom: (cost == null && apiRequestFailedMessage) || apiReqStreamingFailedMessage ? 10 : 0,
-					justifyContent: 'space-between',
-					cursor: 'pointer',
-					userSelect: 'none',
-					WebkitUserSelect: 'none',
-					MozUserSelect: 'none',
-					msUserSelect: 'none',
-				}}
-				onClick={onToggleExpand}>
-				<div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexGrow: 1 }}>
+			<HeaderContainer hasError={hasError} onClick={onToggleExpand}>
+				<HeaderLeft>
 					{icon}
 					{title}
-					<VSCodeBadge style={{ opacity: cost != null && cost > 0 ? 1 : 0 }}>
+					<StyledBadge cost={cost}>
             ${Number(cost || 0)?.toFixed(4)}
-					</VSCodeBadge>
-				</div>
-				<div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-					<div 
+					</StyledBadge>
+					<ChevronIcon expanded={isExpanded} />
+				</HeaderLeft>
+				<HeaderRight>
+					<JumpButton 
 						onClick={handleJumpToAgentStream}
 						title="jump to correspond agent stream"
-						style={{
-							display: 'flex',
-							alignItems: 'center',
-							justifyContent: 'center',
-							padding: '2px',
-							borderRadius: '3px',
-							cursor: 'pointer',
-							color: 'var(--vscode-foreground)',
-							opacity: 0.7,
-							transition: 'opacity 0.2s',
-							marginRight: '8px',
-						}}
-						onMouseOver={(e) => (e.currentTarget.style.opacity = '1')}
-						onMouseOut={(e) => (e.currentTarget.style.opacity = '0.7')}
 					>
-						<span className="codicon codicon-arrow-right" style={{ fontSize: '14px' }}></span>
-					</div>
-					<span className={`codicon codicon-chevron-${isExpanded ? 'up' : 'down'}`}></span>
-				</div>
-			</div>
-			{((cost == null && apiRequestFailedMessage) || apiReqStreamingFailedMessage) && (
+						<ArrowIcon />
+					</JumpButton>
+
+				</HeaderRight>
+			</HeaderContainer>
+			{hasError && (
 				<>
-					<p style={{ 
-						margin: '0 0 10px 0', 
-						color: 'var(--vscode-errorForeground)' 
-					}}>
+					<ErrorMessage>
 						{apiRequestFailedMessage || apiReqStreamingFailedMessage}
 						{apiRequestFailedMessage?.toLowerCase().includes('powershell') && (
 							<>
@@ -120,19 +174,19 @@ export const ApiRequestComponent = ({ message, isExpanded, onToggleExpand }: Def
                 .
 							</>
 						)}
-					</p>
+					</ErrorMessage>
 				</>
 			)}
 
 			{isExpanded && (
-				<div style={{ marginTop: '10px' }}>
+				<ExpandedContent>
 					<CodeAccordian
 						code={JSON.parse(message.text || '{}').request}
 						language="markdown"
 						isExpanded={true}
 						onToggleExpand={onToggleExpand}
 					/>
-				</div>
+				</ExpandedContent>
 			)}
 		</>
 	);

@@ -41,12 +41,24 @@ const ItemCard = styled(Card)`
   
   /* 添加滚动到视图时的高亮效果 */
   &.highlight {
-    animation: highlight 1.5s ease-out;
+    animation: highlight 2s ease-in-out;
   }
   
   @keyframes highlight {
     0% {
-      background-color: rgba(24, 144, 255, 0.1);
+      background-color: #ffffff;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    }
+    25% {
+      background-color: rgba(24, 144, 255, 0.15);
+      box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+    }
+    50% {
+      background-color: rgba(24, 144, 255, 0.3);
+      box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.4);
+    }
+    75% {
+      background-color: rgba(24, 144, 255, 0.15);
       box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
     }
     100% {
@@ -177,16 +189,17 @@ const AgentStream = () => {
 			// 查找最接近的消息索引
 			const nearestIndex = findNearestMessageIndex(agentStreamMessages, targetTs);
 			
-			// 设置高亮索引
-			setHighlightedIndex(nearestIndex);
-			
 			// 使用scrollToNearestTs函数滚动到最接近的时间戳，使用平滑滚动
 			scrollToNearestTs(virtuosoRef, agentStreamMessages, targetTs, 'smooth');
 			
-			// 3秒后取消高亮
+			// 设置高亮索引，启动单次完整的淡入淡出动画
+			setHighlightedIndex(nearestIndex);
+			
+			// 动画持续时间为2秒，与CSS动画时间匹配
+			// 动画结束后清除高亮
 			setTimeout(() => {
 				setHighlightedIndex(null);
-			}, 3000);
+			}, 2000);
 		}
 	}, [agentStreamMessages]) as AppMessageHandler;
 
