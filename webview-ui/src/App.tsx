@@ -1,5 +1,4 @@
 import { useCallback, useEffect } from 'react';
-import { useEvent } from 'react-use';
 import { ExtensionMessage } from '@/shared/ExtensionMessage';
 import HistoryView from './components/history/HistoryView';
 import SettingsView from './components/settings/SettingsView';
@@ -9,8 +8,9 @@ import McpView from './components/mcp/McpView';
 import PromptsView from './components/prompts/PromptsView';
 import { Spin } from 'antd';
 import styled from 'styled-components';
-import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import Home from '@webview-ui/components/Home';
+import messageBus from './store/messageBus';
 
 const LoadingContainer = styled.div`
 	display: flex;
@@ -25,8 +25,7 @@ const AppContent = () => {
 	const navigate = useNavigate();
 	const location = useLocation();
 
-	const handleMessage = useCallback((e: MessageEvent) => {
-		const message: ExtensionMessage = e.data;
+	const handleMessage = useCallback((message: ExtensionMessage) => {
 		switch (message.type) {
 			case 'action':
 				switch (message.action!) {
@@ -50,7 +49,16 @@ const AppContent = () => {
 		}
 	}, [navigate]);
 
-	useEvent('message', handleMessage);
+	// 使用消息总线订阅扩展消息
+	useEffect(() => {
+		// 订阅扩展消息
+		messageBus.on('extension-message', handleMessage);
+		
+		// 清理函数
+		return () => {
+			messageBus.off('extension-message', handleMessage);
+		};
+	}, [handleMessage]);
 
 	if (!didHydrateState) {
 		return (
@@ -81,15 +89,7 @@ const AppContent = () => {
 
 const App = () => {
 	useEffect(() => {
-		window.electronApi.on('message', (data) => {
-			try {
-				const targetOrigin = window.location.origin;
-				window.postMessage(data, targetOrigin);
-			} catch (error) {
-				console.error('Failed to process message when transport message', error);
-			}
-		});
-		window.electronApi.send('message', 'webview ready');
+		return messageBus.init();
 	}, []);
 
 	return (

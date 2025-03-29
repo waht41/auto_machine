@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { ClineMessage, ExtensionMessage } from '../../../src/shared/ExtensionMessage';
 import { findLastIndex } from '@/shared/array';
+import messageBus from './messageBus';
 
 // 定义消息存储的状态类型
 interface MessageState {
@@ -101,10 +102,8 @@ export const useClineMessageStore = create<MessageState>((set, get) => ({
   
 	// 初始化方法，设置消息处理器
 	init: () => {
-		// 设置消息处理器，监听来自扩展的消息
-		const handleMessage = (event: MessageEvent) => {
-			const message: ExtensionMessage = event.data;
-      
+		// 消息处理函数
+		const handleExtensionMessage = (message: ExtensionMessage) => {
 			switch (message.type) {
 				case 'state': {
 					// 当收到state消息时，更新clineMessages
@@ -123,12 +122,12 @@ export const useClineMessageStore = create<MessageState>((set, get) => ({
 			}
 		};
     
-		// 添加消息事件监听器
-		window.addEventListener('message', handleMessage);
+		// 使用消息总线订阅扩展消息
+		messageBus.on('extension-message', handleExtensionMessage);
     
-		// 返回清理函数（如果需要在组件卸载时清理）
+		// 返回清理函数
 		return () => {
-			window.removeEventListener('message', handleMessage);
+			messageBus.off('extension-message', handleExtensionMessage);
 		};
 	}
 }));

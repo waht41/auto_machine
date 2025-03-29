@@ -1,5 +1,4 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { useEvent } from 'react-use';
 import { ApiConfigMeta, ExtensionMessage, ExtensionState } from '../../../src/shared/ExtensionMessage';
 import {
 	ApiConfiguration,
@@ -18,6 +17,7 @@ import { Mode, CustomModePrompts, defaultModeSlug, defaultPrompts, ModeConfig } 
 import { CustomSupportPrompts } from '../../../src/shared/support-prompt';
 import { IToolCategory } from '@core/tool-adapter/type';
 import { useClineMessageStore } from '../store/clineMessageStore';
+import messageBus from '../store/messageBus';
 
 export interface ExtensionStateContextType extends ExtensionState {
 	didHydrateState: boolean
@@ -152,8 +152,7 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 	);
 
 	const handleMessage = useCallback(
-		(event: MessageEvent) => {
-			const message: ExtensionMessage = event.data;
+		(message: ExtensionMessage) => {
 			switch (message.type) {
 				case 'state': {
 					const newState = message.state!;
@@ -234,7 +233,16 @@ export const ExtensionStateContextProvider: React.FC<{ children: React.ReactNode
 		[setListApiConfigMeta],
 	);
 
-	useEvent('message', handleMessage);
+	// 使用消息总线订阅扩展消息
+	useEffect(() => {
+		// 订阅扩展消息
+		messageBus.on('extension-message', handleMessage);
+		
+		// 清理函数
+		return () => {
+			messageBus.off('extension-message', handleMessage);
+		};
+	}, [handleMessage]);
 
 	useEffect(() => {
 		vscode.postMessage({ type: 'webviewDidLaunch' });
