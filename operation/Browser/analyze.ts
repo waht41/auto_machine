@@ -13,7 +13,7 @@ const processElement = (element: HTMLElement, selector: string | undefined): any
 	if (element.id?.includes('css') ||
         element.id?.includes('style') ||
         element.textContent?.trim().startsWith('<style') ||
-        (element as HTMLTextAreaElement).value?.includes('style')) {
+        ('value' in element && typeof element.value === 'string' && element.value.includes('style'))) {
 		return null;
 	}
 
@@ -31,22 +31,21 @@ const processElement = (element: HTMLElement, selector: string | undefined): any
 	return {
 		tag: element.tagName.toLowerCase(),
 		id: element.id || undefined,
-		type: (element as HTMLInputElement).type || undefined,
+		type: 'type' in element ? element.type : undefined,
 		text,
-		// @ts-ignore
-		href: element.tagName.toLowerCase() === 'a' ? element.href : undefined,
+		href: element.tagName.toLowerCase() === 'a' && 'href' in element ? element.href : undefined,
 		_domPath: uniqueKey, // 用于去重
 		selector: selector
 	};
 };
 
-const processElements = (option: {action:string[]}) => {
+const processElements = (option: {action?:string[]}) => {
 
 	const processedElements = new Map<string, any>();
 	const results: any[] = [];
 
 	// 处理交互式元素
-	if (option.action.includes('interactive')) {
+	if (option.action?.includes('interactive')) {
 		const interactiveSelectors = 'a, button, input, select, textarea, [role="button"], [tabindex]:not([tabindex="-1"])';
 		const elements = document.querySelectorAll(interactiveSelectors);
         
@@ -60,7 +59,7 @@ const processElements = (option: {action:string[]}) => {
 	}
 
 	// 处理静态内容
-	if (option.action.includes('static')) {
+	if (option.action?.includes('static')) {
 		const staticSelectors = 'p, h1, h2, h3, h4, h5, h6, div, span, article, section';
 		const elements = document.querySelectorAll(staticSelectors);
         
@@ -92,6 +91,7 @@ const processElements = (option: {action:string[]}) => {
 };
 
 
+// eslint-disable-next-line @typescript-eslint/ban-types
 function functionToExecutableString(fn: Function, variableName: string): string {
 	return `window.${variableName} = ${fn.toString()};`;
 }
@@ -155,4 +155,3 @@ export const analyze = async (options: AnalyzeOptions): Promise<AnalyzeResult[]>
 
 	return results;
 };
-
