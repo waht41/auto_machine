@@ -174,13 +174,13 @@ const AgentStream = () => {
 	const handleJumpToAgentStream = useCallback((message: AgentStreamJumpState) => {
 		if (message.type === AGENT_STREAM_JUMP && agentStreamMessages.length > 0) {
 			const targetTs = message.timestamp;
-			
+
 			// 查找最接近的消息索引
 			const nearestIndex = findNearestMessageIndex(agentStreamMessages, targetTs);
-			
+
 			// 使用scrollToNearestTs函数滚动到最接近的时间戳，使用平滑滚动
 			scrollToNearestTs(virtuosoRef, agentStreamMessages, targetTs, 'smooth');
-			
+
 			// 设置高亮索引，启动单次完整的淡入淡出动画
 			if (nearestIndex === highlightedIndex) { // 如果高亮索引和最近索引相同，需要置空然后再设置回来
 				setHighlightedIndex(null);
@@ -198,7 +198,7 @@ const AgentStream = () => {
 	useEffect(() => {
 		// 使用messageBus监听APP_MESSAGE事件
 		messageBus.on(APP_MESSAGE, handleJumpToAgentStream);
-		
+
 		return () => {
 			// 组件卸载时取消监听
 			messageBus.off(APP_MESSAGE, handleJumpToAgentStream);
@@ -211,7 +211,7 @@ const AgentStream = () => {
 				<TaskTitle level={4}>Agent Stream</TaskTitle>
 				<TaskDescription type="secondary">{task}</TaskDescription>
 			</StreamHeader>
-      
+
 			<StreamBody>
 				<StyledVirtuoso
 					ref={virtuosoRef}
@@ -223,7 +223,7 @@ const AgentStream = () => {
 							<ItemCard className={highlightedIndex === index ? 'highlight' : ''}>
 								<MessageHeader>
 									<StyledTag color="blue">
-										{item.say === 'agent_stream' ? 'thinking' : item.say}
+										{index + 1}
 									</StyledTag>
 									<TimeText type="secondary">{formatTimestamp(item.ts)}</TimeText>
 								</MessageHeader>

@@ -13,7 +13,3 @@ export type Middleware = (
     context: ExecutionContext,
     next: (command: Command, context: ExecutionContext) => Promise<any>
 ) => Promise<any>;
-
-export interface BaseCommand<T extends string> {
-    type: T;
-}

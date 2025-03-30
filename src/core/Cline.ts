@@ -551,12 +551,12 @@ export class Cline {
 						break;
 					}
 					logger.debug('handleAssistantMessage: tool_use', block);
-					await this.sayP({ sayType: 'text', text: `apply tool ${block.name}`, partial: false, messageId: currentMessageId });
+					await this.sayP({ sayType: 'text', text: `apply tool \n ${yaml.dump(block.params)}`, partial: false, messageId: currentMessageId });
 
 					const handleError = async (action: string, error: Error) => {
 						const errorString = `Error ${action}:\n${error.message ?? JSON.stringify(serializeError(error), null, 2)}`;
 						await this.sayP({ sayType: 'error', text: errorString });
-						await this.pushToolResult(formatResponse.toolError(errorString), block);
+						await this.pushToolResult(formatResponse.toolError(errorString));
 					};
 
 					if (block.name === 'ask') { // assign UUID to receive corresponding answers
@@ -567,7 +567,7 @@ export class Cline {
 						const isReplacing = !this.blockProcessHandler.hasNewBlock();
 						const res = await this.applyToolUse(block, this.getInternalContext(isReplacing));
 						if (typeof res === 'string') {
-							await this.pushToolResult(res, block);
+							await this.pushToolResult(res);
 						}
 					} catch (e) {
 						await handleError(`executing tool ${block.name}, `, e);
@@ -594,15 +594,7 @@ export class Cline {
 		}
 	}
 
-	private toolDescription (block: ToolUse): string {
-		return 'use tool \n'+yaml.dump(block);
-	}
-
-	private async pushToolResult (content: ToolResponse, block: ToolUse) {
-		this.userMessageContent.push({
-			type: 'text',
-			text: `${this.toolDescription(block)} Result:`,
-		});
+	private async pushToolResult (content: ToolResponse) {
 		if (typeof content === 'string') {
 			this.userMessageContent.push({
 				type: 'text',
