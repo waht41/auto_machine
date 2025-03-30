@@ -1,4 +1,6 @@
 # Auto Machine - 桌面AI智能助手
+demo如下
+![demo4](https://github.com/user-attachments/assets/4353960a-a98b-4f83-b161-cb1a71a14fdd)
 
 **让AI助手真正触手可及**
  一款基于Electron构建的AI Agent，支持OpenAI/Gemini/deepSeek/Anthropic等大模型接入。一键安装，无需配置开发环境，让AI解放生产力。
