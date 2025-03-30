@@ -52,7 +52,8 @@ export class ClineProvider implements vscode.WebviewViewProvider {
     private sendToMainProcess: (message: any) => void
 	) {
 		createIfNotExists(configPath);
-		this.messageService = MessageService.getInstance(this.sendToMainProcess);
+		this.messageService = MessageService.getInstance();
+		this.messageService.setPostMessage(this.sendToMainProcess);
 		this.apiManager = ApiProviderManager.getInstance(configPath, this.messageService);
 		ClineProvider.activeInstances.add(this);
 		this.workspaceTracker = new WorkspaceTracker(this);
