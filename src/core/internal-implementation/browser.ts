@@ -10,9 +10,11 @@ import Browser, {
 import File from '@operation/File';
 import * as yaml from 'js-yaml';
 import { CommandExecutor } from '@executors/types';
+import { IInternalContext } from '@core/internal-implementation/type';
 
 export class BrowserCommandExecutor implements CommandExecutor {
-	async execute(command: BrowserCommand): Promise<any> {
+	async execute(command: BrowserCommand, context: IInternalContext): Promise<any> {
+		const { cline } = context;
 		switch (command.cmd) {
 			case 'open':
 				await Browser.open(command);
@@ -38,12 +40,27 @@ export class BrowserCommandExecutor implements CommandExecutor {
 				await Browser.auth(command);
 				return 'success';
 			case 'download':
+				let partial = true;
+				const messageId = cline.getNewMessageId();
+
 				if (command.selector || command.tag || command.id || command.text) {
-					const downloadResult = await Browser.download(command);
-					return 'success, download at:' + downloadResult.data;
+					// 使用浏览器下载
+					for await (const progress of Browser.browserDownload(command)) {
+						if (progress.status === 'completed'){
+							partial = false;
+						}
+						await cline?.sayP({ sayType:'tool', text: JSON.stringify({...command,...progress}), partial, messageId });
+					}
+				} else {
+					// 使用文件下载
+					for await (const progress of File.download({ path:'./download',...command })) {
+						if (progress.status === 'completed'){
+							partial = false;
+						}
+						await cline?.sayP({ sayType:'tool', text: JSON.stringify({...command,...progress}), partial, messageId });
+					}
 				}
-				await File.downloadFile({ path:'./download',...command });
-				return `success download with file at ${command.path ?? './download'}`;
+				return 'Download completed';
 			default:
 				throw new Error(`Unknown action: ${command}`);
 		}
