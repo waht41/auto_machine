@@ -120,14 +120,6 @@ export interface DownloadOptions {
     userDataDir?: string;      // 用户数据目录路径
 }
 
-// 下载进度接口
-export interface DownloadProgress {
-    downloaded: number;         // 已下载字节数
-    total: number;              // 总字节数
-    percentage: number;         // 下载百分比
-    status: 'started' | 'downloading' | 'completed' | 'error';  // 下载状态
-}
-
 // 通用的浏览器操作结果接口
 export interface BrowserResult<T = any> {
     success: boolean;

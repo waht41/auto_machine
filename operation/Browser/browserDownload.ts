@@ -1,9 +1,10 @@
 import { getPage } from './common';
-import { BrowserResult, DownloadOptions, DownloadProgress } from './type';
+import { BrowserResult, DownloadOptions } from './type';
 import path from 'path';
 import fs from 'fs';
 import { interact } from '@operation/Browser/interact';
 import type { Download } from 'playwright';
+import { DownloadProgress } from '@operation/type';
 
 // 配置常量
 const DEFAULT_DOWNLOAD_DIR = './download';

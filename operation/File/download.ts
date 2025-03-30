@@ -4,7 +4,9 @@ import https from 'https';
 import http from 'http';
 import { IncomingMessage } from 'http';
 import { URL } from 'url';
-import { DownloadOptions, DownloadProgress } from './type';
+import { DownloadOptions } from './type';
+import { DownloadProgress } from '@operation/type';
+
 
 /**
  * 检查 URL 是否指向可下载的文件

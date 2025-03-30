@@ -21,6 +21,9 @@ const componentRoutes: Record<string, RouteNode> = {
 	},
 	file: {
 		download: DownloadComponent,
+	},
+	browser: {
+		download: DownloadComponent,
 	}
 };
 

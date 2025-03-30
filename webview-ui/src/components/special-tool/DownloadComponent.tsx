@@ -2,15 +2,7 @@ import { headerStyle, toolIcon } from './common';
 import { ComponentRenderer } from './type';
 import { Progress, Card, Typography, Space } from 'antd';
 import styled from 'styled-components';
-
-// 定义下载进度接口
-export interface DownloadProgress {
-	fileName: string;
-    downloaded: number;    // 已下载的字节数
-    total: number;         // 文件总大小（字节）
-    percentage: number;    // 下载百分比 (0-100)
-    status: 'started' | 'downloading' | 'completed' | 'error';  // 下载状态
-}
+import { DownloadProgress } from '@operation/type';
 
 // 样式组件
 const DownloadCard = styled(Card)`
