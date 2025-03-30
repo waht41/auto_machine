@@ -60,12 +60,19 @@ async function handleBrowserDownload(
 	userFilename?: string
 ): Promise<BrowserResult> {
 	const page = await getPage({ url: options.url });
-	const [download] = await Promise.all([page.waitForEvent('download')]);
+	
+	// 同时执行下载事件监听和点击操作
+	const downloadPromise = page.waitForEvent('download');
+	const interactPromise = interact({ ...options, action: 'click' });
+	
+	// 等待点击操作完成和下载事件触发
+	const [download] = await Promise.all([
+		downloadPromise,
+		interactPromise
+	]);
 
 	const filename = userFilename || download.suggestedFilename() || generateTimestampFilename();
 	const downloadPath = path.join(targetDir, sanitizeFilename(filename));
-
-	await interact({ ...options, action: 'click' });
 
 	try {
 		await download.saveAs(downloadPath);
@@ -113,13 +120,6 @@ function generateTimestampFilename(): string {
 // 其他辅助函数保持原有实现，仅添加文件名处理逻辑
 function sanitizeFilename(filename: string): string {
 	return filename.replace(/[\\/:"*?<>|]/g, '_');
-}
-
-/** 获取目标下载目录 */
-function getTargetDirectory(userPath?: string): string {
-	return path.resolve(
-		userPath ? path.dirname(userPath) : DEFAULT_DOWNLOAD_DIR
-	);
 }
 
 /** 确保目录存在 */
@@ -197,11 +197,6 @@ function extractFilename(
 function parseContentDisposition(header: string): string | null {
 	const filenameMatch = header.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i);
 	return filenameMatch?.[1].replace(/^"+|"+$/g, '') || null;
-}
-
-/** 生成完整下载路径 */
-function getDownloadPath(directory: string, filename: string): string {
-	return path.join(directory, sanitizeFilename(filename));
 }
 
 /** 保存文件到本地 */
