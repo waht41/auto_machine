@@ -7,11 +7,12 @@ import Browser, {
 	OpenOptions,
 	SearchOptions
 } from '@operation/Browser';
+import File from '@operation/File';
 import * as yaml from 'js-yaml';
 import { CommandExecutor } from '@executors/types';
 
 export class BrowserCommandExecutor implements CommandExecutor {
-	async execute(command: BrowserCommand, context: any): Promise<any> {
+	async execute(command: BrowserCommand): Promise<any> {
 		switch (command.cmd) {
 			case 'open':
 				await Browser.open(command);
@@ -37,8 +38,12 @@ export class BrowserCommandExecutor implements CommandExecutor {
 				await Browser.auth(command);
 				return 'success';
 			case 'download':
-				const downloadResult = await Browser.download(command);
-				return 'success, download at:' + downloadResult.data;
+				if (command.selector || command.tag || command.id || command.text) {
+					const downloadResult = await Browser.download(command);
+					return 'success, download at:' + downloadResult.data;
+				}
+				await File.downloadFile({ path:'./download',...command });
+				return `success download with file at ${command.path ?? './download'}`;
 			default:
 				throw new Error(`Unknown action: ${command}`);
 		}

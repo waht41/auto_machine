@@ -3,7 +3,78 @@ import Path from 'path';
 import https from 'https';
 import http from 'http';
 import { IncomingMessage } from 'http';
+import { URL } from 'url';
 import { DownloadOptions, DownloadProgress } from './type';
+
+/**
+ * 检查 URL 是否指向可下载的文件
+ * @param urlString 要检查的 URL
+ * @returns Promise<boolean> 是否可下载
+ */
+async function checkUrlIsDownloadable(urlString: string): Promise<{ isDownloadable: boolean; finalUrl: string; headers: http.IncomingHttpHeaders }> {
+	return new Promise((resolve, reject) => {
+		const url = new URL(urlString);
+		const protocol = url.protocol === 'https:' ? https : http;
+		const options = {
+			method: 'HEAD',
+			hostname: url.hostname,
+			port: url.port,
+			path: url.pathname + url.search,
+		};
+
+		const req = protocol.request(options, (res) => {
+			// 处理重定向
+			if (res.statusCode === 301 || res.statusCode === 302) {
+				const redirectUrl = res.headers.location;
+				if (!redirectUrl) {
+					reject(new Error('重定向URL不存在'));
+					return;
+				}
+				// 销毁当前响应，并递归检查重定向后的 URL
+				res.destroy();
+				checkUrlIsDownloadable(redirectUrl)
+					.then(resolve)
+					.catch(reject);
+				return;
+			}
+
+			if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+				const contentDisposition = res.headers['content-disposition'];
+				const contentType = res.headers['content-type'];
+
+				// 如果 Content-Disposition 包含 attachment，认为是可下载的
+				if (contentDisposition && contentDisposition.includes('attachment')) {
+					resolve({ isDownloadable: true, finalUrl: urlString, headers: res.headers });
+					return;
+				}
+
+				// 如果 Content-Type 表明不是网页或 JSON 等，且没有明确的 attachment，则认为是可下载的
+				// 常见可直接下载类型： application/octet-stream, application/zip, image/*, audio/*, video/* 等
+				// 常见不可直接下载（通常是网页或API）： text/html, application/json, text/plain (除非有 attachment)
+				if (contentType &&
+                    !contentType.startsWith('text/html') &&
+                    !contentType.startsWith('application/json') &&
+                    !(contentType.startsWith('text/plain') && (!contentDisposition || !contentDisposition.includes('attachment')))
+				) {
+					resolve({ isDownloadable: true, finalUrl: urlString, headers: res.headers });
+					return;
+				}
+
+				// 其他情况，默认认为不可直接下载 (例如 HTML 页面)
+				resolve({ isDownloadable: false, finalUrl: urlString, headers: res.headers });
+
+			} else {
+				reject(new Error(`检查URL失败，状态码: ${res.statusCode}`));
+			}
+		});
+
+		req.on('error', (e) => {
+			reject(new Error(`检查URL请求错误: ${e.message}`));
+		});
+
+		req.end();
+	});
+}
 
 /**
  * 下载文件并提供进度更新
@@ -12,9 +83,23 @@ import { DownloadOptions, DownloadProgress } from './type';
  * @param options.overwrite 是否覆盖现有文件
  * @returns 生成器，用于获取下载进度和最终路径
  */
-
 export async function* download(options: DownloadOptions): AsyncGenerator<DownloadProgress, string, unknown> {
-	const { url, path, overwrite = false } = options;
+	const { url: initialUrl, path, overwrite = false } = options;
+
+	// 1. 检查 URL 是否可下载
+	let checkResult;
+	try {
+		checkResult = await checkUrlIsDownloadable(initialUrl);
+	} catch (error) {
+		throw new Error(`无法验证URL: ${error.message}`);
+	}
+
+	const { isDownloadable, finalUrl, headers: headHeaders } = checkResult;
+
+	if (!isDownloadable) {
+		const contentType = headHeaders['content-type'] || '未知';
+		throw new Error(`目标URL似乎不是一个可直接下载的文件 (Content-Type: ${contentType})。URL: ${finalUrl}, 可能需要登录或点击按钮之类的操作。`);
+	}
 
 	// 确保目标目录存在
 	const dir = Path.dirname(path);
@@ -27,20 +112,24 @@ export async function* download(options: DownloadOptions): AsyncGenerator<Downlo
 		throw new Error(`文件已存在: ${path}。设置 overwrite 为 true 可覆盖现有文件。`);
 	}
 
-	const protocol = url.startsWith('https') ? https : http;
+	// 使用最终确认的 URL 进行下载
+	const urlToDownload = finalUrl;
+	const protocol = urlToDownload.startsWith('https') ? https : http;
+
+	// 2. 发起 GET 请求下载文件
 	const response = await new Promise<IncomingMessage>((resolve, reject) => {
-		const req = protocol.get(url, (res) => {
-			// 自动处理重定向
+		const req = protocol.get(urlToDownload, (res) => {
+			// 在GET请求时再次处理重定向（理论上HEAD已处理，但作为保险）
 			if (res.statusCode === 301 || res.statusCode === 302) {
 				const redirectUrl = res.headers.location;
 				if (!redirectUrl) {
-					reject(new Error('重定向URL不存在'));
+					reject(new Error('下载重定向URL不存在'));
 					return;
 				}
-				// 关闭当前响应
 				res.destroy();
-				// 递归处理重定向
-				protocol.get(redirectUrl, redirectRes => resolve(redirectRes)).on('error', reject);
+				// 注意：这里简单拒绝，因为checkUrlIsDownloadable应该已处理最终URL
+				// 如果需要递归下载，逻辑会更复杂
+				reject(new Error(`下载请求发生重定向，但HEAD检查应已处理: ${redirectUrl}`));
 				return;
 			}
 			resolve(res);
