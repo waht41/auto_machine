@@ -216,7 +216,7 @@ const AgentStream = () => {
 				<StyledVirtuoso
 					ref={virtuosoRef}
 					totalCount={agentStreamMessages.length}
-					followOutput={true}
+					followOutput='smooth'
 					itemContent={(index) => {
 						const item = agentStreamMessages[index];
 						return (
