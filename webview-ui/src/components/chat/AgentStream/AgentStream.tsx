@@ -182,7 +182,15 @@ const AgentStream = () => {
 			scrollToNearestTs(virtuosoRef, agentStreamMessages, targetTs, 'smooth');
 			
 			// 设置高亮索引，启动单次完整的淡入淡出动画
-			setHighlightedIndex(nearestIndex);
+			if (nearestIndex === highlightedIndex) { // 如果高亮索引和最近索引相同，需要置空然后再设置回来
+				setHighlightedIndex(null);
+				// 使用 requestAnimationFrame 确保状态更新后再设置回来
+				requestAnimationFrame(() => {
+					setHighlightedIndex(nearestIndex);
+				});
+			} else {
+				setHighlightedIndex(nearestIndex);
+			}
 		}
 	}, [agentStreamMessages]) as AppMessageHandler;
 

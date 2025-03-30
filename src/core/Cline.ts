@@ -334,13 +334,13 @@ export class Cline {
 				await this.streamChatManager.setLastMessage({...message, ts: lastMessage.ts});
 				await this.postMessageToWebview({type: 'partialMessage', partialMessage: lastMessage}); // more performant than an entire postStateToWebview
 			} else {
-				await addMessage();
+				await addMessage(lastMessage?.ts ?? message.ts);
 			}
 		};
 
-		const addMessage = async () => {
+		const addMessage = async (ts?: number) => {
 			// this is a new non-partial message, so add it like normal
-			const sayTs = Date.now();
+			const sayTs = ts ?? Date.now();
 			await this.streamChatManager.addToClineMessages({...message, ts: sayTs});
 			await this.providerRef.deref()?.postStateToWebview();
 		};
