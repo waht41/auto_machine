@@ -18,11 +18,19 @@ export class PlanService {
 		return this.steps[index];
 	}
 
-	nextStep() {
+	nextStep(stepNumber?: number) {
+		if (stepNumber) {
+			if (stepNumber < 0){
+				return null;
+			}
+			if (stepNumber < this.currentStep){
+				return 'you can not go back by nextStep, use adjust instead';
+			}
+		}
 		if (this.currentStep >= this.steps.length) {
 			return null;
 		}
-		return this.steps[this.currentStep];
+		return this.steps[++this.currentStep];
 	}
 
 	getCurrentStep() {

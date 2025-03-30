@@ -35,9 +35,9 @@ async function adjustPlan(command: Extract<PlanCommand, { action: 'adjust' }>, c
 
 async function nextStep(command: Extract<PlanCommand, { action: 'complete_step' }>, context: IInternalContext) {
 	const cline = context.cline;
-	const nextStep = await cline.nextStep();
+	const nextStep = await cline.nextStep(command.nextStep);
 	if (nextStep){
 		return 'now you need to do something for next step: ' + nextStep;
 	}
-	return 'no more step, stop the plan or do some finishing work that you think is necessary';
+	return null;
 }

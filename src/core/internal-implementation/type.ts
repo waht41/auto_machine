@@ -27,6 +27,7 @@ export type PlanCommand = {cmd:'plan'} & ({
   currentStep: number;
 } | {
   action: 'complete_step';
+  nextStep?: number;
 })
 
 export type IAskCommand = {type:'ask'; uuid: string, result?: string} & ({

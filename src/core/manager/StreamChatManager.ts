@@ -39,8 +39,8 @@ export class StreamChatManager {
 		await this.uiMessageService.setState('plan',this.planService.getPlanSnapshot());
 	}
 
-	async nextStep() {
-		const currentStepContent =  this.planService.nextStep();
+	async nextStep(stepNumber?: number) {
+		const currentStepContent =  this.planService.nextStep(stepNumber);
 		if (currentStepContent){
 			await this.uiMessageService.setState('plan',this.planService.getPlanSnapshot());
 		}

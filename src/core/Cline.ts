@@ -283,8 +283,8 @@ export class Cline {
 		return this.streamChatManager.getStep(index);
 	}
 
-	public async nextStep() {
-		return await this.streamChatManager.nextStep();
+	public async nextStep(stepNumber?: number) {
+		return await this.streamChatManager.nextStep(stepNumber);
 	}
 
 	async sayP({
