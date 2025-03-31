@@ -23,7 +23,6 @@ import { HistoryItem } from '@/shared/HistoryItem';
 import { parseMentions } from './mentions';
 import { ToolUse } from './assistant-message';
 import { formatResponse } from './prompts/responses';
-import { truncateHalfConversation } from './sliding-window';
 import { ClineProvider } from './webview/ClineProvider';
 import { McpHub } from '@operation/MCP';
 import crypto from 'crypto';
@@ -170,16 +169,8 @@ export class Cline {
 		return this.streamChatManager.apiConversationHistory;
 	}
 
-	async overwriteApiConversationHistory(newHistory: Anthropic.MessageParam[]) {
-		await this.streamChatManager.overwriteApiConversationHistory(newHistory);
-	}
-
 	public get clineMessages(): ClineMessage[] {
 		return this.streamChatManager.clineMessages;
-	}
-
-	public async overwriteClineMessages(newMessages: ClineMessage[]) {
-		await this.streamChatManager.overwriteClineMessages(newMessages);
 	}
 
 	private async postTaskHistory() {
@@ -497,8 +488,7 @@ export class Cline {
 				const contextWindow = this.api.getModel().info.contextWindow || 128_000;
 				const maxAllowedSize = Math.max(contextWindow - 40_000, contextWindow * 0.8);
 				if (totalTokens >= maxAllowedSize) {
-					const truncatedMessages = truncateHalfConversation(this.apiConversationHistory);
-					await this.overwriteApiConversationHistory(truncatedMessages);
+					await this.streamChatManager.halfApiConversationHistory();
 				}
 			}
 		}

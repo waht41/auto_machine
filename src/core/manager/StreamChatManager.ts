@@ -98,8 +98,8 @@ export class StreamChatManager {
 		return this.apiHistoryService.getHistoryTextWithId(historyId);
 	}
 
-	async overwriteApiConversationHistory(newHistory: Anthropic.MessageParam[]) {
-		await this.apiHistoryService.overwriteApiConversationHistory(newHistory);
+	async halfApiConversationHistory() {
+		await this.apiHistoryService.halfConversation();
 	}
 
 	public generateHistoryItem(): HistoryItem | null {

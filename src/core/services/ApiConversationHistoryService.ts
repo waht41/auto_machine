@@ -6,6 +6,7 @@ import fs from 'fs/promises';
 import cloneDeep from 'clone-deep';
 import { isArray } from 'lodash';
 import { IApiConversationHistory, IApiConversationItem } from '@core/services/type';
+import { truncateHalfConversation } from '@core/sliding-window';
 
 type TextBlockParam = Anthropic.TextBlockParam
 
@@ -144,6 +145,28 @@ export class ApiConversationHistoryService{
 
 	async overwriteApiConversationHistory(newHistory: Anthropic.MessageParam[]) {
 		this.apiConversationHistory = newHistory;
+		await this.saveApiConversationHistory();
+	}
+
+	async deleteMessage(startIndex: number, count = 1) {
+		this.apiConversationHistory.splice(startIndex, count);
+		await this.saveApiConversationHistory();
+	}
+
+	async deleteMessageWithId(historyIds: number[]){
+		// 创建一个新数组，只保留不在 historyIds 中的消息
+		this.apiConversationHistory = this.apiConversationHistory.filter(item => {
+			const meta = this.extractMeta(item.content);
+			const itemHistoryId = parseInt(meta.historyId, 10);
+
+			// 保留那些 historyId 不在要删除列表中的消息
+			return isNaN(itemHistoryId) || !historyIds.includes(itemHistoryId);
+		});
+		await this.saveApiConversationHistory();
+	}
+
+	async halfConversation() {
+		this.apiConversationHistory = truncateHalfConversation(this.apiConversationHistory);
 		await this.saveApiConversationHistory();
 	}
 }
