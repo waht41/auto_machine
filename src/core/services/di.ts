@@ -10,6 +10,11 @@ type ServiceDependency = {
   serviceId: string;
 };
 
+interface ServiceClass<T> {
+	serviceId: string; // 静态属性
+	new (...args: any[]): T; // 构造函数
+}
+
 // Type for dependency definition
 type ServiceConstructor<T, P extends any[] = any[]> = new (...args: P) => T;
 
@@ -166,6 +171,10 @@ export class DIContainer {
 		} finally {
 			this.initializing.delete(serviceId);
 		}
+	}
+
+	async getByType<T>(service: ServiceClass<T>): Promise<T> {
+		return this.get<T>(service.serviceId);
 	}
 
 	/**

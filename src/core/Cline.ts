@@ -39,6 +39,8 @@ import logger from '@/utils/logger';
 import yaml from 'js-yaml';
 import { parseXml } from '@/utils/xml';
 import { IApiConversationHistory } from '@core/services/type';
+import { DIContainer } from '@core/services/di';
+import { PlanService } from '@core/services/planService';
 
 const cwd = process.cwd();
 
@@ -89,6 +91,7 @@ export class Cline {
 	private asking = false;
 	private mcpHub?: McpHub;
 	private streamChatManager: StreamChatManager;
+	public di = new DIContainer();
 
 	constructor(
 		prop: IProp
@@ -101,7 +104,6 @@ export class Cline {
 			enableDiff,
 			fuzzyMatchThreshold,
 			historyItem,
-			experimentalDiffStrategy,
 			middleWares = [],
 			mcpHub,
 			taskParentDir
@@ -118,15 +120,16 @@ export class Cline {
 		this.diffViewProvider = new DiffViewProvider(cwd);
 		this.mcpHub = mcpHub;
 		this.taskDir = path.join(taskParentDir, this.taskId);
-		this.streamChatManager = new StreamChatManager(this.api, this.taskDir, this.postTaskHistory.bind(this));
+		this.streamChatManager = new StreamChatManager(this.di,this.api, this.taskDir, this.postTaskHistory.bind(this));
 		registerInternalImplementation(this.executor);
 		for (const middleware of middleWares) {
 			this.executor.use(middleware);
 		}
 
-
-		// Initialize diffStrategy based on current state
-		this.updateDiffStrategy(experimentalDiffStrategy);
+		this.di.register(PlanService.serviceId,{
+			factory: PlanService,
+			dependencies:[]
+		});
 	}
 
 	async init() {

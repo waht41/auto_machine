@@ -13,6 +13,7 @@ import { HistoryItem } from '@/shared/HistoryItem';
 import { UIMessageService } from '@core/services/UIMessageService';
 import { ApiConversationHistoryService } from '@core/services/ApiConversationHistoryService';
 import { PlanService } from '@core/services/planService';
+import { DIContainer } from '@core/services/di';
 
 
 export class StreamChatManager {
@@ -21,15 +22,16 @@ export class StreamChatManager {
 
 	private uiMessageService: UIMessageService;
 	private apiHistoryService: ApiConversationHistoryService;
-	private planService: PlanService = new PlanService();
+	private planService!: PlanService;
 
 
-	constructor(private api: ApiHandler, private taskDir: string, private onSaveUIMessages: () => Promise<void>) {
+	constructor(private di: DIContainer,private api: ApiHandler, private taskDir: string, private onSaveUIMessages: () => Promise<void>) {
 		this.uiMessageService = new UIMessageService(this.taskDir, this.onSaveUIMessages);
 		this.apiHistoryService = new ApiConversationHistoryService(this.taskDir, this.getExtraMeta.bind(this));
 	}
 
 	async init() {
+		this.planService = await this.di.getByType(PlanService);
 		await fs.mkdir(this.taskDir, {recursive: true});
 		await this.resumeHistory();
 	}

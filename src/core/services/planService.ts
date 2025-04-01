@@ -2,6 +2,7 @@ import logger from '@/utils/logger';
 import { IPlan } from '@core/services/type';
 
 export class PlanService {
+	static readonly serviceId = 'PlanService';
 	steps: string[] = [];
 	currentStep: number = 0;
 
