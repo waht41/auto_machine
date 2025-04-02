@@ -282,18 +282,6 @@ export class Cline {
 		return this.streamChatManager.getHistoryTextWithId(historyId)?.replace(this.streamChatManager.metaRegex, '');
 	}
 
-	public async setPlan(steps: string[], currentStep: number = 1) {
-		await this.streamChatManager.setPlan(steps, currentStep -1 );
-	}
-
-	public getStep(index: number) {
-		return this.streamChatManager.getStep(index);
-	}
-
-	public async nextStep(stepNumber?: number) {
-		return await this.streamChatManager.nextStep(stepNumber);
-	}
-
 	async sayP({
 		sayType,
 		text,

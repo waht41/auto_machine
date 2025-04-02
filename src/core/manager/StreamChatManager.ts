@@ -32,23 +32,6 @@ export class StreamChatManager {
 		this.apiHistoryService = await this.di.getByType(ApiConversationHistoryService);
 	}
 
-	async setPlan(steps: string[], currentStep: number) {
-		this.planService.setPlan(steps, currentStep);
-		await this.uiMessageService.setState('plan',this.planService.getPlanSnapshot());
-	}
-
-	async nextStep(stepNumber?: number) {
-		const currentStepContent =  this.planService.nextStep(stepNumber);
-		if (currentStepContent){
-			await this.uiMessageService.setState('plan',this.planService.getPlanSnapshot());
-		}
-		return currentStepContent;
-	}
-
-	getStep(index: number) {
-		return this.planService.getStep(index);
-	}
-
 	private getExtraMeta() {
 		return '';
 		// const currentStep = this.planService.getCurrentStep();
