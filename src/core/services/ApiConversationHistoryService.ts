@@ -11,6 +11,7 @@ import { truncateHalfConversation } from '@core/sliding-window';
 type TextBlockParam = Anthropic.TextBlockParam
 
 export class ApiConversationHistoryService{
+	static readonly serviceId = 'ApiConversationHistoryService';
 	apiConversationHistory: IApiConversationHistory = [];
 	readonly metaRegex = /<meta[\s\S]*?<\/meta>/gi;
 	private apiHistoryId = 0;

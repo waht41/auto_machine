@@ -20,18 +20,17 @@ export class StreamChatManager {
 	didCompleteReadingStream = false;
 
 
-	private uiMessageService: UIMessageService;
-	private apiHistoryService: ApiConversationHistoryService;
+	private uiMessageService!: UIMessageService;
+	private apiHistoryService!: ApiConversationHistoryService;
 	private planService!: PlanService;
 
 
-	constructor(private di: DIContainer,private api: ApiHandler, private taskDir: string, private onSaveUIMessages: () => Promise<void>) {
-		this.uiMessageService = new UIMessageService(this.taskDir, this.onSaveUIMessages);
-		this.apiHistoryService = new ApiConversationHistoryService(this.taskDir, this.getExtraMeta.bind(this));
-	}
+	constructor(private di: DIContainer,private api: ApiHandler, private taskDir: string) {}
 
 	async init() {
 		this.planService = await this.di.getByType(PlanService);
+		this.uiMessageService = await this.di.getByType(UIMessageService);
+		this.apiHistoryService = await this.di.getByType(ApiConversationHistoryService);
 		await fs.mkdir(this.taskDir, {recursive: true});
 		await this.resumeHistory();
 	}
@@ -215,10 +214,6 @@ export class StreamChatManager {
 
 	public async saveClineMessages() {
 		await this.uiMessageService.saveClineMessages();
-	}
-
-	public async overwriteClineMessages(newMessages: ClineMessage[]) {
-		await this.uiMessageService.overwriteClineMessages(newMessages);
 	}
 
 	async addToClineMessages(message: ClineMessage) {

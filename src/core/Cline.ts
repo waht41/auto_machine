@@ -41,6 +41,8 @@ import { parseXml } from '@/utils/xml';
 import { IApiConversationHistory } from '@core/services/type';
 import { DIContainer } from '@core/services/di';
 import { PlanService } from '@core/services/planService';
+import { UIMessageService } from '@core/services/UIMessageService';
+import { ApiConversationHistoryService } from '@core/services/ApiConversationHistoryService';
 
 const cwd = process.cwd();
 
@@ -120,15 +122,26 @@ export class Cline {
 		this.diffViewProvider = new DiffViewProvider(cwd);
 		this.mcpHub = mcpHub;
 		this.taskDir = path.join(taskParentDir, this.taskId);
-		this.streamChatManager = new StreamChatManager(this.di,this.api, this.taskDir, this.postTaskHistory.bind(this));
+		this.streamChatManager = new StreamChatManager(this.di,this.api, this.taskDir);
 		registerInternalImplementation(this.executor);
 		for (const middleware of middleWares) {
 			this.executor.use(middleware);
 		}
+		this.registerServices();
+	}
 
+	private registerServices() {
 		this.di.register(PlanService.serviceId,{
 			factory: PlanService,
 			dependencies:[]
+		});
+		this.di.register(UIMessageService.serviceId,{
+			factory: UIMessageService,
+			dependencies:[this.taskDir, this.postTaskHistory.bind(this)]
+		});
+		this.di.register(ApiConversationHistoryService.serviceId,{
+			factory: ApiConversationHistoryService,
+			dependencies:[this.taskDir]
 		});
 	}
 

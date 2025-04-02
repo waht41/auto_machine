@@ -1,9 +1,10 @@
 /**
  * DIContainer - Dependency Injection Container
- * 
+ *
  * This module provides a dependency injection container that can register services
  * and resolve their dependencies automatically.
  */
+import logger from '@/utils/logger';
 
 // Type for service dependencies that should be resolved from the container
 type ServiceDependency = {
@@ -168,7 +169,10 @@ export class DIContainer {
 			}
       
 			return instance;
-		} finally {
+		} catch (e){
+			logger.error('DIContainer get error', e);
+			throw e;
+		} finally{
 			this.initializing.delete(serviceId);
 		}
 	}

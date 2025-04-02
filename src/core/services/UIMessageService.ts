@@ -8,6 +8,7 @@ import { DeepReadonly } from '@/utils/type';
 import { IUIMessage } from '@core/services/type';
 
 export class UIMessageService {
+	static readonly serviceId = 'UIMessageService';
 	readonly endHint = 'roo stop the conversion, should resume?';
 	private uiMessage: IUIMessage = {clineMessages:[], task: ''};
 	private messageId = 0;
