@@ -1,4 +1,4 @@
-import { DIContainer } from "../di";
+import { DIContainer, aCreateService } from "../di";
 
 describe('DIContainer', () => {
   describe('service registration and resolution', () => {
@@ -440,6 +440,145 @@ describe('DIContainer', () => {
       
       // Assert
       expect(result).toEqual({ serviceId: 'testService' });
+    });
+    
+    // 测试 getByType 方法
+    it('should resolve a service using getByType method', async () => {
+      // Arrange
+      class TypedService {
+        static readonly serviceId = 'typed-service';
+        
+        getValue() {
+          return 'typed service value';
+        }
+      }
+      
+      const container = new DIContainer();
+      
+      // Act
+      container.register(TypedService.serviceId, {
+        factory: TypedService,
+        dependencies: []
+      });
+      
+      const service = await container.getByType<TypedService>(TypedService);
+      
+      // Assert
+      expect(service).toBeInstanceOf(TypedService);
+      expect(service.getValue()).toBe('typed service value');
+    });
+
+    // 测试 aCreateService 函数
+    it('should create a service using aCreateService function', async () => {
+      // Arrange
+      class InitializableService {
+        static readonly serviceId = 'initializable';
+        private initialized = false;
+        
+        async init(): Promise<void> {
+          this.initialized = true;
+        }
+        
+        isInitialized() {
+          return this.initialized;
+        }
+      }
+      
+      // Act
+      const factory = aCreateService(InitializableService);
+      const service = await factory();
+      
+      // Assert
+      expect(service).toBeInstanceOf(InitializableService);
+      expect(service.isInitialized()).toBe(true);
+    });
+
+    // 测试 aCreateService 函数带参数
+    it('should create a service with parameters using aCreateService function', async () => {
+      // Arrange
+      class ConfigurableService {
+        static readonly serviceId = 'configurable';
+        private initialized = false;
+        private config: string;
+        
+        constructor(config: string) {
+          this.config = config;
+        }
+        
+        async init(): Promise<void> {
+          this.initialized = true;
+        }
+        
+        getStatus() {
+          return {
+            initialized: this.initialized,
+            config: this.config
+          };
+        }
+      }
+      
+      // Act
+      const factory = aCreateService(ConfigurableService);
+      const service = await factory('test-config');
+      
+      // Assert
+      expect(service).toBeInstanceOf(ConfigurableService);
+      expect(service.getStatus()).toEqual({
+        initialized: true,
+        config: 'test-config'
+      });
+    });
+
+    // 测试在 DI 容器中使用 aCreateService
+    it('should use aCreateService with DIContainer', async () => {
+      // Arrange
+      class DependencyService {
+        static readonly serviceId = 'dependency-service';
+        
+        getValue() {
+          return 'dependency value';
+        }
+      }
+      
+      class ServiceWithInit {
+        static readonly serviceId = 'service-with-init';
+        private initialized = false;
+        
+        constructor(private dependency: DependencyService) {}
+        
+        async init(): Promise<void> {
+          this.initialized = true;
+        }
+        
+        getStatus() {
+          return {
+            initialized: this.initialized,
+            dependencyValue: this.dependency.getValue()
+          };
+        }
+      }
+      
+      const container = new DIContainer();
+      
+      // Act
+      container.register(DependencyService.serviceId, {
+        factory: DependencyService,
+        dependencies: []
+      });
+      
+      container.register(ServiceWithInit.serviceId, {
+        factory: aCreateService(ServiceWithInit),
+        dependencies: [DIContainer.service(DependencyService)]
+      });
+      
+      const service = await container.get<ServiceWithInit>(ServiceWithInit.serviceId);
+      
+      // Assert
+      expect(service).toBeInstanceOf(ServiceWithInit);
+      expect(service.getStatus()).toEqual({
+        initialized: true,
+        dependencyValue: 'dependency value'
+      });
     });
   });
 });

@@ -242,3 +242,13 @@ export class DIContainer {
 		return { serviceId: service.serviceId } as any;
 	}
 }
+
+export function aCreateService<P extends any[], T extends { init(): Promise<void> }>(
+	ctor: new (...args: P) => T
+) {
+	return async (...args: P): Promise<T> => {
+		const instance = new ctor(...args);
+		await instance.init();
+		return instance;
+	};
+}
