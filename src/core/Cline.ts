@@ -39,7 +39,7 @@ import logger from '@/utils/logger';
 import yaml from 'js-yaml';
 import { parseXml } from '@/utils/xml';
 import { IApiConversationHistory } from '@core/services/type';
-import { DIContainer } from '@core/services/di';
+import { aCreateService, DIContainer } from '@core/services/di';
 import { PlanService } from '@core/services/planService';
 import { UIMessageService } from '@core/services/UIMessageService';
 import { ApiConversationHistoryService } from '@core/services/ApiConversationHistoryService';
@@ -133,14 +133,14 @@ export class Cline {
 	private registerServices() {
 		this.di.register(PlanService.serviceId,{
 			factory: PlanService,
-			dependencies:[]
+			dependencies:[DIContainer.service(UIMessageService)]
 		});
 		this.di.register(UIMessageService.serviceId,{
-			factory: UIMessageService,
+			factory: aCreateService(UIMessageService),
 			dependencies:[this.taskDir, this.postTaskHistory.bind(this)]
 		});
 		this.di.register(ApiConversationHistoryService.serviceId,{
-			factory: ApiConversationHistoryService,
+			factory: aCreateService(ApiConversationHistoryService),
 			dependencies:[this.taskDir]
 		});
 	}
@@ -447,6 +447,7 @@ export class Cline {
 		return {
 			cline: this,
 			mcpHub: this.mcpHub,
+			di: this.di,
 			replacing: replacing
 		};
 	}

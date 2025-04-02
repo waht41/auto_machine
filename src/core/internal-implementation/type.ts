@@ -1,8 +1,10 @@
 import { type Cline } from '@core/Cline';
 import { McpHub } from '@operation/MCP';
+import { DIContainer } from '@core/services/di';
 
 export interface IInternalContext{
     cline: Cline;
+    di: DIContainer;
     mcpHub?: McpHub
     replacing?: boolean;
     approval?: boolean;

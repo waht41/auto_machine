@@ -15,6 +15,10 @@ export class UIMessageService {
 	constructor(private taskDirectory: string, private onSaveUIMessages: () => Promise<void>) {
 	}
 
+	async init() {
+		await this.loadHistory();
+	}
+
 	public get clineMessages() {
 		return this.uiMessage.clineMessages;
 	}
@@ -24,6 +28,7 @@ export class UIMessageService {
 	}
 
 	public async loadHistory(){
+		await fs.mkdir(this.taskDirectory, {recursive: true});
 		this.uiMessage = await this.getSavedUIMessage();
 		this.messageId = this.clineMessages.reduce((maxId, { messageId }) =>
 			messageId != null ? Math.max(maxId, messageId) : maxId, this.messageId);

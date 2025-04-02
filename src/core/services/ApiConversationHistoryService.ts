@@ -18,6 +18,10 @@ export class ApiConversationHistoryService{
 	constructor(private taskDir: string, private getExtraMeta?: () => string) {
 	}
 
+	async init() {
+		await this.loadHistory();
+	}
+
 	async loadHistory(){
 		this.apiConversationHistory = await this.getSavedApiConversationHistory();
 	}
@@ -28,6 +32,7 @@ export class ApiConversationHistoryService{
 	}
 
 	async getSavedApiConversationHistory(): Promise<Anthropic.MessageParam[]> {
+		await fs.mkdir(this.taskDir, {recursive: true});
 		const filePath = path.join(this.taskDir, GlobalFileNames.apiConversationHistory);
 		const fileExists = await fileExistsAtPath(filePath);
 		if (fileExists) {

@@ -1,7 +1,6 @@
 import { ApiHandler } from '@/api';
 import { ApiStream, ApiStreamChunk } from '@/api/transform/stream';
 import { SYSTEM_PROMPT } from '@core/prompts/system';
-import fs from 'fs/promises';
 import { Anthropic } from '@anthropic-ai/sdk';
 import path from 'path';
 import { ProcessingState } from '@core/handlers/type';
@@ -31,8 +30,6 @@ export class StreamChatManager {
 		this.planService = await this.di.getByType(PlanService);
 		this.uiMessageService = await this.di.getByType(UIMessageService);
 		this.apiHistoryService = await this.di.getByType(ApiConversationHistoryService);
-		await fs.mkdir(this.taskDir, {recursive: true});
-		await this.resumeHistory();
 	}
 
 	async setPlan(steps: string[], currentStep: number) {

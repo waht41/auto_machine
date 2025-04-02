@@ -1,12 +1,25 @@
 import logger from '@/utils/logger';
 import { IPlan } from '@core/services/type';
+import { UIMessageService } from '@core/services/UIMessageService';
 
 export class PlanService {
 	static readonly serviceId = 'PlanService';
 	steps: string[] = [];
 	currentStep: number = 0;
 
-	setPlan(steps: string[], currentStep: number) {
+	constructor(private uiMessageService: UIMessageService) {
+		this.init();
+	}
+
+	init() {
+		const planSnapshot = this.uiMessageService.getState('plan');
+		if (planSnapshot) {
+			this.steps = planSnapshot.steps;
+			this.currentStep = planSnapshot.currentStep;
+		}
+	}
+
+	setPlan(steps: string[], currentStep: number, ) {
 		this.steps = steps;
 		this.currentStep = currentStep;
 	}
