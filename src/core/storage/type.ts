@@ -21,7 +21,7 @@ export const secretKeys: SecretKey[] = [
 	'openAiNativeApiKey', 'deepSeekApiKey', 'mistralApiKey'
 ];
 
-export type IGlobalState = {
+export type IConfig = {
   apiConfiguration: ApiConfiguration;
   lastShownAnnouncementId?: string;
   customInstructions?: string;

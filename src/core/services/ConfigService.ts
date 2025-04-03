@@ -1,10 +1,10 @@
-import { GlobalState } from '@core/storage/global-state';
+import { Config } from '@core/storage/config';
 import path from 'path';
 import { configPath } from '@core/storage/common';
 import { SecretStorage } from '@core/storage/secret';
 import { SecretKey } from '@core/webview/type';
 import { ApiConfiguration } from '@/shared/api';
-import { IGlobalState, secretKeys } from '@core/storage/type';
+import { IConfig, secretKeys } from '@core/storage/type';
 import { GlobalFileNames } from '@core/webview/const';
 import { TaskHistoryStorage } from '@core/storage/taskHistory';
 import { HistoryItem } from '@/shared/HistoryItem';
@@ -12,8 +12,8 @@ import { HistoryItem } from '@/shared/HistoryItem';
 export class ConfigService {
 	private static _instance: ConfigService;
 	private _secrets = new SecretStorage(path.join(configPath, GlobalFileNames.secrets));
-	private _state = new GlobalState(path.join(configPath, GlobalFileNames.globalState));
-	private _taskHistory: TaskHistoryStorage = new TaskHistoryStorage(this._state.get('taskDirRoot'));
+	private _config = new Config(path.join(configPath, GlobalFileNames.globalState));
+	private _taskHistory: TaskHistoryStorage = new TaskHistoryStorage(this._config.get('taskDirRoot'));
 
 	private constructor() {
 	}
@@ -29,9 +29,9 @@ export class ConfigService {
 		return ConfigService._instance;
 	}
 
-	public async getConfig() : Promise<IGlobalState> {
+	public async getConfig() : Promise<IConfig> {
 		const [globalStates, secrets] = await Promise.all([
-			this.getGlobalStates(),
+			this.getAllConfig(),
 			this.getSecrets()
 		]);
 		globalStates.apiConfiguration = {...globalStates.apiConfiguration, ...secrets};
@@ -39,13 +39,13 @@ export class ConfigService {
 	}
 
 	public async getApiConfig(): Promise<ApiConfiguration> {
-		const apiConfig = this._state.get('apiConfiguration');
+		const apiConfig = this._config.get('apiConfiguration');
 		const secrets = await this.getSecrets();
 		return { ...apiConfig, ...secrets };
 	}
 
-	public async getGlobalStates() {
-		return this._state.getAll();
+	public async getAllConfig() {
+		return this._config.getAll();
 	}
 
 	public async getSecrets() {
@@ -62,7 +62,7 @@ export class ConfigService {
 				}
 			}
 		}
-		await this._state.set('apiConfiguration', apiConfigWithoutSecrets);
+		await this._config.set('apiConfiguration', apiConfigWithoutSecrets);
 	}
 
 	public async storeSecret(key: SecretKey, value?: string) {
@@ -75,16 +75,16 @@ export class ConfigService {
 		await this._secrets.remove(key);
 	}
 
-	public async setGlobalState<T extends keyof IGlobalState>(key: T, value: IGlobalState[T]) {
-		await this._state.set(key, value);
+	public async setGlobalState<T extends keyof IConfig>(key: T, value: IConfig[T]) {
+		await this._config.set(key, value);
 	}
 
-	public async getGlobalState(key: keyof IGlobalState) {
-		return this._state.get(key);
+	public async getGlobalState(key: keyof IConfig) {
+		return this._config.get(key);
 	}
 
-	public getState() {
-		return this._state;
+	public getInternalConfig() {
+		return this._config;
 	}
 
 	public getTaskHistory() {

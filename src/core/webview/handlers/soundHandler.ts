@@ -25,7 +25,7 @@ export async function handlePlaySound() {
  */
 export async function handleSoundEnabled(instance: ClineProvider, message: WebviewMessage) {
 	const soundEnabled = message.bool ?? true;
-	await instance.updateGlobalState('soundEnabled', soundEnabled);
+	await instance.updateConfig('soundEnabled', soundEnabled);
 	setSoundEnabled(soundEnabled); // 更新声音工具的状态
 	await instance.postStateToWebview();
 }
@@ -35,7 +35,7 @@ export async function handleSoundEnabled(instance: ClineProvider, message: Webvi
  */
 export async function handleSoundVolume(instance: ClineProvider, message: WebviewMessage) {
 	const soundVolume = message.value ?? 0.5;
-	await instance.updateGlobalState('soundVolume', soundVolume);
+	await instance.updateConfig('soundVolume', soundVolume);
 	setSoundVolume(soundVolume);
 	await instance.postStateToWebview();
 }

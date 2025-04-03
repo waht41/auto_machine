@@ -27,7 +27,7 @@ export async function handleSetAllowedTools(instance: ClineProvider, message: We
  * 设置允许的命令
  */
 export async function handleAllowedCommands(instance: ClineProvider, message: WebviewMessage) {
-	await instance.globalState.set('allowedCommands', message.commands);
+	await instance.config.set('allowedCommands', message.commands);
 	// Also update workspace settings
 	await vscode.workspace
 		.getConfiguration('roo-cline')

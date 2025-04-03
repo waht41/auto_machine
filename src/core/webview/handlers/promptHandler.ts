@@ -27,7 +27,7 @@ export async function handleUpdateSupportPrompt(instance: ClineProvider, message
 			...message.values,
 		};
 
-		await instance.updateGlobalState('customSupportPrompts', updatedPrompts);
+		await instance.updateConfig('customSupportPrompts', updatedPrompts);
 		await instance.postStateToWebview();
 	} catch (error) {
 		console.error('Error update support prompt:', error);
@@ -50,7 +50,7 @@ export async function handleResetSupportPrompt(instance: ClineProvider, message:
 
 		updatedPrompts[message.text] = undefined;
 
-		await instance.updateGlobalState('customSupportPrompts', updatedPrompts);
+		await instance.updateConfig('customSupportPrompts', updatedPrompts);
 		await instance.postStateToWebview();
 	} catch (error) {
 		console.error('Error reset support prompt:', error);
@@ -67,7 +67,7 @@ export async function handleUpdatePrompt(instance: ClineProvider, message: Webvi
 			[message.promptMode]: message.customPrompt,
 		};
 
-		await instance.updateGlobalState('customModePrompts', updatedPrompts);
+		await instance.updateConfig('customModePrompts', updatedPrompts);
 
 		// Get current state and explicitly include customModePrompts
 		const currentState = await instance.getState();

@@ -16,7 +16,7 @@ export const mcpHandlers = {
  */
 export async function handleMcpEnabled(instance: ClineProvider, message: WebviewMessage) {
 	const mcpEnabled = message.bool ?? true;
-	await instance.updateGlobalState('mcpEnabled', mcpEnabled);
+	await instance.updateConfig('mcpEnabled', mcpEnabled);
 	await instance.postStateToWebview();
 }
 
@@ -77,6 +77,6 @@ export async function handleUpdateMcpTimeout(instance: ClineProvider, message: W
  * 设置是否始终允许 MCP
  */
 export async function handleAlwaysAllowMcp(instance: ClineProvider, message: WebviewMessage) {
-	await instance.updateGlobalState('alwaysAllowMcp', message.bool);
+	await instance.updateConfig('alwaysAllowMcp', message.bool);
 	await instance.postStateToWebview();
 }

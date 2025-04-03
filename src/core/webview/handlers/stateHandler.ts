@@ -1,10 +1,10 @@
 import { WebviewMessage } from '@/shared/WebviewMessage';
 import { type ClineProvider } from '@core/webview/ClineProvider';
-import { IGlobalState } from '@core/storage/type';
+import { IConfig } from '@core/storage/type';
 
 // 定义支持的状态更新类型和对应的处理函数
 interface StateUpdateConfig {
-    stateKey: keyof IGlobalState;
+    stateKey: keyof IConfig;
     valueKey: 'text' | 'value' | 'bool';
     defaultValue?: unknown;
 }
@@ -38,7 +38,7 @@ export async function handleStateUpdate(instance: ClineProvider, message: Webvie
 		value = message[config.valueKey] ?? config.defaultValue;
 	}
     
-	await instance.updateGlobalState(config.stateKey, value);
+	await instance.updateConfig(config.stateKey, value);
 	await instance.postStateToWebview();
 }
 

@@ -1,26 +1,26 @@
 import { Memento } from '@core/storage/memo';
-import { IGlobalState } from '@core/storage/type';
+import { IConfig } from '@core/storage/type';
 import { defaultModeSlug } from '@/shared/modes';
-export class GlobalState {
+export class Config {
 	private memento: Memento;
 	constructor(statePath: string) {
 		this.memento = new Memento(statePath);
 	}
 
-	get<T extends keyof IGlobalState>(key: T) {
-		return this.memento.get(key) as IGlobalState[T] ?? defaultState[key];
+	get<T extends keyof IConfig>(key: T) {
+		return this.memento.get(key) as IConfig[T] ?? defaultConfig[key];
 	}
 
-	async set<T extends  keyof IGlobalState>(key: T, value: IGlobalState[T]): Promise<void> {
+	async set<T extends  keyof IConfig>(key: T, value: IConfig[T]): Promise<void> {
 		await this.memento.update(key, value);
 	}
 
-	async getAll(): Promise<IGlobalState> {
-		return {...defaultState, ...this.memento.getAll() as IGlobalState};
+	async getAll(): Promise<IConfig> {
+		return {...defaultConfig, ...this.memento.getAll() as IConfig};
 	}
 
-	async setAll(state: IGlobalState): Promise<void> {
-		for (const key of Object.keys(state) as Array<keyof IGlobalState>) {
+	async setAll(state: IConfig): Promise<void> {
+		for (const key of Object.keys(state) as Array<keyof IConfig>) {
 			await this.set(key, state[key]);
 		}
 	}
@@ -30,7 +30,7 @@ export class GlobalState {
 	}
 }
 
-const defaultState : IGlobalState = {
+const defaultConfig : IConfig = {
 	apiConfiguration: {
 		apiProvider: 'openrouter',
 	},

@@ -45,7 +45,7 @@ export async function handleWebviewDidLaunch(instance: ClineProvider) {
 		// update model info in state (this needs to be done here since we don't want to update state while settings is open, and we may refresh models there)
 		const { apiConfiguration } = await instance.getState();
 		if (apiConfiguration.openRouterModelId) {
-			await instance.updateGlobalState(
+			await instance.updateConfig(
 				'openRouterModelInfo',
 				refreshedOpenRouterModels[apiConfiguration.openRouterModelId],
 			);
@@ -66,7 +66,7 @@ export async function handleWebviewDidLaunch(instance: ClineProvider) {
 		// update model info in state (this needs to be done here since we don't want to update state while settings is open, and we may refresh models there)
 		const { apiConfiguration } = await instance.getState();
 		if (apiConfiguration.glamaModelId) {
-			await instance.updateGlobalState(
+			await instance.updateConfig(
 				'glamaModelInfo',
 				refreshedGlamaModels[apiConfiguration.glamaModelId],
 			);
@@ -79,6 +79,6 @@ export async function handleWebviewDidLaunch(instance: ClineProvider) {
  * 处理公告已显示事件
  */
 export async function handleDidShowAnnouncement(instance: ClineProvider) {
-	await instance.updateGlobalState('lastShownAnnouncementId', instance.latestAnnouncementId);
+	await instance.updateConfig('lastShownAnnouncementId', instance.latestAnnouncementId);
 	await instance.postStateToWebview();
 }

@@ -24,7 +24,7 @@ import { ConfigService } from '@core/services/ConfigService';
 import { safeExecuteMiddleware } from '@executors/middleware';
 import { GlobalFileNames } from '@core/webview/const';
 import process from 'node:process';
-import { IGlobalState } from '@core/storage/type';
+import { IConfig } from '@core/storage/type';
 import logger from '@/utils/logger';
 import { handlers } from '@core/webview/handlers';
 
@@ -67,8 +67,8 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		await this.mcpHub?.initialize();
 	}
 
-	public get globalState() { // todo waht 临时方案，待删
-		return this.configService.getState();
+	public get config() { // todo waht 临时方案，待删
+		return this.configService.getInternalConfig();
 	}
 
 	/*
@@ -182,7 +182,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 	}
 
 	private async setUpAllowedTools(){
-		const allowedTools = this.globalState.get('allowedCommands');
+		const allowedTools = this.config.get('allowedCommands');
 		this.allowedToolTree.setAllowedTools(allowedTools?? []);
 	}
 
@@ -211,7 +211,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 	async setAllowedTools(toolId: string| string[]) {
 		const newCommands = this.allowedToolTree.setAllowedTools(toolId);
 
-		await this.globalState.set('allowedCommands', newCommands);
+		await this.config.set('allowedCommands', newCommands);
 		this.postMessageToWebview({
 			type: 'allowedTools',
 			allowedTools: newCommands
@@ -244,7 +244,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 
 		const historyItem = history.find((item) => item.id === id);
 		if (historyItem) {
-			const taskDirRoot: string = this.globalState.get('taskDirRoot');
+			const taskDirRoot: string = this.config.get('taskDirRoot');
 			const taskDirPath = path.join(taskDirRoot, id);
 			const apiConversationHistoryFilePath = path.join(taskDirPath, GlobalFileNames.apiConversationHistory);
 			const uiMessagesFilePath = path.join(taskDirPath, GlobalFileNames.uiMessages);
@@ -359,12 +359,12 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 
 	// global
 
-	async updateGlobalState(key: keyof IGlobalState, value: unknown) {
-		await this.globalState.set(key, value);
+	async updateConfig(key: keyof IConfig, value: unknown) {
+		await this.config.set(key, value);
 	}
 
-	async getGlobalState<T extends keyof IGlobalState>(key: T)  {
-		return this.globalState.get(key);
+	async getGlobalState<T extends keyof IConfig>(key: T)  {
+		return this.config.get(key);
 	}
 
 	// secrets
@@ -391,8 +391,8 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 			return;
 		}
 
-		for (const key in this.globalState.keys()) {
-			await this.globalState.set(key as keyof IGlobalState, undefined);
+		for (const key in this.config.keys()) {
+			await this.config.set(key as keyof IConfig, undefined);
 		}
 		const secretKeys: SecretKey[] = [
 			'apiKey',
