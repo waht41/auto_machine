@@ -18,7 +18,7 @@ export const apiHandlers = {
  */
 export async function handleApiConfiguration(instance: ClineProvider, message: WebviewMessage) {
 	if (message.apiConfiguration) {
-		await instance.configService.updateApiConfig(message.apiConfiguration);
+		await instance.stateService.updateApiConfig(message.apiConfiguration);
 	}
 	await instance.postStateToWebview();
 }
@@ -29,7 +29,7 @@ export async function handleApiConfiguration(instance: ClineProvider, message: W
 export async function handleUpsertApiConfiguration(instance: ClineProvider, message: WebviewMessage) {
 	if (message.text && message.apiConfiguration) {
 		try {
-			await instance.configService.updateApiConfig(message.apiConfiguration);
+			await instance.stateService.updateApiConfig(message.apiConfiguration);
 			await instance.postStateToWebview();
 		} catch (error) {
 			console.error('Error create new api configuration:', error);

@@ -9,8 +9,8 @@ import { GlobalFileNames } from '@core/webview/const';
 import { TaskHistoryStorage } from '@core/storage/taskHistory';
 import { HistoryItem } from '@/shared/HistoryItem';
 
-export class ConfigService {
-	private static _instance: ConfigService;
+export class StateService {
+	private static _instance: StateService;
 	private _secrets = new SecretStorage(path.join(configPath, GlobalFileNames.secrets));
 	private _config = new Config(path.join(configPath, GlobalFileNames.globalState));
 	private _taskHistory: TaskHistoryStorage = new TaskHistoryStorage(this._config.get('taskDirRoot'));
@@ -22,14 +22,14 @@ export class ConfigService {
 		await this._taskHistory.init();
 	}
 
-	public static getInstance(): ConfigService {
-		if (!ConfigService._instance) {
-			ConfigService._instance = new ConfigService();
+	public static getInstance(): StateService {
+		if (!StateService._instance) {
+			StateService._instance = new StateService();
 		}
-		return ConfigService._instance;
+		return StateService._instance;
 	}
 
-	public async getConfig() : Promise<IConfig> {
+	public async getState() : Promise<IConfig> {
 		const [globalStates, secrets] = await Promise.all([
 			this.getAllConfig(),
 			this.getSecrets()
@@ -75,15 +75,7 @@ export class ConfigService {
 		await this._secrets.remove(key);
 	}
 
-	public async setGlobalState<T extends keyof IConfig>(key: T, value: IConfig[T]) {
-		await this._config.set(key, value);
-	}
-
-	public async getGlobalState(key: keyof IConfig) {
-		return this._config.get(key);
-	}
-
-	public getInternalConfig() {
+	public getConfig() {
 		return this._config;
 	}
 

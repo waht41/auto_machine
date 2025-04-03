@@ -20,7 +20,7 @@ import { AllowedToolTree } from '@core/tool-adapter/AllowedToolTree';
 import { SecretKey } from '@core/webview/type';
 import ApiProviderManager from '@core/manager/ApiProviderManager';
 import { MessageService } from '@core/services/MessageService';
-import { ConfigService } from '@core/services/ConfigService';
+import { StateService } from '@core/services/StateService';
 import { safeExecuteMiddleware } from '@executors/middleware';
 import { GlobalFileNames } from '@core/webview/const';
 import process from 'node:process';
@@ -46,7 +46,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 	allowedToolTree = new AllowedToolTree([],this.toolCategories);
 	apiManager : ApiProviderManager;
 	readonly messageService : MessageService;
-	configService : ConfigService;
+	stateService : StateService;
 
 	constructor(
     private sendToMainProcess: (message: any) => void
@@ -58,17 +58,17 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		ClineProvider.activeInstances.add(this);
 		this.workspaceTracker = new WorkspaceTracker(this);
 		this.mcpHub = new McpHub(path.join(configPath,GlobalFileNames.mcpSettings),this.postMessageToWebview.bind(this));
-		this.configService = ConfigService.getInstance();
+		this.stateService = StateService.getInstance();
 	}
 
 	async init() {
-		await this.configService.init();
+		await this.stateService.init();
 		await this.setUpAllowedTools();
 		await this.mcpHub?.initialize();
 	}
 
 	public get config() { // todo waht 临时方案，待删
-		return this.configService.getInternalConfig();
+		return this.stateService.getConfig();
 	}
 
 	/*
@@ -239,7 +239,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		uiMessagesFilePath: string
 		apiConversationHistory: Anthropic.MessageParam[]
 	}> {
-		const history = this.configService.getTaskHistory();
+		const history = this.stateService.getTaskHistory();
 		logger.debug('getTaskWithId history: ', history, 'id:',id);
 
 		const historyItem = history.find((item) => item.id === id);
@@ -316,22 +316,22 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 
 	async deleteTaskFromState(id: string) {
 		// Remove the task from history
-		await this.configService.deleteTaskHistory(id);
+		await this.stateService.deleteTaskHistory(id);
 
 		// Notify the webview that the task has been deleted
 		await this.postStateToWebview();
 	}
 
 	async postStateToWebview() {
-		const state = await this.getStateToPostToWebview();
-		// @ts-ignore
+		const state = await this.getSharedContext();
+		//@ts-ignore  todo 需要重写extensionState
 		await this.postMessageToWebview({ type: 'state', state });
 	}
 
-	async getStateToPostToWebview() {
+	async getSharedContext() {
 		const state = await this.getState();
 		const { lastShownAnnouncementId, ...restState } = state;
-		const taskHistory = this.configService.getTaskHistory();
+		const taskHistory = this.stateService.getTaskHistory();
 		return {
 			version: process.env?.version ?? '',
 			uriScheme: vscode.env.uriScheme,
@@ -350,11 +350,11 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 	}
 
 	async getState() {
-		return await this.configService.getConfig();
+		return await this.stateService.getState();
 	}
 
 	async updateTaskHistory(item: HistoryItem) {
-		await this.configService.addTaskHistory(item);
+		await this.stateService.addTaskHistory(item);
 	}
 
 	// global
@@ -371,9 +371,9 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 
 	private async storeSecret(key: SecretKey, value?: string) {
 		if (value) {
-			await this.configService.storeSecret(key, value);
+			await this.stateService.storeSecret(key, value);
 		} else {
-			await this.configService.deleteSecret(key);
+			await this.stateService.deleteSecret(key);
 		}
 	}
 
