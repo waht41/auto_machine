@@ -140,11 +140,8 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		const {
 			apiConfiguration,
 			customModePrompts,
-			diffEnabled,
-			fuzzyMatchThreshold,
 			mode,
 			customInstructions: globalInstructions,
-			experimentalDiffStrategy,
 			taskDirRoot,
 		} = await this.getState();
 		const modePrompt = customModePrompts?.[mode] as PromptComponent;
@@ -156,12 +153,9 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 				apiConfiguration,
 				postMessageToWebview: this.postMessageToWebview.bind(this),
 				customInstructions: effectiveInstructions,
-				enableDiff: diffEnabled,
-				fuzzyMatchThreshold,
 				task,
 				images,
 				historyItem,
-				experimentalDiffStrategy,
 				middleWares: [safeExecuteMiddleware, ApprovalMiddleWrapper(this.allowedToolTree)],
 				mcpHub: this.mcpHub,
 				taskParentDir: taskDirRoot,

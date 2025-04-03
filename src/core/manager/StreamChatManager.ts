@@ -32,12 +32,6 @@ export class StreamChatManager {
 		this.apiHistoryService = await this.di.getByType(ApiConversationHistoryService);
 	}
 
-	private getExtraMeta() {
-		return '';
-		// const currentStep = this.planService.getCurrentStep();
-		// return currentStep ? `currentStep: ${currentStep}` : '';
-	}
-
 	public get metaRegex() {
 		return this.apiHistoryService.metaRegex;
 	}

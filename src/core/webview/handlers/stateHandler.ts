@@ -17,10 +17,8 @@ const stateUpdateConfigs: Record<string, StateUpdateConfig> = {
 	'screenshotQuality': { stateKey: 'screenshotQuality', valueKey: 'value' },
 	'enhancementApiConfigId': { stateKey: 'enhancementApiConfigId', valueKey: 'text' },
 	'autoApprovalEnabled': { stateKey: 'autoApprovalEnabled', valueKey: 'bool', defaultValue: false },
-	'fuzzyMatchThreshold': { stateKey: 'fuzzyMatchThreshold', valueKey: 'value' },
 	'alwaysApproveResubmit': { stateKey: 'alwaysApproveResubmit', valueKey: 'bool', defaultValue: false },
 	'requestDelaySeconds': { stateKey: 'requestDelaySeconds', valueKey: 'value', defaultValue: 5 },
-	'diffEnabled': { stateKey: 'diffEnabled', valueKey: 'bool', defaultValue: true },
 	'browserViewportSize': { stateKey: 'browserViewportSize', valueKey: 'text', defaultValue: '900x600' },
 };
 

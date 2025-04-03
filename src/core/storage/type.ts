@@ -28,11 +28,9 @@ export type IGlobalState = {
   allowedCommands?: string[];
   soundEnabled?: boolean;
   soundVolume?: number;
-  diffEnabled?: boolean;
   alwaysAllowMcp?: boolean;
   browserViewportSize?: string;
   screenshotQuality?: number;
-  fuzzyMatchThreshold?: number;
   preferredLanguage?: string;
   writeDelayMs?: number;
   terminalOutputLineLimit?: number;
@@ -47,7 +45,6 @@ export type IGlobalState = {
   customModePrompts?: Record<string, any>;
   customSupportPrompts?: Record<string, any>;
   enhancementApiConfigId?: string;
-  experimentalDiffStrategy: boolean;
   autoApprovalEnabled?: boolean;
   customModes?: any[];
   taskDirRoot: string;

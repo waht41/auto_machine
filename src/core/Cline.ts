@@ -1,5 +1,4 @@
 import { Anthropic } from '@anthropic-ai/sdk';
-import { DiffStrategy, getDiffStrategy } from './diff/DiffStrategy';
 import pWaitFor from 'p-wait-for';
 import * as path from 'path';
 import { serializeError } from 'serialize-error';
@@ -53,12 +52,9 @@ interface IProp {
 	apiConfiguration: ApiConfiguration,
 	postMessageToWebview: (message: ExtensionMessage) => Promise<void>,
 	customInstructions?: string,
-	enableDiff?: boolean,
-	fuzzyMatchThreshold?: number,
 	task?: string | undefined,
 	images?: string[] | undefined,
 	historyItem?: HistoryItem | undefined,
-	experimentalDiffStrategy: boolean,
 	middleWares?: Middleware[],
 	mcpHub?: McpHub
 	taskParentDir: string
@@ -70,7 +66,6 @@ export class Cline {
 	private terminalManager: TerminalManager;
 	private urlContentFetcher: UrlContentFetcher;
 	customInstructions?: string;
-	diffStrategy?: DiffStrategy;
 	diffEnabled: boolean = false;
 	fuzzyMatchThreshold: number = 1.0;
 
@@ -86,7 +81,6 @@ export class Cline {
 	private blockProcessHandler = new BlockProcessHandler();
 	private userMessageContent: (Anthropic.TextBlockParam | Anthropic.ImageBlockParam)[] = [];
 	private isCurrentStreamEnd = false;
-	private didRejectTool = false;
 	private didGetNewMessage = false;
 
 	private executor = new CommandRunner();
@@ -103,8 +97,6 @@ export class Cline {
 			apiConfiguration,
 			postMessageToWebview,
 			customInstructions,
-			enableDiff,
-			fuzzyMatchThreshold,
 			historyItem,
 			middleWares = [],
 			mcpHub,
@@ -116,8 +108,6 @@ export class Cline {
 		this.terminalManager = new TerminalManager();
 		this.urlContentFetcher = new UrlContentFetcher('./storage'); //todo 待删
 		this.customInstructions = customInstructions;
-		this.diffEnabled = enableDiff ?? false;
-		this.fuzzyMatchThreshold = fuzzyMatchThreshold ?? 1.0;
 		this.providerRef = new WeakRef(provider);
 		this.diffViewProvider = new DiffViewProvider(cwd);
 		this.mcpHub = mcpHub;
@@ -146,7 +136,6 @@ export class Cline {
 	}
 
 	async init() {
-		await this.updateDiffStrategy();
 		await this.streamChatManager.init();
 	}
 
@@ -168,17 +157,6 @@ export class Cline {
 		} else {
 			// this.resumeTaskFromHistory();
 		}
-	}
-
-	// Add method to update diffStrategy
-	async updateDiffStrategy(experimentalDiffStrategy?: boolean) {
-		// If not provided, get from current state
-		if (experimentalDiffStrategy === undefined) {
-			const {experimentalDiffStrategy: stateExperimentalDiffStrategy} =
-			(await this.providerRef.deref()?.getState()) ?? {};
-			experimentalDiffStrategy = stateExperimentalDiffStrategy ?? false;
-		}
-		this.diffStrategy = getDiffStrategy(this.api.getModel().id, this.fuzzyMatchThreshold, experimentalDiffStrategy);
 	}
 
 	get apiConversationHistory(): IApiConversationHistory {
@@ -570,7 +548,7 @@ export class Cline {
 					break;
 			}
 
-			const isThisBlockFinished = !block.partial || this.didRejectTool;
+			const isThisBlockFinished = !block.partial;
 			if (isThisBlockFinished){
 				this.blockProcessHandler.toNextBlock();
 				logger.debug('handleAssistantMessage toNextBlock', this.blockProcessHandler.getCurrentMessageId());
@@ -743,7 +721,6 @@ export class Cline {
 
 		this.userMessageContent = [];
 		this.isCurrentStreamEnd = false;
-		this.didRejectTool = false;
 		this.didGetNewMessage = false;
 
 		await this.diffViewProvider.reset();
@@ -815,10 +792,6 @@ export class Cline {
 					break;
 				}
 
-				if (this.didRejectTool) {
-					streamState.assistantMessage += '\n\n[Response interrupted by user feedback]';
-					break;
-				}
 			}
 		} catch (error) {
 			await this.handleStreamError(error, streamState.assistantMessage, streamState.apiReq, lastApiReqIndex);

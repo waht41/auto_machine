@@ -5,7 +5,6 @@ import { searchCommits } from '@/utils/git';
 
 export const diffHandlers = {
 	'searchCommits': handleSearchCommits,
-	'experimentalDiffStrategy': handleExperimentalDiffStrategy,
 };
 
 /**
@@ -25,16 +24,4 @@ export async function handleSearchCommits(instance: ClineProvider, message: Webv
 			vscode.window.showErrorMessage('Failed to search commits');
 		}
 	}
-}
-
-/**
- * 处理实验性差异比较策略设置
- */
-export async function handleExperimentalDiffStrategy(instance: ClineProvider, message: WebviewMessage) {
-	await instance.updateGlobalState('experimentalDiffStrategy', message.bool ?? false);
-	// Update diffStrategy in current Cline instance if it exists
-	if (instance.cline) {
-		await instance.cline.updateDiffStrategy(message.bool ?? false);
-	}
-	await instance.postStateToWebview();
 }
