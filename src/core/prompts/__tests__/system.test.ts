@@ -79,7 +79,7 @@ const mockContext = {
 		get: () => undefined,
 		update: () => Promise.resolve(),
 	},
-	globalState: {
+	config: {
 		get: () => undefined,
 		update: () => Promise.resolve(),
 		setKeysForSync: () => {},

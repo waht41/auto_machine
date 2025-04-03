@@ -215,7 +215,7 @@ describe('Cline', () => {
 			fsPath: path.join(os.tmpdir(), 'test-storage'),
 		};
 		mockExtensionContext = {
-			globalState: {
+			config: {
 				get: jest.fn().mockImplementation((key) => {
 					if (key === 'taskHistory') {
 						return [

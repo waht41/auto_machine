@@ -206,7 +206,7 @@ describe('ClineProvider', () => {
 		mockContext = {
 			extensionPath: '/test/path',
 			extensionUri: {} as vscode.Uri,
-			globalState: {
+			config: {
 				get: jest.fn().mockImplementation((key: string) => {
 					switch (key) {
 						case 'mode':
@@ -680,7 +680,7 @@ describe('ClineProvider', () => {
 		// Setup mock context with mode and config name
 		mockContext = {
 			...mockContext,
-			globalState: {
+			config: {
 				...mockContext.globalState,
 				get: jest.fn((key: string) => {
 					if (key === 'mode') {

@@ -4,7 +4,7 @@ export const GlobalFileNames = {
 	glamaModels: 'glama_models.json',
 	openRouterModels: 'openrouter_models.json',
 	mcpSettings: 'mcp_settings.json',
-	globalState: 'auto_machine_global_state.json',
+	config: 'auto_machine_config.json',
 	secrets: 'auto_machine_secrets.json',
 	taskHistory: 'task_history.json',
 };

@@ -12,7 +12,7 @@ import { HistoryItem } from '@/shared/HistoryItem';
 export class StateService {
 	private static _instance: StateService;
 	private _secrets = new SecretStorage(path.join(configPath, GlobalFileNames.secrets));
-	private _config = new Config(path.join(configPath, GlobalFileNames.globalState));
+	private _config = new Config(path.join(configPath, GlobalFileNames.config));
 	private _taskHistory: TaskHistoryStorage = new TaskHistoryStorage(this._config.get('taskDirRoot'));
 
 	private constructor() {
