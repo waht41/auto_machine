@@ -30,16 +30,14 @@ export class GlobalState {
 	}
 }
 
-export const defaultState : IGlobalState = {
+const defaultState : IGlobalState = {
 	apiConfiguration: {
 		apiProvider: 'openrouter',
 	},
 	alwaysAllowMcp: false,
 	soundEnabled: false,
-	diffEnabled: true,
 	browserViewportSize: '900x600',
 	screenshotQuality: 75,
-	fuzzyMatchThreshold: 1.0,
 	writeDelayMs: 1000,
 	terminalOutputLineLimit: 500,
 	mode: defaultModeSlug,
@@ -51,7 +49,6 @@ export const defaultState : IGlobalState = {
 	modeApiConfigs: {},
 	customModePrompts: {},
 	customSupportPrompts: {},
-	experimentalDiffStrategy: false,
 	autoApprovalEnabled: false,
 	taskDirRoot: './tasks'
 };
