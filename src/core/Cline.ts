@@ -42,6 +42,7 @@ import { aCreateService, DIContainer } from '@core/services/di';
 import { PlanService } from '@core/services/planService';
 import { UIMessageService } from '@core/services/UIMessageService';
 import { ApiConversationHistoryService } from '@core/services/ApiConversationHistoryService';
+import { PostService } from '@core/services/postService';
 
 const cwd = process.cwd();
 
@@ -51,6 +52,7 @@ interface IProp {
 	provider: ClineProvider,
 	apiConfiguration: ApiConfiguration,
 	postMessageToWebview: (message: ExtensionMessage) => Promise<void>,
+	postStateToWebview: () => Promise<void>,
 	customInstructions?: string,
 	task?: string | undefined,
 	images?: string[] | undefined,
@@ -75,7 +77,6 @@ export class Cline {
 	private abort: boolean = false;
 	abortComplete = false;
 	private diffViewProvider: DiffViewProvider;
-	private postMessageToWebview: (message: ExtensionMessage) => Promise<void>;
 
 	// streaming
 	private blockProcessHandler = new BlockProcessHandler();
@@ -88,6 +89,7 @@ export class Cline {
 	private mcpHub?: McpHub;
 	private streamChatManager: StreamChatManager;
 	public di = new DIContainer();
+	private postService!: PostService;
 
 	constructor(
 		prop: IProp
@@ -95,14 +97,12 @@ export class Cline {
 		const {
 			provider,
 			apiConfiguration,
-			postMessageToWebview,
 			customInstructions,
 			historyItem,
 			middleWares = [],
 			mcpHub,
 			taskParentDir
 		} = prop;
-		this.postMessageToWebview = postMessageToWebview;
 		this.taskId = historyItem ? historyItem.id : crypto.randomUUID();
 		this.api = buildApiHandler(apiConfiguration);
 		this.terminalManager = new TerminalManager();
@@ -117,10 +117,10 @@ export class Cline {
 		for (const middleware of middleWares) {
 			this.executor.use(middleware);
 		}
-		this.registerServices();
+		this.registerServices(prop);
 	}
 
-	private registerServices() {
+	private registerServices(prop: IProp) {
 		this.di.register(PlanService.serviceId,{
 			factory: PlanService,
 			dependencies:[DIContainer.service(UIMessageService)]
@@ -133,10 +133,15 @@ export class Cline {
 			factory: aCreateService(ApiConversationHistoryService),
 			dependencies:[this.taskDir]
 		});
+		this.di.register(PostService.serviceId,{
+			factory: PostService,
+			dependencies:[prop.postMessageToWebview, prop.postStateToWebview]
+		});
 	}
 
 	async init() {
 		await this.streamChatManager.init();
+		this.postService = await this.di.getByType(PostService);
 	}
 
 	async start({task, images}: { task?: string, images?: string[] }) {
@@ -231,7 +236,7 @@ export class Cline {
 	private async finalizePartialMessage(message: ClineMessage, lastMessage: ClineMessage) {
 		// 保留原始时间戳防止渲染闪烁
 		await this.streamChatManager.setLastMessage({...message, ts: lastMessage.ts});
-		await this.postMessageToWebview({
+		await this.postService.postMessageToWebview({
 			type: 'partialMessage',
 			partialMessage: lastMessage
 		});
@@ -244,7 +249,7 @@ export class Cline {
 	}
 
 	private async updateWebviewState() {
-		await this.providerRef.deref()?.postStateToWebview();
+		await this.postService.postStateToWebview();
 	}
 
 	public getNewMessageId() {
@@ -296,7 +301,7 @@ export class Cline {
 		const handlePartialUpdate = async () => {
 			if (isUpdatingPreviousPartial) {
 				await this.streamChatManager.setLastMessage({...message, ts: lastMessage.ts});
-				await this.postMessageToWebview({type: 'partialMessage', partialMessage: lastMessage});
+				await this.postService.postMessageToWebview({type: 'partialMessage', partialMessage: lastMessage});
 			} else {
 				await addMessage();
 			}
@@ -305,7 +310,7 @@ export class Cline {
 		const handleCompletion = async () => {
 			if (isUpdatingPreviousPartial) {
 				await this.streamChatManager.setLastMessage({...message, ts: lastMessage.ts});
-				await this.postMessageToWebview({type: 'partialMessage', partialMessage: lastMessage}); // more performant than an entire postStateToWebview
+				await this.postService.postMessageToWebview({type: 'partialMessage', partialMessage: lastMessage}); // more performant than an entire postStateToWebview
 			} else {
 				await addMessage(lastMessage?.ts ?? message.ts);
 			}
@@ -315,7 +320,7 @@ export class Cline {
 			// this is a new non-partial message, so add it like normal
 			const sayTs = ts ?? Date.now();
 			await this.streamChatManager.addToClineMessages({...message, ts: sayTs});
-			await this.providerRef.deref()?.postStateToWebview();
+			await this.postService.postStateToWebview();
 		};
 
 		switch (message.partial) {
@@ -336,7 +341,7 @@ export class Cline {
 		// conversationHistory (for API) and clineMessages (for webview) need to be in sync
 		// if the extension process were killed, then on restart the clineMessages might not be empty, so we need to set it to [] when we create a new Cline client (otherwise webview would show stale messages from previous session)
 		await this.streamChatManager.clearHistory();
-		await this.providerRef.deref()?.postStateToWebview();
+		await this.postService.postStateToWebview();
 
 		await this.sayP({sayType: 'task', text: task, images});
 
@@ -640,7 +645,7 @@ export class Cline {
 			request: parsedUserContent.map((block) => formatContentBlockToMarkdown(block)).join('\n\n'),
 		} satisfies ClineApiReqInfo);
 		await this.streamChatManager.saveClineMessages();
-		await this.providerRef.deref()?.postStateToWebview();
+		await this.postService.postStateToWebview();
 
 		return parsedUserContent;
 	}
@@ -686,7 +691,7 @@ export class Cline {
 		apiReq.cancelReason = cancelReason;
 		apiReq.streamingFailedMessage = streamingFailedMessage;
 		await this.updateApiReq(apiReq, lastApiReqIndex);
-		await this.providerRef.deref()?.postStateToWebview();
+		await this.postService.postStateToWebview();
 
 		// signals to provider that it can retrieve the saved messages from disk, as abortTask can not be awaited on in nature
 		this.abortComplete = true;
@@ -709,7 +714,7 @@ export class Cline {
 			const history = await this.providerRef.deref()?.getTaskWithId(this.taskId);
 			if (history) {
 				await this.providerRef.deref()?.initClineWithHistoryItem(history.historyItem);
-				// await this.providerRef.deref()?.postStateToWebview()
+				// await this.postService.postStateToWebview()
 			}
 		}
 	}
@@ -858,7 +863,7 @@ export class Cline {
 		await pWaitFor(() => this.isCurrentStreamEnd); // wait for the last block to be presented
 
 		await this.updateApiReq(state.apiReq, index);
-		await this.providerRef.deref()?.postStateToWebview();
+		await this.postService.postStateToWebview();
 	}
 
 	async recursivelyMakeClineRequests(
