@@ -14,4 +14,16 @@ export interface IPlan {
 }
 
 export type IApiConversationItem = Anthropic.MessageParam & { ts?: number };
-export type IApiConversationHistory = IApiConversationItem[]
+export type IApiConversationHistory = IApiConversationItem[];
+
+export type Memory = {
+	title: string;
+	keywords: string[];
+	content: string;
+	category: string;
+	createTime?: string;
+}
+export type SearchOption = {
+	category?: string;
+	keywords?: string[];
+}
