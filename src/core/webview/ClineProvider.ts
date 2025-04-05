@@ -13,7 +13,7 @@ import { PromptComponent } from '@/shared/modes';
 import { fileExistsAtPath } from '@/utils/fs';
 import { Cline } from '../Cline';
 import { setSoundEnabled } from '@/utils/sound';
-import { configPath, createIfNotExists, getAssetPath } from '@core/storage/common';
+import { configPath, createIfNotExists, getAssetPath, getUserDataPath } from '@core/storage/common';
 import { ApprovalMiddleWrapper } from '@core/internal-implementation/middleware';
 import { getToolCategory } from '@core/tool-adapter/getToolCategory';
 import { AllowedToolTree } from '@core/tool-adapter/AllowedToolTree';
@@ -160,6 +160,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 				middleWares: [safeExecuteMiddleware, ApprovalMiddleWrapper(this.allowedToolTree)],
 				mcpHub: this.mcpHub,
 				taskParentDir: taskDirRoot,
+				memoryDir: path.join(getUserDataPath(),'memory')
 			}
 		);
 		await this.cline.init();

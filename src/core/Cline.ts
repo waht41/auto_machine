@@ -43,6 +43,7 @@ import { PlanService } from '@core/services/planService';
 import { UIMessageService } from '@core/services/UIMessageService';
 import { ApiConversationHistoryService } from '@core/services/ApiConversationHistoryService';
 import { PostService } from '@core/services/postService';
+import { MemoryService } from './services/memoryService';
 
 const cwd = process.cwd();
 
@@ -59,7 +60,8 @@ interface IProp {
 	historyItem?: HistoryItem | undefined,
 	middleWares?: Middleware[],
 	mcpHub?: McpHub
-	taskParentDir: string
+	taskParentDir: string,
+	memoryDir: string,
 }
 
 export class Cline {
@@ -136,6 +138,10 @@ export class Cline {
 		this.di.register(PostService.serviceId,{
 			factory: PostService,
 			dependencies:[prop.postMessageToWebview, prop.postStateToWebview]
+		});
+		this.di.register(MemoryService.serviceId,{
+			factory: aCreateService(MemoryService),
+			dependencies:[prop.memoryDir]
 		});
 	}
 

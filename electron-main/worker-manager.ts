@@ -16,6 +16,10 @@ export const getAssetsPath = (): string => {
 	}
 };
 
+export const getUserDataPath = (): string => {
+	return app.getPath('userData');
+};
+
 export class WorkerManager {
 	private worker: ChildProcess | null = null;
 	private restartAttempts = 0;
@@ -59,6 +63,7 @@ export class WorkerManager {
 		};
 		if (!this.isDev){
 			workerEnv.ASSETS_PATH = getAssetsPath();
+			workerEnv.USER_DATA_PATH = getUserDataPath();
 		}
 
 		this.worker = fork(workerPath, [], {
