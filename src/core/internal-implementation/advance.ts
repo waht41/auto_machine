@@ -3,12 +3,18 @@ import { IInternalContext } from '@core/internal-implementation/type';
 import { Memory, SearchOption } from '@core/services/type';
 import { MemoryService } from '@core/services/memoryService';
 import yaml from 'js-yaml';
+import { ApiConversationHistoryService } from '@core/services/ApiConversationHistoryService';
 
 export class AdvanceExecutor implements CommandExecutor {
 	async execute(command: AdvanceCommand, context: IInternalContext): Promise<string|null> {
+		const di = context.di;
 		switch (command.cmd){
 			case 'memory':
 				return memoryHandler(command, context);
+			case 'compress':
+				const apiHistoryService = await di.getByType(ApiConversationHistoryService);
+				await  apiHistoryService.deleteMessageWithId(command.history_id);
+				return 'success. \n compress summary:\n' + command.summary;
 		}
 		return null;
 	}
@@ -34,4 +40,11 @@ type MemoryCommand = {
 } & ({
 	action:'add',
 } & Memory  | {action:'search'}& SearchOption)
-type AdvanceCommand = MemoryCommand;
+
+type CompressCommand = {
+	type:'compress',
+	cmd: 'compress',
+	history_id: number[],
+	summary: string;
+}
+type AdvanceCommand = MemoryCommand | CompressCommand;

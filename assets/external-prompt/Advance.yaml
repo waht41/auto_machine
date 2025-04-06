@@ -27,4 +27,13 @@ memory:
         category: browser
         keywords: [download,csdn]
 
-
+compress:
+  description: 压缩无用信息，推荐在已知信息超过10k时使用
+  params:
+    history_id: 数组，要被压缩的historyId
+    summary: 被压缩后的内容
+  example:
+    - tool: advance
+      cmd: compress
+      history_id: [3,4,5]
+      summary: 这些信息是浏览器搜索js红宝书的结果，之前已经一一尝试了对应的网址，并成功下载了书籍，所以已经不需要继续保留在对话中了。
