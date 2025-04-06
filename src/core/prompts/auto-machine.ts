@@ -1,15 +1,25 @@
 import fs from 'fs';
 import path from 'path';
-import * as process from 'node:process';
+import file from 'fs/promises';
+import { getAssetPath } from '@core/storage/common';
+import { yamlWrap } from '@core/internal-implementation/utils';
 
 let prompt = '';
 
 export const AM_PROMPT = async (
-	...prop: any
+	defaultExternals = ['Advance']
 ): Promise<string> => {
 	if (!prompt) {
-		const assetPath = process.env.ASSETS_PATH ?? path.join(process.cwd(), './assets');
-		prompt = fs.readFileSync(path.join(assetPath, 'base.md'), 'utf8');
+		if (!Array.isArray(defaultExternals)) {
+			defaultExternals = [defaultExternals];
+		}
+		const externals = await Promise.all(
+			defaultExternals.map(fileName =>
+				file.readFile(path.join(getAssetPath(), 'external-prompt', `${fileName}.yaml`), 'utf8')
+			)
+		);
+		const base = fs.readFileSync(path.join(getAssetPath(), 'base.md'), 'utf8');
+		prompt = yamlWrap(externals) + '\n' + base;
 	}
 	return prompt;
 };

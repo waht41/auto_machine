@@ -47,7 +47,7 @@ request: File,MCP
 ```
 
 ## 资源类别
-- Advance: auto machine的高阶操作，包括记忆功能
+- Advance: auto machine的高阶操作，包括记忆功能、压缩对话
 - File: 文件资源，包括读取、写入、列出文件等
 - Browser: 浏览器控制，包括打开网页，点击按钮，模拟键盘输入等
 - MCP: 模型上下文协议，可以使用用户自定义的服务
