@@ -23,6 +23,7 @@ export class ApiConversationHistoryService{
 
 	async loadHistory(){
 		this.apiConversationHistory = await this.getSavedApiConversationHistory();
+		this.updateApiHistoryIdFromHistory();
 	}
 
 	async cleanHistory(){
@@ -174,6 +175,20 @@ export class ApiConversationHistoryService{
 		this.apiConversationHistory = truncateHalfConversation(this.apiConversationHistory);
 		await this.saveApiConversationHistory();
 	}
+
+	private updateApiHistoryIdFromHistory() {
+		let maxHistoryId = 0;
+		for (const item of this.apiConversationHistory) {
+			const meta = this.extractMeta(item.content);
+			const itemHistoryId = parseInt(meta.historyId, 10);
+			if (!isNaN(itemHistoryId) && itemHistoryId > maxHistoryId) {
+				maxHistoryId = itemHistoryId;
+			}
+		}
+		this.apiHistoryId = maxHistoryId;
+
+	}
+
 }
 
 function truncateHalfConversation(
