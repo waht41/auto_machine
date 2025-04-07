@@ -20,6 +20,16 @@ export const getUserDataPath = (): string => {
 	return app.getPath('userData');
 };
 
+export const getLogPath = (): string => {
+	// 生产环境下使用 userData 目录下的 logs 文件夹
+	if (app.isPackaged) {
+		return join(app.getPath('userData'), 'logs');
+	} else {
+		// 开发环境下使用项目根目录下的 logs 文件夹
+		return join(app.getAppPath(), 'logs');
+	}
+};
+
 export class WorkerManager {
 	private worker: ChildProcess | null = null;
 	private restartAttempts = 0;
@@ -64,6 +74,7 @@ export class WorkerManager {
 		if (!this.isDev){
 			workerEnv.ASSETS_PATH = getAssetsPath();
 			workerEnv.USER_DATA_PATH = getUserDataPath();
+			workerEnv.LOG_PATH = getLogPath();
 		}
 
 		this.worker = fork(workerPath, [], {

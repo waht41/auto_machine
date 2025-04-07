@@ -21,6 +21,10 @@ export function createIfNotExists(path: string): void {
 	}
 }
 
+export function getLogPath(): string {
+	return process.env.LOG_PATH ?? path.join(process.cwd(), './logs');
+}
+
 export function sanitizeFileName(name: string) {
 	// 生成0x00到0x1F的控制字符
 	const controlChars = Array.from({ length: 0x20 }, (_, i) =>

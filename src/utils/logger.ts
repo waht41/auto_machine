@@ -1,4 +1,6 @@
 import winston from 'winston';
+import path from 'path';
+import {getLogPath, createIfNotExists} from '@core/storage/common';
 
 /**
  * Winston日志级别参考:
@@ -8,6 +10,10 @@ import winston from 'winston';
 
 // 判断当前环境
 const isProd = process.env.NODE_ENV === 'production';
+
+// 确保日志目录存在
+const logDir = getLogPath();
+createIfNotExists(logDir);
 
 // 创建自定义格式
 const customFormat = winston.format.combine(
@@ -44,13 +50,13 @@ const transports = [
   
 	// 错误日志文件 - 只记录error级别
 	new winston.transports.File({ 
-		filename: 'logs/error.log', 
+		filename: path.join(logDir, 'error.log'), 
 		level: 'error' 
 	}),
   
 	// 组合日志文件 - 根据环境记录不同级别
 	new winston.transports.File({ 
-		filename: 'logs/combined.log',
+		filename: path.join(logDir, 'combined.log'),
 		level: 'info'
 	}),
 ];
@@ -59,7 +65,7 @@ const transports = [
 if (!isProd) {
 	transports.push(
 		new winston.transports.File({ 
-			filename: 'logs/debug.log', 
+			filename: path.join(logDir, 'debug.log'), 
 			level: 'debug' 
 		})
 	);
