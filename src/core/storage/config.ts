@@ -1,6 +1,8 @@
 import { Memento } from '@core/storage/memo';
 import { IConfig } from '@core/storage/type';
 import { defaultModeSlug } from '@/shared/modes';
+import path from 'path';
+import { getUserDataPath } from '@core/storage/common';
 export class Config {
 	private memento: Memento;
 	constructor(statePath: string) {
@@ -50,5 +52,5 @@ const defaultConfig : IConfig = {
 	customModePrompts: {},
 	customSupportPrompts: {},
 	autoApprovalEnabled: false,
-	taskDirRoot: './tasks'
+	taskDirRoot: path.join(getUserDataPath(), 'tasks'),
 };
