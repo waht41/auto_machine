@@ -13,7 +13,7 @@ class IPCWorker {
 				this.setupEventListeners();
 				console.log('Hello worker process started!!!');
 			}
-		).catch(console.error);
+		).catch(this.handleUncaughtException.bind(this));
 	}
 
 	/**

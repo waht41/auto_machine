@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ExtensionMessage } from '@/shared/ExtensionMessage';
 import HistoryView from './components/history/HistoryView';
 import SettingsView from './components/settings/SettingsView';
@@ -6,12 +6,14 @@ import WelcomeView from './components/welcome/WelcomeView';
 import { ExtensionStateContextProvider, useExtensionState } from './context/ExtensionStateContext';
 import McpView from './components/mcp/McpView';
 import PromptsView from './components/prompts/PromptsView';
-import { Spin } from 'antd';
+import { Alert, Spin } from 'antd';
 import styled from 'styled-components';
 import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import Home from '@webview-ui/components/Home';
 import messageBus from './store/messageBus';
 import { BACKGROUND_MESSAGE } from '@webview-ui/store/const';
+import { BackgroundMessage } from '@webview-ui/store/type';
+import { Handler } from 'mitt';
 
 const LoadingContainer = styled.div`
 	display: flex;
@@ -21,10 +23,21 @@ const LoadingContainer = styled.div`
 	width: 100%;
 `;
 
+const ErrorContainer = styled.div`
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	height: 100vh;
+	width: 100%;
+	padding: 0 20px;
+`;
+
 const AppContent = () => {
 	const { didHydrateState, showWelcome } = useExtensionState();
 	const navigate = useNavigate();
 	const location = useLocation();
+	const [workerError, setWorkerError] = useState<string | null>(null);
 
 	const handleMessage = useCallback((message: ExtensionMessage) => {
 		switch (message.type) {
@@ -47,8 +60,15 @@ const AppContent = () => {
 						break;
 				}
 				break;
+			case 'worker-error':
+				if (message.error) {
+					setWorkerError(message.error);
+				}
+				break;
 		}
-	}, [navigate]);
+		console.log(message);
+	}, [navigate]) as Handler<BackgroundMessage>;
+
 
 	// 使用消息总线订阅扩展消息
 	useEffect(() => {
@@ -61,7 +81,22 @@ const AppContent = () => {
 		};
 	}, [handleMessage]);
 
+	
+
 	if (!didHydrateState) {
+		if (workerError) {
+			return (
+				<ErrorContainer>
+					<Alert
+						message="background worker error"
+						description={`${workerError}`}
+						type="error"
+						showIcon
+					/>
+				</ErrorContainer>
+			);
+		}
+		
 		return (
 			<LoadingContainer>
 				<Spin size="large" tip="加载中..." />

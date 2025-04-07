@@ -45,6 +45,7 @@ export interface ExtensionMessage {
 		| 'toolCategories'
 		| 'allowedTools'
     | 'electron'
+		| 'worker-error'
 	text?: string
 	action?:
 		| 'chatButtonClicked'
@@ -73,6 +74,7 @@ export interface ExtensionMessage {
 	toolCategories?: IToolCategory[]
 	allowedTools?: string[]
   payload?: any
+	error?: string
 }
 
 export interface ApiConfigMeta {
