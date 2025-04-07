@@ -2,6 +2,7 @@ import { chromium, Page, BrowserContext, ElementHandle } from 'playwright';
 import { BrowserOptions, PageOptions } from './type';
 import path from 'path';
 import fs from 'fs';
+import process from 'node:process';
 
 
 let browserContext: BrowserContext | null = null;
@@ -10,7 +11,7 @@ let userDataDir: string | null = null;
 
 export async function getBrowser(options: BrowserOptions = {}): Promise<BrowserContext> {
 	if (!browserContext) {
-		userDataDir = options.userDataDir || getDefaultUserDataDir();
+		userDataDir = options.userDataDir || getBrowserUserDataDir();
 		if (!fs.existsSync(userDataDir)) {
 			fs.mkdirSync(userDataDir, {recursive: true});
 		}
@@ -180,8 +181,9 @@ export async function closeBrowser(): Promise<void> {
 	}
 }
 
-export const getDefaultUserDataDir = () => {
-	return path.resolve(path.join('.','userData'));
+export const getBrowserUserDataDir = () => {
+	const userDataDir = process.env.USER_DATA_PATH ? path.join(process.env.USER_DATA_PATH,'browserUserData') : './userData';
+	return path.resolve(userDataDir);
 };
 
 export const getElementSelector = async (element: ElementHandle): Promise<string> => {

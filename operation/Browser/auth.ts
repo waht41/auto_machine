@@ -1,5 +1,5 @@
 import { BrowserContext } from 'playwright';
-import { getDefaultUserDataDir, getPage } from './common';
+import { getBrowserUserDataDir, getPage } from './common';
 import { AuthOptions, BrowserResult } from './type';
 
 
@@ -29,7 +29,7 @@ export async function saveAuth(options: AuthOptions): Promise<BrowserResult> {
 
 	const page = await getPage({url: options.url, title: options.title});
 	const context = page.context() as BrowserContext;
-	const path = options.path ?? getDefaultUserDataDir();
+	const path = options.path ?? getBrowserUserDataDir();
 	// 获取当前页面的存储状态
 	await context.storageState({path: path});
 
