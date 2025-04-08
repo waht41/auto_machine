@@ -288,50 +288,8 @@ export class Cline {
 		}
 		const answer = typeof result === 'string' ? result : yaml.dump(result);
 		await this.streamChatManager.resumeHistory();
-		await this.updateAskMessageByUuid(uuid, answer);
+		await this.streamChatManager.updateAskMessageByUuid(uuid, answer);
 		this.initiateTaskLoop(toUserContent(answer, images));
-	}
-
-	private async updateAskMessageByUuid(uuid: string, result: string): Promise<boolean> {
-		const targetIndex = this.findLastAskMessageIndex(uuid);
-
-		if (targetIndex === -1) {
-			console.warn(`No matching message for UUID: ${uuid}`);
-			return false;
-		}
-
-		const message = this.clineMessages[targetIndex];
-		const command = this.parseMessageCommand(message.text) as { uuid: string; result?: string };
-
-		if (!command) {
-			console.error(`Invalid command format in message: ${message.text}`);
-			return false;
-		}
-
-		command.result = result;
-		message.text = JSON.stringify(command);
-		await this.streamChatManager.saveClineMessages();
-		return true;
-	}
-
-	private findLastAskMessageIndex(uuid: string): number {
-		for (let i = this.clineMessages.length - 1; i >= 0; i--) {
-			const message = this.clineMessages[i];
-			if (message.type !== 'ask') continue;
-
-			const command = this.parseMessageCommand(message.text) as { uuid: string };
-			if (command?.uuid === uuid) return i;
-		}
-		return -1;
-	}
-
-	private parseMessageCommand(text?: string): unknown | null {
-		try {
-			return text ? JSON.parse(text) : null;
-		} catch (error) {
-			console.error('Failed to parse message text:', text?.substring(0, 50), error);
-			return null;
-		}
 	}
 
 	private getInternalContext(replacing: boolean = false): IInternalContext {
