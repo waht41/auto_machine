@@ -166,7 +166,7 @@ export class Cline {
 		if (text || images) {
 			this.resumeTaskWithNewMessage(text, images);
 		} else {
-			// this.resumeTaskFromHistory();
+			console.error('no new message get when resume');
 		}
 	}
 
@@ -200,7 +200,8 @@ export class Cline {
 		messageId?: number,
 		noReturn?: boolean
 	}) {
-		return await this.askx({
+		this.asking = true;
+		return await this.sayx({
 			type: 'ask',
 			ts: Date.now(),
 			ask: askType,
@@ -208,35 +209,6 @@ export class Cline {
 			partial,
 			messageId
 		});
-	}
-
-	async askx(message: ClineMessage) {
-		if (this.abort) {
-			throw new Error('Roo Code instance aborted');
-		}
-
-		const lastMessage = this.streamChatManager.getLastClineMessage();
-		const isUpdatingPartial = !!lastMessage && lastMessage.messageId === message.messageId;
-
-		const handleCompletion = async () => {
-			if (isUpdatingPartial) {
-				await this.finalizePartialMessage(message, lastMessage);
-			} else {
-				await this.addNewCompleteMessage(message);
-			}
-		};
-
-		switch (message.partial) {
-			case true:
-				throw new Error(`ask should not be partial, isUpdatingPartial: ${isUpdatingPartial}`);
-			case false:
-				await handleCompletion();
-				break;
-			default:
-				await this.addNewCompleteMessage(message);
-		}
-
-		this.asking = true;
 	}
 
 	private async finalizePartialMessage(message: ClineMessage, lastMessage: ClineMessage) {
@@ -248,13 +220,9 @@ export class Cline {
 		});
 	}
 
-	private async addNewCompleteMessage(message: ClineMessage) {
-		const askTs = Date.now();
+	private async addNewCompleteMessage(message: ClineMessage, ts?: number) {
+		const askTs = ts ?? Date.now();
 		await this.streamChatManager.addToClineMessages({...message, ts: askTs});
-		await this.updateWebviewState();
-	}
-
-	private async updateWebviewState() {
 		await this.postService.postStateToWebview();
 	}
 
@@ -304,41 +272,22 @@ export class Cline {
 		const isUpdatingPreviousPartial =
 			!!lastMessage && lastMessage.messageId === message.messageId;
 
-		const handlePartialUpdate = async () => {
-			if (isUpdatingPreviousPartial) {
-				await this.streamChatManager.setLastMessage({...message, ts: lastMessage.ts});
-				await this.postService.postMessageToWebview({type: 'partialMessage', partialMessage: lastMessage});
-			} else {
-				await addMessage();
-			}
-		};
-
 		const handleCompletion = async () => {
 			if (isUpdatingPreviousPartial) {
-				await this.streamChatManager.setLastMessage({...message, ts: lastMessage.ts});
-				await this.postService.postMessageToWebview({type: 'partialMessage', partialMessage: lastMessage}); // more performant than an entire postStateToWebview
+				await this.finalizePartialMessage(message,lastMessage);
 			} else {
-				await addMessage(lastMessage?.ts ?? message.ts);
+				await this.addNewCompleteMessage(message,getTs());
 			}
 		};
 
-		const addMessage = async (ts?: number) => {
-			// this is a new non-partial message, so add it like normal
-			const sayTs = ts ?? Date.now();
-			await this.streamChatManager.addToClineMessages({...message, ts: sayTs});
-			await this.postService.postStateToWebview();
+		const getTs = ()=> {
+			if (isUpdatingPreviousPartial) {
+				return lastMessage?.ts ?? message.ts;
+			}
+			return Date.now();
 		};
 
-		switch (message.partial) {
-			case true:
-				await handlePartialUpdate();
-				break;
-			case false:
-				await handleCompletion();
-				break;
-			default:
-				await addMessage();
-		}
+		await handleCompletion();
 	}
 
 	// Task lifecycle
