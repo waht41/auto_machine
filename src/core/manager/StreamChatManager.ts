@@ -13,6 +13,7 @@ import { UIMessageService } from '@core/services/UIMessageService';
 import { ApiConversationHistoryService } from '@core/services/ApiConversationHistoryService';
 import { PlanService } from '@core/services/planService';
 import { DIContainer } from '@core/services/di';
+import { PostService } from '@core/services/postService';
 
 
 export class StreamChatManager {
@@ -22,6 +23,7 @@ export class StreamChatManager {
 	private uiMessageService!: UIMessageService;
 	private apiHistoryService!: ApiConversationHistoryService;
 	private planService!: PlanService;
+	private postService!: PostService;
 
 
 	constructor(private di: DIContainer,private api: ApiHandler, private taskDir: string) {}
@@ -30,6 +32,7 @@ export class StreamChatManager {
 		this.planService = await this.di.getByType(PlanService);
 		this.uiMessageService = await this.di.getByType(UIMessageService);
 		this.apiHistoryService = await this.di.getByType(ApiConversationHistoryService);
+		this.postService = await this.di.getByType(PostService);
 	}
 
 	public get metaRegex() {
@@ -228,5 +231,43 @@ export class StreamChatManager {
 
 	public async updateApiRequest(apiReq: ClineApiReqInfo){
 		await this.uiMessageService.updateApiRequest(apiReq);
+	}
+
+	public async chat(message: ClineMessage) {
+		const lastMessage = this.getLastClineMessage();
+		const isUpdatingPreviousPartial =
+			!!lastMessage && lastMessage.messageId === message.messageId;
+
+		const handleCompletion = async () => {
+			if (isUpdatingPreviousPartial) {
+				await this.finalizePartialMessage(message,lastMessage);
+			} else {
+				await this.addNewCompleteMessage(message,getTs());
+			}
+		};
+
+		const getTs = ()=> {
+			if (isUpdatingPreviousPartial) {
+				return lastMessage?.ts ?? message.ts;
+			}
+			return Date.now();
+		};
+
+		await handleCompletion();
+	}
+
+	private async finalizePartialMessage(message: ClineMessage, lastMessage: ClineMessage) {
+		// 保留原始时间戳防止渲染闪烁
+		await this.setLastMessage({...message, ts: lastMessage.ts});
+		await this.postService.postMessageToWebview({
+			type: 'partialMessage',
+			partialMessage: lastMessage
+		});
+	}
+
+	private async addNewCompleteMessage(message: ClineMessage, ts?: number) {
+		const askTs = ts ?? Date.now();
+		await this.addToClineMessages({...message, ts: askTs});
+		await this.postService.postStateToWebview();
 	}
 }

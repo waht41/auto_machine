@@ -186,8 +186,6 @@ export class Cline {
 		await this.providerRef.deref()?.updateTaskHistory(historyItem);
 	}
 
-	// Communicate with webview
-
 	async askP({
 		askType,
 		text,
@@ -201,7 +199,7 @@ export class Cline {
 		noReturn?: boolean
 	}) {
 		this.asking = true;
-		return await this.sayx({
+		return await this.chat({
 			type: 'ask',
 			ts: Date.now(),
 			ask: askType,
@@ -209,21 +207,6 @@ export class Cline {
 			partial,
 			messageId
 		});
-	}
-
-	private async finalizePartialMessage(message: ClineMessage, lastMessage: ClineMessage) {
-		// 保留原始时间戳防止渲染闪烁
-		await this.streamChatManager.setLastMessage({...message, ts: lastMessage.ts});
-		await this.postService.postMessageToWebview({
-			type: 'partialMessage',
-			partialMessage: lastMessage
-		});
-	}
-
-	private async addNewCompleteMessage(message: ClineMessage, ts?: number) {
-		const askTs = ts ?? Date.now();
-		await this.streamChatManager.addToClineMessages({...message, ts: askTs});
-		await this.postService.postStateToWebview();
 	}
 
 	public getNewMessageId() {
@@ -261,33 +244,15 @@ export class Cline {
 			partial,
 			messageId
 		};
-		return await this.sayx(message);
+		return await this.chat(message);
 	}
 
-	async sayx(message: ClineMessage): Promise<undefined> {
+	async chat(message: ClineMessage): Promise<undefined> {
 		if (this.abort) {
-			logger.debug('sayx after abort',message);
+			logger.debug('chat after abort',message);
+			return;
 		}
-		const lastMessage = this.streamChatManager.getLastClineMessage();
-		const isUpdatingPreviousPartial =
-			!!lastMessage && lastMessage.messageId === message.messageId;
-
-		const handleCompletion = async () => {
-			if (isUpdatingPreviousPartial) {
-				await this.finalizePartialMessage(message,lastMessage);
-			} else {
-				await this.addNewCompleteMessage(message,getTs());
-			}
-		};
-
-		const getTs = ()=> {
-			if (isUpdatingPreviousPartial) {
-				return lastMessage?.ts ?? message.ts;
-			}
-			return Date.now();
-		};
-
-		await handleCompletion();
+		await this.streamChatManager.chat(message);
 	}
 
 	// Task lifecycle
