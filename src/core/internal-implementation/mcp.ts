@@ -1,6 +1,7 @@
 import { CommandExecutor } from '@executors/types';
 import yaml from 'js-yaml';
 import { IInternalContext, MCPCommand } from '@core/internal-implementation/type';
+import pWaitFor from 'p-wait-for';
 
 export class MCPCommandExecutor implements CommandExecutor {
 	async execute(command: MCPCommand, context: IInternalContext): Promise<any> {
@@ -8,6 +9,9 @@ export class MCPCommandExecutor implements CommandExecutor {
 		if (!mcp){
 			return 'MCP not defined';
 		}
+		await pWaitFor(() => !mcp!.isConnecting, {timeout: 10_000}).catch(() => {
+			console.error('MCP servers failed to connect in time');
+		});
 		switch (command.cmd) {
 			case 'list':
 				return yaml.dump(mcp.getServers());

@@ -105,7 +105,27 @@ export class StreamChatManager {
 		};
 	}
 
+	async checkMessage() {
+		// If the previous API request's total token usage is close to the context window, truncate the conversation history to free up space for the new request
+		const previousApiReqIndex = findLastIndex(this.clineMessages, (m) => m.say === 'api_req_started');
+		if (previousApiReqIndex >= 0) {
+			const previousRequest = this.clineMessages[previousApiReqIndex];
+			if (previousRequest && previousRequest.text) {
+				const {tokensIn, tokensOut, cacheWrites, cacheReads}: ClineApiReqInfo = JSON.parse(
+					previousRequest.text,
+				);
+				const totalTokens = (tokensIn || 0) + (tokensOut || 0) + (cacheWrites || 0) + (cacheReads || 0);
+				const contextWindow = this.api.getModel().info.contextWindow || 128_000;
+				const maxAllowedSize = Math.max(contextWindow - 40_000, contextWindow * 0.8);
+				if (totalTokens >= maxAllowedSize) {
+					await this.halfApiConversationHistory();
+				}
+			}
+		}
+	}
+
 	async* attemptApiRequest(): ApiStream {
+		await this.checkMessage();
 		const systemPrompt = await SYSTEM_PROMPT();
 		// Clean conversation history by:
 		// 1. Converting to Anthropic.MessageParam by spreading only the API-required properties
@@ -118,7 +138,7 @@ export class StreamChatManager {
 			yield firstChunk.value;
 		} catch (error) {
 			console.error(error);
-			throw new Error('API request failed');
+			throw new Error('API request failed: '+ error?.message);
 		}
 
 		yield* iterator;

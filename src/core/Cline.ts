@@ -3,7 +3,7 @@ import pWaitFor from 'p-wait-for';
 import * as path from 'path';
 import { serializeError } from 'serialize-error';
 import { ApiHandler, buildApiHandler } from '@/api';
-import { ApiStream, ApiStreamChunk } from '@/api/transform/stream';
+import { ApiStreamChunk } from '@/api/transform/stream';
 import { DiffViewProvider } from '@/integrations/editor/DiffViewProvider';
 import { formatContentBlockToMarkdown } from '@/integrations/misc/export-markdown';
 import { TerminalManager } from '@/integrations/terminal/TerminalManager';
@@ -326,42 +326,6 @@ export class Cline {
 		this.urlContentFetcher.closeBrowser();
 	}
 
-	async attemptApiRequest(previousApiReqIndex: number): Promise<ApiStream> {
-		let mcpHub: McpHub | undefined;
-
-		const {mcpEnabled} =
-		(await this.providerRef.deref()?.getState()) ?? {};
-
-		if (mcpEnabled ?? true) {
-			mcpHub = this.providerRef.deref()?.mcpHub;
-			if (!mcpHub) {
-				throw new Error('MCP hub not available');
-			}
-			// Wait for MCP servers to be connected before generating system prompt
-			await pWaitFor(() => !mcpHub!.isConnecting, {timeout: 10_000}).catch(() => {
-				console.error('MCP servers failed to connect in time');
-			});
-		}
-
-		// If the previous API request's total token usage is close to the context window, truncate the conversation history to free up space for the new request
-		if (previousApiReqIndex >= 0) {
-			const previousRequest = this.clineMessages[previousApiReqIndex];
-			if (previousRequest && previousRequest.text) {
-				const {tokensIn, tokensOut, cacheWrites, cacheReads}: ClineApiReqInfo = JSON.parse(
-					previousRequest.text,
-				);
-				const totalTokens = (tokensIn || 0) + (tokensOut || 0) + (cacheWrites || 0) + (cacheReads || 0);
-				const contextWindow = this.api.getModel().info.contextWindow || 128_000;
-				const maxAllowedSize = Math.max(contextWindow - 40_000, contextWindow * 0.8);
-				if (totalTokens >= maxAllowedSize) {
-					await this.streamChatManager.halfApiConversationHistory();
-				}
-			}
-		}
-
-		return this.streamChatManager.attemptApiRequest();
-	}
-
 	async handleAssistantMessage() {
 		// eslint-disable-next-line no-constant-condition
 		while (true) {
@@ -650,7 +614,7 @@ export class Cline {
 		};
 	}
 
-	async handleStreamingMessage(previousApiReqIndex: number, lastApiReqIndex: number) {
+	async handleStreamingMessage(lastApiReqIndex: number) {
 		let streamState: ProcessingState = {
 			reasoningMessage: '',
 			assistantMessage: '',
@@ -660,7 +624,7 @@ export class Cline {
 		await this.resetStream();
 
 		try {
-			const stream = await this.attemptApiRequest(previousApiReqIndex);
+			const stream = this.streamChatManager.attemptApiRequest();
 
 			for await (const chunk of stream) {
 				streamState = await this.handleChunk(chunk, streamState);
@@ -751,9 +715,6 @@ export class Cline {
 			throw new Error('Roo Code instance aborted');
 		}
 
-		// get previous api req's index to check token usage and determine if we need to truncate conversation history
-		const previousApiReqIndex = findLastIndex(this.clineMessages, (m) => m.say === 'api_req_started');
-
 		// getting verbose details is an expensive operation, it uses globby to top-down build file structure of project which for large projects can take a few seconds
 		// for the best UX we show a placeholder api_req_started message with a loading spinner as this happens
 		await this.sayP({
@@ -768,7 +729,7 @@ export class Cline {
 		await this.prepareUserContent(userContent, lastApiReqIndex);
 
 		try {
-			return this.handleStreamingMessage(previousApiReqIndex, lastApiReqIndex);
+			return this.handleStreamingMessage(lastApiReqIndex);
 		} catch (error) {
 			console.error('Error in recursivelyMakeClineRequests:', error);
 			// this should never happen since the only thing that can throw an error is the attemptApiRequest, which is wrapped in a try catch that sends an ask where if noButtonClicked, will clear current task and destroy this instance. However to avoid unhandled promise rejection, we will end this loop which will end execution of this instance (see startTask)
