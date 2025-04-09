@@ -28,7 +28,7 @@ import crypto from 'crypto';
 import { CommandRunner } from '@executors/runner';
 import { registerInternalImplementation } from '@core/internal-implementation';
 import process from 'node:process';
-import { toUserContent, UserContent } from '@core/prompts/utils';
+import { convertUserContentString, toUserContent, UserContent } from '@core/prompts/utils';
 import { Command, Middleware } from '@executors/types';
 import { StreamChatManager } from '@core/manager/StreamChatManager';
 import { IInternalContext } from '@core/internal-implementation/type';
@@ -479,7 +479,7 @@ export class Cline {
 	}
 
 	async prepareUserContent(userContent: UserContent, lastApiReqIndex: number): Promise<UserContent> {
-		const [parsedUserContent] = await this.loadContext(userContent);
+		const parsedUserContent = await this.loadContext(userContent);
 		await this.streamChatManager.addToApiConversationHistory({role: 'user', content: parsedUserContent});
 
 		// since we sent off a placeholder api_req_started message to update the webview while waiting to actually start the API request (to load potential details for example), we need to update the text of that message
@@ -738,62 +738,11 @@ export class Cline {
 	}
 
 	async loadContext(userContent: UserContent) {
-		return await Promise.all([
-			// We need to apply parseMentions() to:
-			// 1. All TextBlockParam's text (first user message with task)
-			// 2. ToolResultBlockParam's content/context text arrays if it contains "<feedback>" (see formatToolDeniedFeedback, attemptCompletion, executeCommand, and consecutiveMistakeCount >= 3) or "<answer>" (see askFollowupQuestion), we place all user generated content in these tags so they can effectively be used as markers for when we should parse mentions)
-			Promise.all(
-				userContent.map(async (block) => {
-					const shouldProcessMentions = (text: string) =>
-						text.includes('<task>') || text.includes('<feedback>');
-
-					if (block.type === 'text') {
-						if (shouldProcessMentions(block.text)) {
-							return {
-								...block,
-								text: await parseMentions(block.text, cwd, this.urlContentFetcher),
-							};
-						}
-						return block;
-					}
-
-					if (block.type === 'tool_result') {
-						if (typeof block.content === 'string') {
-							if (shouldProcessMentions(block.content)) {
-								return {
-									...block,
-									content: await parseMentions(block.content, cwd, this.urlContentFetcher),
-								};
-							}
-							return block;
-						}
-
-						if (Array.isArray(block.content)) {
-							const parsedContent = await Promise.all(
-								block.content.map(async (contentBlock) => {
-									if (contentBlock.type === 'text' && shouldProcessMentions(contentBlock.text)) {
-										return {
-											...contentBlock,
-											text: await parseMentions(contentBlock.text, cwd, this.urlContentFetcher),
-										};
-									}
-									return contentBlock;
-								}),
-							);
-							return {
-								...block,
-								content: parsedContent,
-							};
-						}
-
-						return block;
-					}
-
-					return block;
-				}),
-			),
-		]);
+		// We need to apply parseMentions() to:
+		// 1. All TextBlockParam's text (first user message with task)
+		// 2. ToolResultBlockParam's content/context text arrays if it contains "<feedback>" (see formatToolDeniedFeedback, attemptCompletion, executeCommand, and consecutiveMistakeCount >= 3) or "<answer>" (see askFollowupQuestion), we place all user generated content in these tags so they can effectively be used as markers for when we should parse mentions)
+		const shouldProcessMentions = (text: string) =>
+			text.includes('<task>') || text.includes('<feedback>');
+		return await convertUserContentString(userContent, (text) => parseMentions(text, cwd, this.urlContentFetcher), shouldProcessMentions);
 	}
-
 }
-
