@@ -149,10 +149,10 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 
 		this.cline = new Cline(
 			{
-				provider: this,
 				apiConfiguration,
 				postMessageToWebview: this.postMessageToWebview.bind(this),
 				postStateToWebview: this.postStateToWebview.bind(this),
+				updateTaskHistory: this.updateTaskHistory.bind(this),
 				customInstructions: effectiveInstructions,
 				task,
 				images,

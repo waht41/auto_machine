@@ -21,7 +21,6 @@ import { HistoryItem } from '@/shared/HistoryItem';
 import { parseMentions } from './mentions';
 import { ToolUse } from './assistant-message';
 import { formatResponse } from './prompts/responses';
-import { ClineProvider } from './webview/ClineProvider';
 import { McpHub } from '@operation/MCP';
 import crypto from 'crypto';
 import process from 'node:process';
@@ -46,10 +45,10 @@ const cwd = process.cwd();
 type ToolResponse = string | Array<Anthropic.TextBlockParam | Anthropic.ImageBlockParam>
 
 interface IProp {
-	provider: ClineProvider,
 	apiConfiguration: ApiConfiguration,
 	postMessageToWebview: (message: ExtensionMessage) => Promise<void>,
 	postStateToWebview: () => Promise<void>,
+	updateTaskHistory: (historyItem: HistoryItem) => Promise<void>,
 	customInstructions?: string,
 	task?: string | undefined,
 	images?: string[] | undefined,
@@ -71,7 +70,6 @@ export class Cline {
 
 	private readonly taskDir: string;
 
-	private providerRef: WeakRef<ClineProvider>;
 	private abort: boolean = false;
 	abortComplete = false;
 	private diffViewProvider: DiffViewProvider;
@@ -93,7 +91,6 @@ export class Cline {
 		prop: IProp
 	) {
 		const {
-			provider,
 			apiConfiguration,
 			customInstructions,
 			historyItem,
@@ -106,7 +103,6 @@ export class Cline {
 		this.terminalManager = new TerminalManager();
 		this.urlContentFetcher = new UrlContentFetcher('./storage'); //todo 待删
 		this.customInstructions = customInstructions;
-		this.providerRef = new WeakRef(provider);
 		this.diffViewProvider = new DiffViewProvider(cwd);
 		this.mcpHub = mcpHub;
 		this.taskDir = path.join(taskParentDir, this.taskId);
@@ -132,7 +128,7 @@ export class Cline {
 		});
 		this.di.register(PostService.serviceId,{
 			factory: PostService,
-			dependencies:[prop.postMessageToWebview, prop.postStateToWebview]
+			dependencies:[prop.postMessageToWebview, prop.postStateToWebview, prop.updateTaskHistory]
 		});
 		this.di.register(MemoryService.serviceId,{
 			factory: aCreateService(MemoryService),
@@ -175,7 +171,7 @@ export class Cline {
 		if (!historyItem) {
 			return;
 		}
-		await this.providerRef.deref()?.updateTaskHistory(historyItem);
+		await this.postService.updateTaskHistory(historyItem);
 	}
 
 	async askP({
