@@ -24,8 +24,6 @@ import { formatResponse } from './prompts/responses';
 import { ClineProvider } from './webview/ClineProvider';
 import { McpHub } from '@operation/MCP';
 import crypto from 'crypto';
-import { CommandRunner } from '@executors/runner';
-import { registerInternalImplementation } from '@core/internal-implementation';
 import process from 'node:process';
 import { convertUserContentString, toUserContent, UserContent } from '@core/prompts/utils';
 import { Command, Middleware } from '@executors/types';
@@ -35,14 +33,13 @@ import { ProcessingState } from '@core/handlers/type';
 import { BlockProcessHandler } from '@core/handlers/BlockProcessHandler';
 import logger from '@/utils/logger';
 import yaml from 'js-yaml';
-import { parseXml } from '@/utils/xml';
-import { IApiConversationHistory } from '@core/services/type';
 import { aCreateService, DIContainer } from '@core/services/di';
 import { PlanService } from '@core/services/planService';
 import { UIMessageService } from '@core/services/UIMessageService';
 import { ApiConversationHistoryService } from '@core/services/ApiConversationHistoryService';
 import { PostService } from '@core/services/postService';
 import { MemoryService } from './services/memoryService';
+import { ToolManager } from '@core/manager/ToolManager';
 
 const cwd = process.cwd();
 
@@ -85,7 +82,7 @@ export class Cline {
 	private isCurrentStreamEnd = false;
 	private didGetNewMessage = false;
 
-	private executor = new CommandRunner();
+	private toolManager: ToolManager;
 	private asking = false;
 	private mcpHub?: McpHub;
 	private streamChatManager: StreamChatManager;
@@ -114,11 +111,10 @@ export class Cline {
 		this.mcpHub = mcpHub;
 		this.taskDir = path.join(taskParentDir, this.taskId);
 		this.streamChatManager = new StreamChatManager(this.di,this.api, this.taskDir);
-		registerInternalImplementation(this.executor);
-		for (const middleware of middleWares) {
-			this.executor.use(middleware);
-		}
+		this.toolManager = new ToolManager(this.di, middleWares);
+
 		this.registerServices(prop);
+
 	}
 
 	private registerServices(prop: IProp) {
@@ -146,6 +142,7 @@ export class Cline {
 
 	async init() {
 		await this.streamChatManager.init();
+		await this.toolManager.init();
 		this.postService = await this.di.getByType(PostService);
 	}
 
@@ -167,10 +164,6 @@ export class Cline {
 		} else {
 			console.error('no new message get when resume');
 		}
-	}
-
-	get apiConversationHistory(): IApiConversationHistory {
-		return this.streamChatManager.apiConversationHistory;
 	}
 
 	public get clineMessages(): ClineMessage[] {
@@ -213,11 +206,6 @@ export class Cline {
 
 	public getMessageId() {
 		return this.streamChatManager.getMessageId();
-	}
-
-	public getHistoryTextWithId(historyId: number) {
-		logger.debug('getHistoryContentWithId res', this.streamChatManager.getHistoryTextWithId(historyId));
-		return this.streamChatManager.getHistoryTextWithId(historyId)?.replace(this.streamChatManager.metaRegex, '');
 	}
 
 	async sayP({
@@ -300,7 +288,7 @@ export class Cline {
 	}
 
 	async receiveApproval({tool}: { tool: Command }) {
-		const result = await this.applyCommand(tool, this.getInternalContext());
+		const result = await this.toolManager.applyCommand(tool, this.getInternalContext());
 		this.resume({text: typeof result === 'string' ? result : undefined, images: []});
 	}
 
@@ -434,46 +422,7 @@ export class Cline {
 	}
 
 	async applyToolUse(block: ToolUse, context?: IInternalContext): Promise<string | unknown> {
-		return await this.applyCommand({...block.params, type: block.name}, context);
-	}
-
-	async applyCommand(command: Command, context?: IInternalContext): Promise<string | null> {
-		console.log('[waht] try apply tool', command);
-		if (this.executor.executorNames.includes(command.type)) {
-			return await this.executor.runCommand(this.parseCommand(command), context) as string | null;
-		}
-		console.log('[waht]', 'no executor found for', command.type);
-		return null;
-	}
-
-	private parseCommand(command: Command) {
-		const parsedCommand: Command = { ...command };
-		if (command.content && typeof command.content === 'string') {
-			parsedCommand.content = this.replaceVariable(command.content as string);
-			logger.debug('parseCommand content: ', parsedCommand);
-		}
-		return parsedCommand;
-	}
-
-	private replaceVariable(content: string): string {
-		// 使用全局正则匹配所有 <var> 标签
-		return content.replace(/<var\s+([^>]+?)\s*\/?>/g, (match, attributesStr) => {
-			const attributes = parseXml(attributesStr);
-
-			// 处理 historyId 属性（如果有）
-			if ('historyId' in attributes) {
-				logger.debug('Processing var tag with attributes:', attributes);
-				return this.getHistoryTextWithId(Number(attributes.historyId)) ?? '';
-			}
-
-			// 警告未支持的属性
-			const unsupportedAttrs = Object.keys(attributes).filter(attr => attr !== 'historyId');
-			if (unsupportedAttrs.length > 0) {
-				console.warn(`Unsupported attributes in <var> tag: ${unsupportedAttrs.join(', ')}`);
-			}
-
-			return ''; // 移除不支持的标签
-		});
+		return await this.toolManager.applyCommand({...block.params, type: block.name}, context);
 	}
 
 	private async abortStream({apiReq, assistantMessage}: ProcessingState) {
