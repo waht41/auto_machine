@@ -250,6 +250,8 @@ export class StreamChatManager {
 	}
 
 	public async updateApiRequest(apiReq: ClineApiReqInfo){
+		const lastApiReqIndex = findLastIndex(this.clineMessages, (m) => m.say === 'api_req_started');
+		this.clineMessages[lastApiReqIndex].text = JSON.stringify(apiReq);
 		await this.uiMessageService.updateApiRequest(apiReq);
 	}
 

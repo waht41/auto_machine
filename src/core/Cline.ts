@@ -11,7 +11,6 @@ import { UrlContentFetcher } from '@/services/browser/UrlContentFetcher';
 import { ApiConfiguration } from '@/shared/api';
 import { findLastIndex } from '@/shared/array';
 import {
-	ClineApiReqCancelReason,
 	ClineApiReqInfo,
 	ClineAsk,
 	ClineMessage,
@@ -196,7 +195,6 @@ export class Cline {
 		text?: string,
 		partial?: boolean,
 		messageId?: number,
-		noReturn?: boolean
 	}) {
 		this.asking = true;
 		return await this.chat({
@@ -248,8 +246,8 @@ export class Cline {
 	}
 
 	async chat(message: ClineMessage): Promise<undefined> {
-		if (this.abort) {
-			logger.debug('chat after abort',message);
+		if (this.abortComplete) {
+			logger.error('chat after abort complete',message);
 			return;
 		}
 		await this.streamChatManager.chat(message);
@@ -478,38 +476,16 @@ export class Cline {
 		});
 	}
 
-	async prepareUserContent(userContent: UserContent, lastApiReqIndex: number): Promise<UserContent> {
-		const parsedUserContent = await this.loadContext(userContent);
-		await this.streamChatManager.addToApiConversationHistory({role: 'user', content: parsedUserContent});
-
-		// since we sent off a placeholder api_req_started message to update the webview while waiting to actually start the API request (to load potential details for example), we need to update the text of that message
-		this.clineMessages[lastApiReqIndex].text = JSON.stringify({
-			request: parsedUserContent.map((block) => formatContentBlockToMarkdown(block)).join('\n\n'),
-		} satisfies ClineApiReqInfo);
-		await this.streamChatManager.saveClineMessages();
-		await this.postService.postStateToWebview();
-
-		return parsedUserContent;
-	}
-
-	async updateApiReq(apiReq: ClineApiReqInfo, lastApiReqIndex: number) {
-		this.clineMessages[lastApiReqIndex].text = JSON.stringify(apiReq);
-		await this.streamChatManager.updateApiRequest(apiReq);
-	}
-
-	private async abortStream(cancelReason: ClineApiReqCancelReason, assistantMessage: string, apiReq: ClineApiReqInfo, lastApiReqIndex: number, streamingFailedMessage?: string) {
+	private async abortStream({apiReq, assistantMessage}: ProcessingState) {
 		if (this.diffViewProvider.isEditing) {
 			await this.diffViewProvider.revertChanges(); // closes diff view
 		}
 
-		// if last message is a partial we need to update and save it
-		const lastMessage = this.clineMessages.at(-1);
-		if (lastMessage && lastMessage.partial) {
-			// lastMessage.ts = Date.now() DO NOT update ts since it is used as a key for virtuoso list
-			lastMessage.partial = false;
+		const lastMessage = this.streamChatManager.getLastClineMessage();
+		if (lastMessage && lastMessage.partial) { // if last message is a partial we need to update and save it
+			// sayP will replace last message
 			await this.sayP({sayType: 'text', text: lastMessage.text, partial: false, messageId: lastMessage.messageId});
-			// instead of streaming partialMessage events, we do a save and post like normal to persist to disk
-			console.log('abort last message', lastMessage);
+			console.log('abort last message', this.streamChatManager.getLastClineMessage());
 		}
 
 		// Let assistant know their response was interrupted for when task is resumed
@@ -518,47 +494,28 @@ export class Cline {
 			content: [
 				{
 					type: 'text',
-					text:
-						assistantMessage +
-						`\n\n[${
-							cancelReason === 'streaming_failed'
-								? 'Response interrupted by API Error'
-								: 'Response interrupted by user'
-						}]`,
+					text: assistantMessage + `\n\n[${apiReq.cancelReason}]`,
 				},
 			],
 		});
 
-		// update api_req_started to have cancelled and cost, so that we can display the cost of the partial stream
-		apiReq.cancelReason = cancelReason;
-		apiReq.streamingFailedMessage = streamingFailedMessage;
-		await this.updateApiReq(apiReq, lastApiReqIndex);
+		await this.streamChatManager.updateApiRequest(apiReq);
+
 		await this.postService.postStateToWebview();
 
 		// signals to provider that it can retrieve the saved messages from disk, as abortTask can not be awaited on in nature
 		this.abortComplete = true;
 	}
 
-	private async handleStreamError(error: Error, assistantMessage: string, apiReq: ClineApiReqInfo, lastApiReqIndex: number) {
-		console.error('error when receive chunk: ', error);
+	private async handleStreamError(streamState: ProcessingState) {
 		// abandoned happens when extension is no longer waiting for the cline instance to finish aborting (error is thrown here when any function in the for loop throws due to this.abort)
-		if (!this.abortComplete) {
-			this.isCurrentStreamEnd = true;
-			this.blockProcessHandler.markPartialBlockAsComplete();
-			this.abortTask(); // if the stream failed, there's various states the task could be in (i.e. could have streamed some tools the user may have executed), so we just resort to replicating a cancel task
-			await this.abortStream(
-				'streaming_failed',
-				assistantMessage,
-				apiReq,
-				lastApiReqIndex,
-				error.message ?? JSON.stringify(serializeError(error), null, 2),
-			);
-			const history = await this.providerRef.deref()?.getTaskWithId(this.taskId);
-			if (history) {
-				await this.providerRef.deref()?.initClineWithHistoryItem(history.historyItem);
-				// await this.postService.postStateToWebview()
-			}
+		if (this.abortComplete){
+			return;
 		}
+		this.isCurrentStreamEnd = true;
+		this.blockProcessHandler.markPartialBlockAsComplete();
+		this.abortTask(); // if the stream failed, there's various states the task could be in (i.e. could have streamed some tools the user may have executed), so we just resort to replicating a cancel task
+		await this.abortStream(streamState);
 	}
 
 	private async resetStream() {
@@ -625,30 +582,31 @@ export class Cline {
 
 		try {
 			const stream = this.streamChatManager.attemptApiRequest();
-
 			for await (const chunk of stream) {
 				streamState = await this.handleChunk(chunk, streamState);
-
 				// 处理终止条件
 				if (this.abort) {
 					console.log('aborting stream...');
 					if (!this.abortComplete) {
 						// only need to gracefully abort if this instance isn't abandoned (sometimes openrouter stream hangs, in which case this would affect future instances of cline)
-						await this.abortStream('user_cancelled', streamState.assistantMessage, streamState.apiReq, lastApiReqIndex);
+						streamState.apiReq.cancelReason = 'user_cancelled';
+						await this.abortStream(streamState);
 					}
 					break;
 				}
-
 			}
 		} catch (error) {
-			await this.handleStreamError(error, streamState.assistantMessage, streamState.apiReq, lastApiReqIndex);
+			console.error('error when receive chunk: ', error);
+			streamState.apiReq.cancelReason = 'streaming_failed';
+			streamState.apiReq.streamingFailedMessage = error.message ?? JSON.stringify(serializeError(error), null, 2);
+			await this.handleStreamError(streamState);
 		}
 
-		return this.handleAssistantMessageComplete(streamState, lastApiReqIndex);
+		return this.handleAssistantMessageComplete(streamState);
 	}
 
-	async handleAssistantMessageComplete(streamState: ProcessingState, lastApiReqIndex: number) {
-		await this.finalizeProcessing(streamState, lastApiReqIndex);
+	async handleAssistantMessageComplete(streamState: ProcessingState) {
+		await this.finalizeProcessing(streamState);
 		const assistantMessage = streamState.assistantMessage;
 		// now add to apiconversationhistory
 		// need to save assistant responses to file before proceeding to tool use since user can exit at any moment and we wouldn't be able to save the assistant's response
@@ -669,7 +627,6 @@ export class Cline {
 					askType: 'followup',
 					text: this.streamChatManager.endHint,
 					partial: false,
-					noReturn: true,
 				});
 				return true;
 			}
@@ -681,21 +638,16 @@ export class Cline {
 
 			didEndLoop = await this.recursivelyMakeClineRequests(this.userMessageContent);
 		} else {
-			// if there's no assistant_responses, that means we got no text or tool_use content blocks from API which we should assume is an error
 			await this.sayP({
 				sayType: 'error',
 				text: 'Unexpected API Response: The language model did not provide any assistant messages. This may indicate an issue with the API or the model\'s output.'
-			});
-			await this.streamChatManager.addToApiConversationHistory({
-				role: 'assistant',
-				content: [{type: 'text', text: 'Failure: I did not provide a response.'}],
 			});
 		}
 
 		return didEndLoop;
 	}
 
-	private async finalizeProcessing(state: ProcessingState, index: number) {
+	private async finalizeProcessing(state: ProcessingState) {
 		this.streamChatManager.endStream();
 		if (this.blockProcessHandler.hasPartialBlock()) {
 			this.blockProcessHandler.markPartialBlockAsComplete();
@@ -704,7 +656,7 @@ export class Cline {
 		}
 		await pWaitFor(() => this.isCurrentStreamEnd); // wait for the last block to be presented
 
-		await this.updateApiReq(state.apiReq, index);
+		await this.streamChatManager.updateApiRequest(state.apiReq);
 		await this.postService.postStateToWebview();
 	}
 
@@ -735,6 +687,20 @@ export class Cline {
 			// this should never happen since the only thing that can throw an error is the attemptApiRequest, which is wrapped in a try catch that sends an ask where if noButtonClicked, will clear current task and destroy this instance. However to avoid unhandled promise rejection, we will end this loop which will end execution of this instance (see startTask)
 			return true; // needs to be true so parent loop knows to end task
 		}
+	}
+
+	private async prepareUserContent(userContent: UserContent, lastApiReqIndex: number): Promise<UserContent> {
+		const parsedUserContent = await this.loadContext(userContent);
+		await this.streamChatManager.addToApiConversationHistory({role: 'user', content: parsedUserContent});
+
+		// since we sent off a placeholder api_req_started message to update the webview while waiting to actually start the API request (to load potential details for example), we need to update the text of that message
+		this.clineMessages[lastApiReqIndex].text = JSON.stringify({
+			request: parsedUserContent.map((block) => formatContentBlockToMarkdown(block)).join('\n\n'),
+		} satisfies ClineApiReqInfo);
+		await this.streamChatManager.saveClineMessages();
+		await this.postService.postStateToWebview();
+
+		return parsedUserContent;
 	}
 
 	async loadContext(userContent: UserContent) {
