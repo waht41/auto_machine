@@ -1,5 +1,5 @@
 import { CommandExecutor } from '@executors/types';
-import { IApprovalCommand, IAskCommand, IInternalContext } from '@core/internal-implementation/type';
+import { IApprovalCommand, IInternalContext } from '@core/internal-implementation/type';
 
 export class ApprovalCommandExecutor implements CommandExecutor {
 	async execute(command: IApprovalCommand, context: IInternalContext): Promise<any> {

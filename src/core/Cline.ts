@@ -423,6 +423,10 @@ export class Cline {
 		return await this.toolManager.applyCommand({...block.params, type: block.name}, context);
 	}
 
+	async applyCommand(command: Command, context?: IInternalContext) {
+		return await this.toolManager.applyCommand(command, context);
+	}
+
 	private async abortStream({apiReq, assistantMessage}: ProcessingState) {
 		if (this.diffViewProvider.isEditing) {
 			await this.diffViewProvider.revertChanges(); // closes diff view
