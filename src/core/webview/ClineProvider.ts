@@ -17,7 +17,7 @@ import { configPath, createIfNotExists, getAssetPath, getUserDataPath } from '@c
 import { ApprovalMiddleWrapper } from '@core/internal-implementation/middleware';
 import { getToolCategory } from '@core/tool-adapter/getToolCategory';
 import { AllowedToolTree } from '@core/tool-adapter/AllowedToolTree';
-import { SecretKey } from '@core/webview/type';
+import { ClineNode, ICreateSubCline, SecretKey } from '@core/webview/type';
 import ApiProviderManager from '@core/manager/ApiProviderManager';
 import { MessageService } from '@core/services/MessageService';
 import { StateService } from '@core/services/StateService';
@@ -47,6 +47,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 	apiManager : ApiProviderManager;
 	readonly messageService : MessageService;
 	stateService : StateService;
+	private clineTree: Map<string, ClineNode> = new Map<string, ClineNode>();
 
 	constructor(
     private sendToMainProcess: (message: any) => void
@@ -136,7 +137,25 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		this.clearTask();
 	}
 
-	private async createCline({task,images,historyItem}: { task?:string,images?:string[],historyItem?:HistoryItem }){
+	private addChildToParent(parentId: string | undefined, childId: string) {
+		if (!parentId) return;
+
+		const parent = this.clineTree.get(parentId);
+		if (!parent) {
+			logger.error(`add child to parent: has parentId but no parent in tree, parent: ${parentId}  child:${childId}`);
+			return;
+		}
+
+		parent.children ??= [];
+		parent.children.push(childId);
+	}
+
+	private async createSubCline(prop:ICreateSubCline) {
+		const node = await this.createCline(prop);
+		return node.id;
+	}
+
+	private async createCline({task,images,historyItem, parent}: { task?:string,images?:string[],historyItem?:HistoryItem, parent?:string }){
 		const {
 			apiConfiguration,
 			customModePrompts,
@@ -147,23 +166,36 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		const modePrompt = customModePrompts?.[mode] as PromptComponent;
 		const effectiveInstructions = [globalInstructions, modePrompt?.customInstructions].filter(Boolean).join('\n\n');
 
-		this.cline = new Cline(
+		const cline = new Cline(
 			{
 				apiConfiguration,
 				postMessageToWebview: this.postMessageToWebview.bind(this),
 				postStateToWebview: this.postStateToWebview.bind(this),
 				updateTaskHistory: this.updateTaskHistory.bind(this),
+				createCline: this.createSubCline.bind(this),
 				customInstructions: effectiveInstructions,
 				task,
 				images,
 				historyItem,
 				middleWares: [safeExecuteMiddleware, ApprovalMiddleWrapper(this.allowedToolTree)],
 				mcpHub: this.mcpHub,
-				taskParentDir: taskDirRoot,
+				taskParentDir: parent ? path.join(parent,taskDirRoot) : taskDirRoot,
 				memoryDir: path.join(getUserDataPath(),'memory')
 			}
 		);
+		this.cline = cline;
 		await this.cline.init();
+
+		const clineNode: ClineNode = {
+			cline,
+			id: cline.taskId,
+			parent
+		};
+
+		this.clineTree.set(clineNode.id, clineNode);
+		this.addChildToParent(parent, clineNode.id);
+
+		return clineNode;
 	}
 
 	public async initClineWithTask(task?: string, images?: string[]) {

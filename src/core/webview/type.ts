@@ -1,66 +1,28 @@
+import { Cline } from '@core/Cline';
+
 export type SecretKey =
-  | 'apiKey'
-  | 'glamaApiKey'
-  | 'openRouterApiKey'
-  | 'awsAccessKey'
-  | 'awsSecretKey'
-  | 'awsSessionToken'
-  | 'openAiApiKey'
-  | 'geminiApiKey'
-  | 'openAiNativeApiKey'
-  | 'deepSeekApiKey'
-  | 'mistralApiKey'
-export type GlobalStateKey =
-  | 'apiProvider'
-  | 'apiModelId'
-  | 'glamaModelId'
-  | 'glamaModelInfo'
-  | 'awsRegion'
-  | 'awsUseCrossRegionInference'
-  | 'awsProfile'
-  | 'awsUseProfile'
-  | 'vertexProjectId'
-  | 'vertexRegion'
-  | 'lastShownAnnouncementId'
-  | 'customInstructions'
-  | 'taskHistory'
-  | 'openAiBaseUrl'
-  | 'openAiModelId'
-  | 'openAiCustomModelInfo'
-  | 'openAiUseAzure'
-  | 'ollamaModelId'
-  | 'ollamaBaseUrl'
-  | 'lmStudioModelId'
-  | 'lmStudioBaseUrl'
-  | 'anthropicBaseUrl'
-  | 'azureApiVersion'
-  | 'openAiStreamingEnabled'
-  | 'openRouterModelId'
-  | 'openRouterModelInfo'
-  | 'openRouterBaseUrl'
-  | 'openRouterUseMiddleOutTransform'
-  | 'allowedCommands'
-  | 'soundEnabled'
-  | 'soundVolume'
-  | 'diffEnabled'
-  | 'alwaysAllowMcp'
-  | 'browserViewportSize'
-  | 'screenshotQuality'
-  | 'fuzzyMatchThreshold'
-  | 'preferredLanguage' // Language setting for Cline's communication
-  | 'writeDelayMs'
-  | 'terminalOutputLineLimit'
-  | 'mcpEnabled'
-  | 'alwaysApproveResubmit'
-  | 'requestDelaySeconds'
-  | 'currentApiConfigName'
-  | 'listApiConfigMeta'
-  | 'vsCodeLmModelSelector'
-  | 'mode'
-  | 'modeApiConfigs'
-  | 'customModePrompts'
-  | 'customSupportPrompts'
-  | 'enhancementApiConfigId'
-  | 'experimentalDiffStrategy'
-  | 'autoApprovalEnabled'
-  | 'customModes' // Array of custom modes
+	| 'apiKey'
+	| 'glamaApiKey'
+	| 'openRouterApiKey'
+	| 'awsAccessKey'
+	| 'awsSecretKey'
+	| 'awsSessionToken'
+	| 'openAiApiKey'
+	| 'geminiApiKey'
+	| 'openAiNativeApiKey'
+	| 'deepSeekApiKey'
+	| 'mistralApiKey'
+
+
+export interface ICreateSubCline {
+	task: string,
+	images?: string[],
+	parent: string
+}
+
+export type ClineNode = {
+	id: string;
+	cline: Cline;
+	parent?: string;
+	children?: string[];
+}

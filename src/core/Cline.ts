@@ -39,6 +39,7 @@ import { ApiConversationHistoryService } from '@core/services/ApiConversationHis
 import { PostService } from '@core/services/postService';
 import { MemoryService } from './services/memoryService';
 import { ToolManager } from '@core/manager/ToolManager';
+import { ICreateSubCline } from '@core/webview/type';
 
 const cwd = process.cwd();
 
@@ -49,6 +50,7 @@ interface IProp {
 	postMessageToWebview: (message: ExtensionMessage) => Promise<void>,
 	postStateToWebview: () => Promise<void>,
 	updateTaskHistory: (historyItem: HistoryItem) => Promise<void>,
+	createCline: (prop: ICreateSubCline) => Promise<string>
 	customInstructions?: string,
 	task?: string | undefined,
 	images?: string[] | undefined,
@@ -128,7 +130,7 @@ export class Cline {
 		});
 		this.di.register(PostService.serviceId,{
 			factory: PostService,
-			dependencies:[prop.postMessageToWebview, prop.postStateToWebview, prop.updateTaskHistory]
+			dependencies:[prop.postMessageToWebview, prop.postStateToWebview, prop.updateTaskHistory, prop.createCline]
 		});
 		this.di.register(MemoryService.serviceId,{
 			factory: aCreateService(MemoryService),
