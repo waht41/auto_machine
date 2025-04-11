@@ -106,7 +106,7 @@ export class Cline {
 		this.diffViewProvider = new DiffViewProvider(cwd);
 		this.mcpHub = mcpHub;
 		this.taskDir = path.join(taskParentDir, this.taskId);
-		this.streamChatManager = new StreamChatManager(this.di,this.api, this.taskDir);
+		this.streamChatManager = new StreamChatManager(this.di,this.api, this.taskId);
 		this.toolManager = new ToolManager(this.di, middleWares);
 
 		this.registerServices(prop);
@@ -172,6 +172,10 @@ export class Cline {
 			return;
 		}
 		await this.postService.updateTaskHistory(historyItem);
+	}
+
+	async postClineMessage() {
+		await this.streamChatManager.postClineMessage();
 	}
 
 	async askP({
@@ -243,7 +247,7 @@ export class Cline {
 		// conversationHistory (for API) and clineMessages (for webview) need to be in sync
 		// if the extension process were killed, then on restart the clineMessages might not be empty, so we need to set it to [] when we create a new Cline client (otherwise webview would show stale messages from previous session)
 		await this.streamChatManager.clearHistory();
-		await this.postService.postStateToWebview();
+		await this.streamChatManager.postClineMessage();
 
 		await this.sayP({sayType: 'task', text: task, images});
 
@@ -450,7 +454,7 @@ export class Cline {
 
 		await this.streamChatManager.updateApiRequest(apiReq);
 
-		await this.postService.postStateToWebview();
+		await this.streamChatManager.postClineMessage();
 
 		// signals to provider that it can retrieve the saved messages from disk, as abortTask can not be awaited on in nature
 		this.abortComplete = true;
@@ -607,7 +611,7 @@ export class Cline {
 		await pWaitFor(() => this.isCurrentStreamEnd); // wait for the last block to be presented
 
 		await this.streamChatManager.updateApiRequest(state.apiReq);
-		await this.postService.postStateToWebview();
+		await this.streamChatManager.postClineMessage();
 	}
 
 	async recursivelyMakeClineRequests(
@@ -648,7 +652,7 @@ export class Cline {
 			request: parsedUserContent.map((block) => formatContentBlockToMarkdown(block)).join('\n\n'),
 		} satisfies ClineApiReqInfo);
 		await this.streamChatManager.saveClineMessages();
-		await this.postService.postStateToWebview();
+		await this.streamChatManager.postClineMessage();
 
 		return parsedUserContent;
 	}

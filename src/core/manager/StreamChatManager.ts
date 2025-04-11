@@ -2,7 +2,6 @@ import { ApiHandler } from '@/api';
 import { ApiStream, ApiStreamChunk } from '@/api/transform/stream';
 import { SYSTEM_PROMPT } from '@core/prompts/system';
 import { Anthropic } from '@anthropic-ai/sdk';
-import path from 'path';
 import { ProcessingState } from '@core/handlers/type';
 import { calculateApiCost } from '@/utils/cost';
 import { ClineApiReqInfo, ClineMessage } from '@/shared/ExtensionMessage';
@@ -26,7 +25,7 @@ export class StreamChatManager {
 	private postService!: PostService;
 
 
-	constructor(private di: DIContainer,private api: ApiHandler, private taskDir: string) {}
+	constructor(private di: DIContainer,private api: ApiHandler, private taskId: string) {}
 
 	async init() {
 		this.planService = await this.di.getByType(PlanService);
@@ -94,7 +93,7 @@ export class StreamChatManager {
 				)
 			];
 		return {
-			id: path.basename(this.taskDir),
+			id: this.taskId,
 			ts: lastRelevantMessage.ts,
 			task: taskMessage.text ?? '',
 			tokensIn: apiMetrics.totalTokensIn,
@@ -138,7 +137,7 @@ export class StreamChatManager {
 			yield firstChunk.value;
 		} catch (error) {
 			console.error(error);
-			throw new Error('API request failed: '+ error?.message);
+			throw new Error('API request failed: ' + JSON.stringify(error));
 		}
 
 		yield* iterator;
@@ -281,16 +280,25 @@ export class StreamChatManager {
 	private async finalizePartialMessage(message: ClineMessage, lastMessage: ClineMessage) {
 		// 保留原始时间戳防止渲染闪烁
 		await this.setLastMessage({...message, ts: lastMessage.ts});
-		await this.postService.postMessageToWebview({
+		await this.postService.postClineMessage({
 			type: 'partialMessage',
-			partialMessage: lastMessage
+			partialMessage: lastMessage,
+			id: this.taskId
 		});
 	}
 
 	private async addNewCompleteMessage(message: ClineMessage, ts?: number) {
 		const askTs = ts ?? Date.now();
 		await this.addToClineMessages({...message, ts: askTs});
-		await this.postService.postStateToWebview();
+		await this.postClineMessage();
+	}
+
+	async postClineMessage() {
+		await this.postService.postClineMessage({
+			type: 'clineMessage',
+			id: this.taskId,
+			clineMessage: this.clineMessages
+		});
 	}
 
 	public async updateAskMessageByUuid(uuid: string, result: string): Promise<boolean> {

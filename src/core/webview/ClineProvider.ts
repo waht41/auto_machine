@@ -310,8 +310,8 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 			// non-current task
 			// await this.clearTask();
 			const { historyItem } = await this.getTaskWithId(id);
-			await this.createCline(historyItem);
-			await this.postStateToWebview();
+			const cline = await this.createCline(historyItem);
+			await cline.postClineMessage();
 		}
 		await this.postMessageToWebview({ type: 'action', action: 'chatButtonClicked' });
 	}

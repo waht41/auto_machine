@@ -46,6 +46,7 @@ export interface ExtensionMessage {
 		| 'allowedTools'
     | 'electron'
 		| 'worker-error'
+		| 'clineMessage'
 	text?: string
 	action?:
 		| 'chatButtonClicked'

@@ -1,6 +1,7 @@
 import { ExtensionMessage } from '@/shared/ExtensionMessage';
 import { HistoryItem } from '@/shared/HistoryItem';
 import { ICreateSubCline } from '@core/webview/type';
+import { SharedClineMessage } from '@/shared/type';
 
 export class PostService {
 	static serviceId: string = 'PostService';
@@ -11,6 +12,11 @@ export class PostService {
 		public createCline: ({task,images,parent}: ICreateSubCline) => Promise<string>
 	) {
 	}
-
+	async postClineMessage(payload: SharedClineMessage){
+		await this.postMessageToWebview({
+			type: 'clineMessage',
+			payload
+		});
+	}
 
 }

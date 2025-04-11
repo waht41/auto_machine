@@ -1,12 +1,14 @@
 import { create } from 'zustand';
-import { ClineMessage } from '@/shared/ExtensionMessage';
+import { ClineMessage, ExtensionMessage } from '@/shared/ExtensionMessage';
 import { findLastIndex } from '@/shared/array';
 import messageBus from './messageBus';
 import { BACKGROUND_MESSAGE } from '@webview-ui/store/const';
-import { ClineMessageState, BackGroundMessageHandler } from '@webview-ui/store/type';
+import { BackGroundMessageHandler } from '@webview-ui/store/type';
+import { SharedClineMessage } from '@/shared/type';
 
 // 定义消息存储的状态类型
 interface IClineMessageStore {
+	taskId: string;
   // 保持与ExtensionStateContext中相同的clineMessages结构
   clineMessages: ClineMessage[];
   
@@ -32,6 +34,7 @@ interface IClineMessageStore {
 
 // 创建zustand存储
 export const useClineMessageStore = create<IClineMessageStore>((set, get) => ({
+	taskId: '',
 	// 初始状态
 	clineMessages: [],
   
@@ -115,17 +118,20 @@ export const useClineMessageStore = create<IClineMessageStore>((set, get) => ({
 	// 初始化方法，设置消息处理器
 	init: () => {
 		// 消息处理函数
-		const handleExtensionMessage = (message: ClineMessageState) => {
-			switch (message.type) {
-				case 'state': {
-					const newState = message.state;
-					if (newState.clineMessages) {
-						get().setClineMessages(newState.clineMessages);
+		const handleExtensionMessage = (message: ExtensionMessage) => {
+			if (message.type !== 'clineMessage') {
+				return;
+			}
+			const payload = message.payload as SharedClineMessage;
+			switch (payload.type) {
+				case 'clineMessage': {
+					if (payload.clineMessage) {
+						get().setClineMessages(payload.clineMessage);
 					}
 					break;
 				}
 				case 'partialMessage': {
-					const partialMessage = message.partialMessage;
+					const partialMessage = payload.partialMessage;
 					get().updateClineMessage(partialMessage);
 					break;
 				}
