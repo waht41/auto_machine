@@ -74,4 +74,9 @@ export class Memento {
 	getAll(): unknown {
 		return Object.fromEntries(this.cache);
 	}
+
+	async flush() {
+		this.dirty = true;
+		await this.flushIfNeeded();
+	}
 }

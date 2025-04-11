@@ -5,6 +5,7 @@ import { MemoryService } from '@core/services/memoryService';
 import yaml from 'js-yaml';
 import { ApiConversationHistoryService } from '@core/services/ApiConversationHistoryService';
 import { PostService } from '@core/services/postService';
+import { ClineIdentifier, ParallelProp } from '@/shared/type';
 
 export class AdvanceExecutor implements CommandExecutor {
 	async execute(command: AdvanceCommand, context: IInternalContext): Promise<string|null> {
@@ -19,16 +20,20 @@ export class AdvanceExecutor implements CommandExecutor {
 				return 'success. \n compress summary:\n' + command.summary;
 			case 'parallel':
 				const postService = await di.getByType(PostService);
-				const subCline: {task:string, id:string}[] = [];
+				const subCline: ClineIdentifier[] = [];
+				const parallelProp: ParallelProp = {
+					clines: subCline
+				};
 				for (const subTask of command.sub_tasks){
 					const newId = await postService.createCline({task: subTask, parent: cline.taskId});
 					subCline.push({
 						task: subTask,
-						id: newId
+						id: newId,
+						status: 'running'
 					});
 				}
 				const messageId = context.replacing ? cline.getMessageId() : cline.getNewMessageId();
-				await cline.sayP({sayType:'tool',text:JSON.stringify(subCline), partial: true, messageId});
+				await cline.sayP({sayType:'tool',text:JSON.stringify({...command, ...parallelProp}), partial: true, messageId});
 				return null;
 		}
 		return null;

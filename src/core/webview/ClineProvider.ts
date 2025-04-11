@@ -137,8 +137,15 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		this.clearTask();
 	}
 
-	private addChildToParent(parentId: string | undefined, childId: string) {
+	private async addChildToParent(parentId: string | undefined, childId: string) {
 		if (!parentId) return;
+
+		const child = this.clineTree.get(childId);
+		if (!child) {
+			logger.warn(`child ${childId} not exist`);
+			return;
+		}
+
 
 		const parent = this.clineTree.get(parentId);
 		if (!parent) {
@@ -146,16 +153,19 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 			return;
 		}
 
+		child.parent = parentId;
 		parent.children ??= [];
 		parent.children.push(childId);
 	}
 
 	private async createSubCline(prop:ICreateSubCline) {
-		const node = await this.createCline(prop);
-		return node.id;
+		const cline = await this.createCline();
+		await this.addChildToParent(prop.parent, cline.taskId);
+		cline.start({task: prop.task, images: prop.images});
+		return cline.taskId;
 	}
 
-	private async createCline({task,images,historyItem, parent}: { task?:string,images?:string[],historyItem?:HistoryItem, parent?:string }){
+	private async createCline(historyItem?:HistoryItem){
 		const {
 			apiConfiguration,
 			customModePrompts,
@@ -174,39 +184,35 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 				updateTaskHistory: this.updateTaskHistory.bind(this),
 				createCline: this.createSubCline.bind(this),
 				customInstructions: effectiveInstructions,
-				task,
-				images,
 				historyItem,
 				middleWares: [safeExecuteMiddleware, ApprovalMiddleWrapper(this.allowedToolTree)],
 				mcpHub: this.mcpHub,
-				taskParentDir: parent ? path.join(parent,taskDirRoot) : taskDirRoot,
+				taskParentDir: taskDirRoot,
 				memoryDir: path.join(getUserDataPath(),'memory')
 			}
 		);
 		this.cline = cline;
-		await this.cline.init();
 
 		const clineNode: ClineNode = {
 			cline,
 			id: cline.taskId,
-			parent
 		};
-
 		this.clineTree.set(clineNode.id, clineNode);
-		this.addChildToParent(parent, clineNode.id);
 
-		return clineNode;
+		await this.cline.init();
+
+		return cline;
 	}
 
 	public async initClineWithTask(task?: string, images?: string[]) {
 		await this.clearTask();
-		await this.createCline({task, images});
+		await this.createCline();
 		this.cline?.start({task,images});
 	}
 
 	public async initClineWithHistoryItem(historyItem: HistoryItem) {
 		await this.clearTask();
-		await this.createCline({historyItem});
+		await this.createCline(historyItem);
 		this.cline?.resume({text:historyItem.newMessage,images:historyItem.newImages});
 	}
 
@@ -302,9 +308,9 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 	async showTaskWithId(id: string) {
 		if (id !== this.cline?.taskId) {
 			// non-current task
-			await this.clearTask();
+			// await this.clearTask();
 			const { historyItem } = await this.getTaskWithId(id);
-			await this.createCline({historyItem});
+			await this.createCline(historyItem);
 			await this.postStateToWebview();
 		}
 		await this.postMessageToWebview({ type: 'action', action: 'chatButtonClicked' });

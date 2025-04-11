@@ -7,6 +7,7 @@ import { BaseTool, ComponentRenderer, RouteNode } from './type';
 import { AskApprovalComponent } from './AskApproval';
 import { FollowupComponent } from '@webview-ui/components/special-tool/FollowupComponent';
 import { DownloadComponent } from '@webview-ui/components/special-tool/DownloadComponent';
+import { ParallelComponent } from '@webview-ui/components/special-tool/ParallelComponent';
 
 
 const componentRoutes: Record<string, RouteNode> = {
@@ -24,6 +25,9 @@ const componentRoutes: Record<string, RouteNode> = {
 	},
 	browser: {
 		download: DownloadComponent,
+	},
+	advance: {
+		parallel: ParallelComponent,
 	}
 };
 

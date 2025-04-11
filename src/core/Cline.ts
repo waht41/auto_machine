@@ -52,8 +52,6 @@ interface IProp {
 	updateTaskHistory: (historyItem: HistoryItem) => Promise<void>,
 	createCline: (prop: ICreateSubCline) => Promise<string>
 	customInstructions?: string,
-	task?: string | undefined,
-	images?: string[] | undefined,
 	historyItem?: HistoryItem | undefined,
 	middleWares?: Middleware[],
 	mcpHub?: McpHub
@@ -570,6 +568,7 @@ export class Cline {
 				role: 'assistant',
 				content: [{type: 'text', text: assistantMessage}],
 			});
+			console.log(`[cline] final message, task id ${this.taskId}`,this.streamChatManager.getLastClineMessage());
 
 			// if the model did not tool use, then we need to tell it to either use a tool or attempt_completion
 			// const didToolUse = this.assistantMessageContent.some((block) => block.type === "tool_use")
