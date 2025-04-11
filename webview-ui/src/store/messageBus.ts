@@ -125,6 +125,10 @@ class MessageBus {
 			console.error('Failed to send message to electron', error);
 		}
 	}
+
+	sendToBackground(message: unknown): void {
+		window.electronApi.send('message', message);
+	}
 }
 
 const messageBus = new MessageBus();

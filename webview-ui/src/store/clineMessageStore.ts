@@ -13,6 +13,7 @@ interface IClineMessageStore {
   clineMessages: ClineMessage[];
   
   // 操作方法
+	setTaskId(taskId: string): void;
   setClineMessages: (messages: ClineMessage[]) => void;
   addClineMessage: (message: ClineMessage) => void;
   updateClineMessage: (updatedMessage: ClineMessage) => void;
@@ -114,27 +115,42 @@ export const useClineMessageStore = create<IClineMessageStore>((set, get) => ({
 	getAgentStreamMessages: () => {
 		return get().clineMessages.filter(item => item.say === 'agent_stream');
 	},
+
+	setTaskId: (taskId: string) => {
+		console.log('[waht]','set taskId',taskId);
+		if (get().taskId !== taskId) {
+			set({ taskId });
+			messageBus.sendToBackground({type: 'setTaskId', taskId});
+		}
+	},
   
 	// 初始化方法，设置消息处理器
 	init: () => {
 		// 消息处理函数
 		const handleExtensionMessage = (message: ExtensionMessage) => {
-			if (message.type !== 'clineMessage') {
-				return;
-			}
-			const payload = message.payload as SharedClineMessage;
-			switch (payload.type) {
-				case 'clineMessage': {
-					if (payload.clineMessage) {
-						get().setClineMessages(payload.clineMessage);
+			switch (message.type){
+				case 'setTaskId':
+					set({taskId: message.taskId});
+					break;
+				case 'clineMessage':
+					const payload = message.payload as SharedClineMessage;
+					if (payload.id !== get().taskId) {
+						break;
+					}
+					switch (payload.type) {
+						case 'clineMessage': {
+							if (payload.clineMessage) {
+								get().setClineMessages(payload.clineMessage);
+							}
+							break;
+						}
+						case 'partialMessage': {
+							const partialMessage = payload.partialMessage;
+							get().updateClineMessage(partialMessage);
+							break;
+						}
 					}
 					break;
-				}
-				case 'partialMessage': {
-					const partialMessage = payload.partialMessage;
-					get().updateClineMessage(partialMessage);
-					break;
-				}
 			}
 		};
     

@@ -11,6 +11,7 @@ import { diffHandlers } from './diffHandler';
 import { chatHandlers } from './chatHandler';
 import { type ClineProvider } from '@core/webview/ClineProvider';
 import { WebviewMessage } from '@/shared/WebviewMessage';
+import { clineHandler } from '@core/webview/handlers/clineHandler';
 
 interface IHandler {
 	[key:string] : (instance: ClineProvider, message: WebviewMessage) => Promise<void>;
@@ -26,5 +27,6 @@ export const handlers: IHandler = {
 	...soundHandlers,
 	...launchHandlers,
 	...diffHandlers,
-	...chatHandlers
+	...chatHandlers,
+	...clineHandler
 };

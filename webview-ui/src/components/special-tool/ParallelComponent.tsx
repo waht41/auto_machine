@@ -1,8 +1,9 @@
 import { ComponentRenderer } from '@webview-ui/components/special-tool/type';
-import { ParallelProp, ClineStatus } from '@/shared/type';
+import { ParallelProp, ClineStatus, ClineIdentifier } from '@/shared/type';
 import { List, Typography, Space } from 'antd';
 import { RightOutlined } from '@ant-design/icons';
 import styled from 'styled-components';
+import { useClineMessageStore } from '@webview-ui/store/clineMessageStore';
 
 const { Text, Paragraph } = Typography;
 
@@ -45,8 +46,10 @@ const TaskStatus = styled(Text)<{ status: ClineStatus }>`
 
 export const ParallelComponent: ComponentRenderer = (prop: ParallelProp) => {
 	const { clines } = prop;
+	const clineStore = useClineMessageStore();
 
-	const handleTaskClick = (task: any, index: number) => {
+	const handleTaskClick = (task: ClineIdentifier, index: number) => {
+		clineStore.setTaskId(task.id);
 		console.log(index, `点击了任务: ${task.task}，ID: ${task.id}，状态: ${task.status} `);
 	};
 

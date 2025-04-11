@@ -165,7 +165,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		return cline.taskId;
 	}
 
-	private async createCline(historyItem?:HistoryItem){
+	private async createCline(historyItem?:HistoryItem, subCline?:boolean){
 		const {
 			apiConfiguration,
 			customModePrompts,
@@ -191,7 +191,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 				memoryDir: path.join(getUserDataPath(),'memory')
 			}
 		);
-		this.cline = cline;
+		await cline.init();
 
 		const clineNode: ClineNode = {
 			cline,
@@ -199,21 +199,36 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		};
 		this.clineTree.set(clineNode.id, clineNode);
 
-		await this.cline.init();
+		if (!subCline){
+			this.cline = cline;
+			await this.postMessageToWebview({type:'setTaskId',taskId:cline.taskId});
+		}
 
 		return cline;
 	}
 
 	public async initClineWithTask(task?: string, images?: string[]) {
 		await this.clearTask();
-		await this.createCline();
-		this.cline?.start({task,images});
+		const cline = await this.createCline();
+		await cline.start({task,images});
 	}
 
 	public async initClineWithHistoryItem(historyItem: HistoryItem) {
 		await this.clearTask();
-		await this.createCline(historyItem);
-		this.cline?.resume({text:historyItem.newMessage,images:historyItem.newImages});
+		const cline =  await this.createCline(historyItem);
+		await cline.resume({text:historyItem.newMessage,images:historyItem.newImages});
+	}
+
+	public async switchCline(clineId: string) {
+		console.log(`switchCline in provider: ${clineId}`);
+		if (this.clineTree.has(clineId)){
+			this.cline = this.clineTree.get(clineId)!.cline;
+			await this.cline.postClineMessage();
+			return;
+		}
+		const historyItem = (await this.getTaskWithId(clineId)).historyItem;
+		this.cline = await this.createCline(historyItem);
+		await this.cline.postClineMessage();
 	}
 
 	public async postMessageToWebview(message: ExtensionMessage) {
@@ -374,7 +389,6 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		return {
 			version: process.env?.version ?? '',
 			uriScheme: vscode.env.uriScheme,
-			clineMessages: this.cline?.clineMessages || [],
 			taskHistory: (taskHistory || [])
 				.filter((item: HistoryItem) => item.ts && item.task)
 				.sort((a: HistoryItem, b: HistoryItem) => b.ts - a.ts),

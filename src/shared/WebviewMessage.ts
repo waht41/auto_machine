@@ -1,11 +1,12 @@
-import { ApiConfiguration, ApiProvider } from './api';
+import { ApiConfiguration } from './api';
 import { Mode, PromptComponent, ModeConfig } from './modes';
+import { SetTaskIdEvent } from '@/shared/ExtensionMessage';
 
 export type PromptMode = Mode | 'enhance'
 
 export type AudioType = 'notification' | 'celebration' | 'progress_loop'
 
-export interface WebviewMessage {
+export type WebviewMessage = {
 	type:
 		| 'apiConfiguration'
 		| 'currentApiConfigName'
@@ -102,6 +103,6 @@ export interface WebviewMessage {
 	timeout?: number
 	payload?: any
 	toolId?: string | string[]
-}
+} | SetTaskIdEvent;
 
 export type ClineAskResponse = 'yesButtonClicked' | 'noButtonClicked' | 'messageResponse'

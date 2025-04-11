@@ -16,7 +16,7 @@ export interface LanguageModelChatSelector {
 }
 
 // webview will hold state
-export interface ExtensionMessage {
+export type ExtensionMessage = {
 	type:
 		| 'action'
 		| 'state'
@@ -76,8 +76,12 @@ export interface ExtensionMessage {
 	allowedTools?: string[]
   payload?: any
 	error?: string
-}
+} | SetTaskIdEvent;
 
+export type SetTaskIdEvent = {
+	type: 'setTaskId';
+	taskId: string;
+}
 export interface ApiConfigMeta {
 	id: string
 	name: string
