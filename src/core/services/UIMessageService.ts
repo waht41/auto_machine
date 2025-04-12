@@ -27,6 +27,10 @@ export class UIMessageService {
 		this.uiMessage.clineMessages = clineMessages;
 	}
 
+	public get task(){ //todo 存在bug，task可能未被写入
+		return this.uiMessage.task;
+	}
+
 	public async loadHistory(){
 		await fs.mkdir(this.taskDirectory, {recursive: true});
 		this.uiMessage = await this.getSavedUIMessage();

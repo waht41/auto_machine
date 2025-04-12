@@ -1,5 +1,6 @@
 import { ClineApiReqInfo, ClineMessage } from '@/shared/ExtensionMessage';
 import { Anthropic } from '@anthropic-ai/sdk';
+import { ClineStatus } from '@/shared/type';
 
 export interface IUIMessage {
 	apiReqInfo?: ClineApiReqInfo;
@@ -26,4 +27,10 @@ export type Memory = {
 export type SearchOption = {
 	category?: string;
 	keywords?: string[];
+}
+export type InterClineMessage = {
+	sourceId: string;
+	targetId: string;
+	sourceStatus: ClineStatus;
+	message: string;
 }

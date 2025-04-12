@@ -76,12 +76,19 @@ export type ExtensionMessage = {
 	allowedTools?: string[]
   payload?: any
 	error?: string
-} | SetTaskIdEvent;
+} | SetTaskIdEvent | OpenTab;
 
 export type SetTaskIdEvent = {
 	type: 'setTaskId';
 	taskId: string;
 }
+
+export type OpenTab = {
+	type: 'openTab';
+	taskId: string;
+	task: string;
+}
+
 export interface ApiConfigMeta {
 	id: string
 	name: string

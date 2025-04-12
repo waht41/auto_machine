@@ -1,5 +1,9 @@
 import { create } from 'zustand';
 import { TabItem } from '@webview-ui/components/navigation/TabNavigation';
+import { ExtensionMessage } from '@/shared/ExtensionMessage';
+import messageBus from '@webview-ui/store/messageBus';
+import { BACKGROUND_MESSAGE } from '@webview-ui/store/const';
+import { BackGroundMessageHandler } from '@webview-ui/store/type';
 
 // 定义标签页存储的状态类型
 interface IChatViewTabStore {
@@ -18,20 +22,21 @@ interface IChatViewTabStore {
   getActiveTab: () => string;
   getTabItems: () => TabItem[];
   getTabByKey: (key: string) => TabItem | undefined;
+	
+	init: () => void;
 }
 
 // 创建zustand存储
 export const useChatViewTabStore = create<IChatViewTabStore>((set, get) => ({
 	// 初始状态
-	activeTab: 'chat',
-	tabItems: [
-		{ key: 'chat', label: '聊天', closable: false },
-		{ key: 'code', label: '代码', closable: true },
-		{ key: 'debug', label: '调试', closable: true },
-	],
+	activeTab: '',
+	tabItems: [],
   
 	// 设置当前激活的标签页
-	setActiveTab: (activeKey) => set({ activeTab: activeKey }),
+	setActiveTab: (activeKey) => {
+		set({ activeTab: activeKey });
+		messageBus.sendToBackground({type: 'setTaskId', taskId: activeKey});
+	},
   
 	// 设置所有标签页
 	setTabItems: (items) => set({ tabItems: items }),
@@ -138,5 +143,23 @@ export const useChatViewTabStore = create<IChatViewTabStore>((set, get) => ({
   
 	// 根据key获取标签页
 	getTabByKey: (key) => get().tabItems.find(item => item.key === key),
+	
+	init:()=>{
+		const handleExtensionMessage = (message: ExtensionMessage) => {
+			switch (message.type){
+				case 'openTab':  // open tab from worker, is created by history or userInput, could not be close now
+					get().openTab({activeKey: message.taskId, label: message.task, closable: false});
+					break;
+			}
+		};
+
+		// 使用消息总线订阅扩展消息
+		messageBus.on(BACKGROUND_MESSAGE, handleExtensionMessage as BackGroundMessageHandler);
+
+		// 返回清理函数
+		return () => {
+			messageBus.off(BACKGROUND_MESSAGE, handleExtensionMessage as BackGroundMessageHandler);
+		};
+	}
 
 }));

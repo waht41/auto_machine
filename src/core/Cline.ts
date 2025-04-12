@@ -40,6 +40,7 @@ import { PostService } from '@core/services/postService';
 import { MemoryService } from './services/memoryService';
 import { ToolManager } from '@core/manager/ToolManager';
 import { ICreateSubCline } from '@core/webview/type';
+import { InterClineMessage } from '@core/services/type';
 
 const cwd = process.cwd();
 
@@ -86,6 +87,8 @@ export class Cline {
 	private streamChatManager: StreamChatManager;
 	public di = new DIContainer();
 	private postService!: PostService;
+
+	private messageBox: InterClineMessage[] = [];
 
 	constructor(
 		prop: IProp
@@ -140,6 +143,11 @@ export class Cline {
 		await this.streamChatManager.init();
 		await this.toolManager.init();
 		this.postService = await this.di.getByType(PostService);
+	}
+
+
+	async getTask(){
+		return this.streamChatManager.getTask();
 	}
 
 	async start({task, images}: { task?: string, images?: string[] }) {
@@ -664,5 +672,9 @@ export class Cline {
 		const shouldProcessMentions = (text: string) =>
 			text.includes('<task>') || text.includes('<feedback>');
 		return await convertUserContentString(userContent, (text) => parseMentions(text, cwd, this.urlContentFetcher), shouldProcessMentions);
+	}
+
+	private receiveInterMessage(message: InterClineMessage) {
+		this.messageBox.push(message);
 	}
 }

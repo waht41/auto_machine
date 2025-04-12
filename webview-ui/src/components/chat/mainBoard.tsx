@@ -7,6 +7,7 @@ import { useExtensionState } from '@webview-ui/context/ExtensionStateContext';
 import { useNavigate } from 'react-router-dom';
 import { useClineMessageStore } from '@webview-ui/store/clineMessageStore';
 import TabNavigation from '@webview-ui/components/navigation/TabNavigation';
+import { useChatViewTabStore } from '@webview-ui/store/chatViewTabStore';
 
 interface IProp {
 	isChatViewHidden: boolean;
@@ -63,6 +64,7 @@ const MainBoard = (prop: IProp) => {
 	useEffect(() => {
 		// 初始化clineMessageStore，让它自己处理消息
 		useClineMessageStore.getState().init();
+		useChatViewTabStore.getState().init();
 	}, []);
 
 	return (

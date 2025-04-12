@@ -244,6 +244,10 @@ export class StreamChatManager {
 		return this.uiMessageService.getLastClineMessage();
 	}
 
+	public getTask(){
+		return this.uiMessageService.task;
+	}
+
 	public async setLastMessage(message: ClineMessage) {
 		await this.uiMessageService.setLastMessage(message);
 	}

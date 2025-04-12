@@ -211,23 +211,26 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		await this.clearTask();
 		const cline = await this.createCline();
 		await cline.start({task,images});
+		await this.postMessageToWebview({type: 'openTab', taskId: cline.taskId, task: task??'empty task'});
 	}
 
 	public async initClineWithHistoryItem(historyItem: HistoryItem) {
 		await this.clearTask();
 		const cline =  await this.createCline(historyItem);
 		await cline.resume({text:historyItem.newMessage,images:historyItem.newImages});
+		await this.postMessageToWebview({type: 'openTab', taskId: cline.taskId, task: await cline.getTask()});
 	}
 
 	public async switchCline(clineId: string) {
 		console.log(`switchCline in provider: ${clineId}`);
 		if (this.clineTree.has(clineId)){
 			this.cline = this.clineTree.get(clineId)!.cline;
-			await this.cline.postClineMessage();
-			return;
+		} else {
+			const historyItem = (await this.getTaskWithId(clineId)).historyItem;
+			this.cline = await this.createCline(historyItem);
 		}
-		const historyItem = (await this.getTaskWithId(clineId)).historyItem;
-		this.cline = await this.createCline(historyItem);
+
+		await this.postMessageToWebview({type:'setTaskId', taskId:clineId});
 		await this.cline.postClineMessage();
 	}
 
@@ -327,6 +330,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 			const { historyItem } = await this.getTaskWithId(id);
 			const cline = await this.createCline(historyItem);
 			await cline.postClineMessage();
+			await this.postMessageToWebview({type: 'openTab', taskId: cline.taskId, task: historyItem.task});
 		}
 		await this.postMessageToWebview({ type: 'action', action: 'chatButtonClicked' });
 	}
