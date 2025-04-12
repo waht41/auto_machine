@@ -3,7 +3,8 @@ import { ParallelProp, ClineStatus, ClineIdentifier } from '@/shared/type';
 import { List, Typography, Space } from 'antd';
 import { RightOutlined } from '@ant-design/icons';
 import styled from 'styled-components';
-import { useClineMessageStore } from '@webview-ui/store/clineMessageStore';
+import { useChatViewTabStore } from '@webview-ui/store/chatViewTabStore';
+import messageBus from '@webview-ui/store/messageBus';
 
 const { Text, Paragraph } = Typography;
 
@@ -46,18 +47,17 @@ const TaskStatus = styled(Text)<{ status: ClineStatus }>`
 
 export const ParallelComponent: ComponentRenderer = (prop: ParallelProp) => {
 	const { clines } = prop;
-	const clineStore = useClineMessageStore();
-
-	const handleTaskClick = (task: ClineIdentifier, index: number) => {
-		clineStore.setTaskId(task.id);
-		console.log(index, `点击了任务: ${task.task}，ID: ${task.id}，状态: ${task.status} `);
+	const openTab = useChatViewTabStore(state => state.openTab);
+	
+	const handleTaskClick = (task: ClineIdentifier) => {
+		messageBus.sendToBackground({type: 'setTaskId', taskId: task.id});
+		openTab({activeKey: task.id, label:task.task});
 	};
-
 	return (
 		<List
 			dataSource={clines}
-			renderItem={(task, index) => (
-				<TaskItem onClick={() => handleTaskClick(task, index)}>
+			renderItem={(task) => (
+				<TaskItem onClick={() => handleTaskClick(task)}>
 					<TaskContent
 						ellipsis={{ rows: 1, tooltip: task.task }}
 					>

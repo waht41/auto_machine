@@ -6,6 +6,7 @@ import { vscode } from '@webview-ui/utils/vscode';
 import { useExtensionState } from '@webview-ui/context/ExtensionStateContext';
 import { useNavigate } from 'react-router-dom';
 import { useClineMessageStore } from '@webview-ui/store/clineMessageStore';
+import TabNavigation from '@webview-ui/components/navigation/TabNavigation';
 
 interface IProp {
 	isChatViewHidden: boolean;
@@ -67,6 +68,7 @@ const MainBoard = (prop: IProp) => {
 	return (
 		<MainContainer>
 			<ChatViewContainer hasTask={hasTask}>
+				<TabNavigation />
 				<ChatView
 					showHistoryView={() => {
 						navigate('/history');
