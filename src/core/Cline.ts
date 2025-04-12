@@ -90,8 +90,6 @@ export class Cline {
 	public di = new DIContainer();
 	private postService!: PostService;
 	private uiMessageService!: UIMessageService;
-
-	private messageBox: InterClineMessage[] = [];
 	clineBus = new EventEmitter();
 
 	constructor(
@@ -684,8 +682,8 @@ export class Cline {
 	}
 
 	receiveInterMessage(message: InterClineMessage) {
-		this.messageBox.push(message);
-		this.clineBus.emit('inter_message', message);
+		console.log('[waht]','receiveInterMessage',message);
+		this.clineBus.emit('interMessage', message);
 	}
 
 	async postInterMessage(message: InterClineMessage) {

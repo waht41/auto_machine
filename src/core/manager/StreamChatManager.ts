@@ -13,7 +13,6 @@ import { ApiConversationHistoryService } from '@core/services/ApiConversationHis
 import { PlanService } from '@core/services/planService';
 import { DIContainer } from '@core/services/di';
 import { PostService } from '@core/services/postService';
-import logger from '@/utils/logger';
 
 
 export class StreamChatManager {
@@ -133,9 +132,6 @@ export class StreamChatManager {
 
 		}
 		const systemPrompt = await SYSTEM_PROMPT({defaultTriggers});
-		if (parentId){
-			logger.debug('parentId', parentId, this.taskId, systemPrompt);
-		}
 		// Clean conversation history by:
 		// 1. Converting to Anthropic.MessageParam by spreading only the API-required properties
 		// 2. Converting image blocks to text descriptions if model doesn't support images

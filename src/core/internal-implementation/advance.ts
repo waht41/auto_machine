@@ -16,8 +16,7 @@ export class AdvanceExecutor implements CommandExecutor {
 				await  apiHistoryService.deleteMessageWithId(command.history_id);
 				return 'success. \n compress summary:\n' + command.summary;
 			case 'parallel':
-				await handleParallelCommand(command, context);
-				return null;
+				return await handleParallelCommand(command, context);
 		}
 		return null;
 	}
