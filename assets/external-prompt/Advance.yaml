@@ -39,7 +39,7 @@ compress:
       summary: 这些信息是浏览器搜索js红宝书的结果，之前已经一一尝试了对应的网址，并成功下载了书籍，所以已经不需要继续保留在对话中了。
 
 parallel:
-  description: 同步开启多个agent，可用于并行完成任务。新的agent没有之前的对话历史，所以记得附带必要信息。
+  description: 同步开启多个agent，可用于并行完成任务。新的agent没有之前的对话历史，所以记得附带必要信息。注意不要让子node开启parallel
   params:
     sub_tasks: [task1,task2,task3...]
   example:

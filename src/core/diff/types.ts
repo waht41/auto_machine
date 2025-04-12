@@ -14,7 +14,7 @@ export type DiffResult =
 				searchContent?: string
 				bestMatch?: string
 			}
-	  }
+}
 
 export interface DiffStrategy {
 	/**

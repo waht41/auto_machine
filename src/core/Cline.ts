@@ -41,6 +41,7 @@ import { MemoryService } from './services/memoryService';
 import { ToolManager } from '@core/manager/ToolManager';
 import { ICreateSubCline } from '@core/webview/type';
 import { InterClineMessage } from '@core/services/type';
+import { EventEmitter } from 'events';
 
 const cwd = process.cwd();
 
@@ -51,6 +52,7 @@ interface IProp {
 	postMessageToWebview: (message: ExtensionMessage) => Promise<void>,
 	postStateToWebview: () => Promise<void>,
 	updateTaskHistory: (historyItem: HistoryItem) => Promise<void>,
+	postInterClineMessage: (clineMessage: InterClineMessage) => Promise<void>,
 	createCline: (prop: ICreateSubCline) => Promise<string>
 	customInstructions?: string,
 	historyItem?: HistoryItem | undefined,
@@ -87,8 +89,10 @@ export class Cline {
 	private streamChatManager: StreamChatManager;
 	public di = new DIContainer();
 	private postService!: PostService;
+	private uiMessageService!: UIMessageService;
 
 	private messageBox: InterClineMessage[] = [];
+	clineBus = new EventEmitter();
 
 	constructor(
 		prop: IProp
@@ -131,7 +135,7 @@ export class Cline {
 		});
 		this.di.register(PostService.serviceId,{
 			factory: PostService,
-			dependencies:[prop.postMessageToWebview, prop.postStateToWebview, prop.updateTaskHistory, prop.createCline]
+			dependencies:[prop.postMessageToWebview, prop.postStateToWebview, prop.updateTaskHistory, prop.createCline, prop.postInterClineMessage]
 		});
 		this.di.register(MemoryService.serviceId,{
 			factory: aCreateService(MemoryService),
@@ -143,11 +147,16 @@ export class Cline {
 		await this.streamChatManager.init();
 		await this.toolManager.init();
 		this.postService = await this.di.getByType(PostService);
+		this.uiMessageService = await this.di.getByType(UIMessageService);
 	}
 
 
 	async getTask(){
 		return this.streamChatManager.getTask();
+	}
+
+	async setParentId(parentId:string){
+		await this.uiMessageService.setState('parentId', parentId);
 	}
 
 	async start({task, images}: { task?: string, images?: string[] }) {
@@ -674,7 +683,12 @@ export class Cline {
 		return await convertUserContentString(userContent, (text) => parseMentions(text, cwd, this.urlContentFetcher), shouldProcessMentions);
 	}
 
-	private receiveInterMessage(message: InterClineMessage) {
+	receiveInterMessage(message: InterClineMessage) {
 		this.messageBox.push(message);
+		this.clineBus.emit('inter_message', message);
+	}
+
+	async postInterMessage(message: InterClineMessage) {
+		await this.postService.postInterClineMessage(message);
 	}
 }

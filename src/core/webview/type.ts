@@ -17,12 +17,12 @@ export type SecretKey =
 export interface ICreateSubCline {
 	task: string,
 	images?: string[],
-	parent: string
+	parentId: string
 }
 
 export type ClineNode = {
 	id: string;
 	cline: Cline;
-	parent?: string;
+	parentId?: string;
 	children?: string[];
 }

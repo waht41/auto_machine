@@ -72,5 +72,3 @@ export class MessageService {
 		this.postMessage(message);
 	}
 }
-
-export const messageBus = MessageService.getInstance();

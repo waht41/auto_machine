@@ -27,6 +27,7 @@ import process from 'node:process';
 import { IConfig } from '@core/storage/type';
 import logger from '@/utils/logger';
 import { handlers } from '@core/webview/handlers';
+import { InterClineMessage } from '@core/services/type';
 
 /*
 https://github.com/microsoft/vscode-webview-ui-toolkit-samples/blob/main/default/weather-webview/src/providers/WeatherViewProvider.ts
@@ -153,14 +154,15 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 			return;
 		}
 
-		child.parent = parentId;
+		child.parentId = parentId;
+		await child.cline.setParentId(parentId);
 		parent.children ??= [];
 		parent.children.push(childId);
 	}
 
 	private async createSubCline(prop:ICreateSubCline) {
-		const cline = await this.createCline();
-		await this.addChildToParent(prop.parent, cline.taskId);
+		const cline = await this.createCline(undefined, true);
+		await this.addChildToParent(prop.parentId, cline.taskId);
 		cline.start({task: prop.task, images: prop.images});
 		return cline.taskId;
 	}
@@ -182,6 +184,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 				postMessageToWebview: this.postMessageToWebview.bind(this),
 				postStateToWebview: this.postStateToWebview.bind(this),
 				updateTaskHistory: this.updateTaskHistory.bind(this),
+				postInterClineMessage: this.postInterClineMessage.bind(this),
 				createCline: this.createSubCline.bind(this),
 				customInstructions: effectiveInstructions,
 				historyItem,
@@ -209,6 +212,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 
 	public async initClineWithTask(task?: string, images?: string[]) {
 		await this.clearTask();
+		console.log('initClineWithTask task', task);
 		const cline = await this.createCline();
 		await cline.start({task,images});
 		await this.postMessageToWebview({type: 'openTab', taskId: cline.taskId, task: task??'empty task'});
@@ -384,6 +388,16 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		const state = await this.getSharedContext();
 		//@ts-ignore  todo 需要重写extensionState
 		await this.postMessageToWebview({ type: 'state', state });
+	}
+
+	async postInterClineMessage(message: InterClineMessage) {
+		const targetId = message.targetId;
+		const targetCline = this.clineTree.get(targetId);
+		if (!targetCline) {
+			logger.error('post inter cline message, no such target cline', message);
+			return;
+		}
+		targetCline.cline.receiveInterMessage(message);
 	}
 
 	async getSharedContext() {

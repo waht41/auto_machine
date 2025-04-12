@@ -1,16 +1,13 @@
 import { CommandExecutor } from '@executors/types';
-import { IInternalContext } from '@core/internal-implementation/type';
-import { Memory, SearchOption } from '@core/services/type';
+import { AdvanceCommand, IInternalContext, MemoryCommand } from '@core/internal-implementation/type';
 import { MemoryService } from '@core/services/memoryService';
 import yaml from 'js-yaml';
 import { ApiConversationHistoryService } from '@core/services/ApiConversationHistoryService';
-import { PostService } from '@core/services/postService';
-import { ClineIdentifier, ParallelProp } from '@/shared/type';
+import { handleParallelCommand } from '@core/internal-implementation/handlers/parallelHandler';
 
 export class AdvanceExecutor implements CommandExecutor {
 	async execute(command: AdvanceCommand, context: IInternalContext): Promise<string|null> {
 		const di = context.di;
-		const cline = context.cline;
 		switch (command.cmd){
 			case 'memory':
 				return memoryHandler(command, context);
@@ -19,21 +16,7 @@ export class AdvanceExecutor implements CommandExecutor {
 				await  apiHistoryService.deleteMessageWithId(command.history_id);
 				return 'success. \n compress summary:\n' + command.summary;
 			case 'parallel':
-				const postService = await di.getByType(PostService);
-				const subCline: ClineIdentifier[] = [];
-				const parallelProp: ParallelProp = {
-					clines: subCline
-				};
-				for (const subTask of command.sub_tasks){
-					const newId = await postService.createCline({task: subTask, parent: cline.taskId});
-					subCline.push({
-						task: subTask,
-						id: newId,
-						status: 'running'
-					});
-				}
-				const messageId = context.replacing ? cline.getMessageId() : cline.getNewMessageId();
-				await cline.sayP({sayType:'tool',text:JSON.stringify({...command, ...parallelProp}), partial: true, messageId});
+				await handleParallelCommand(command, context);
 				return null;
 		}
 		return null;
@@ -54,23 +37,3 @@ async function memoryHandler(command: MemoryCommand, context: IInternalContext):
 	}
 }
 
-type MemoryCommand = {
-	type:'advance',
-	cmd: 'memory',
-} & ({
-	action:'add',
-} & Memory  | {action:'search'}& SearchOption)
-
-type CompressCommand = {
-	type:'advance',
-	cmd: 'compress',
-	history_id: number[],
-	summary: string;
-}
-
-type ParallelCommand = {
-	type:'advance',
-	cmd: 'parallel',
-	sub_tasks: string[]
-}
-type AdvanceCommand = MemoryCommand | CompressCommand | ParallelCommand;

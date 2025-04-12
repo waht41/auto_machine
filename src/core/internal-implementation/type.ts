@@ -1,6 +1,8 @@
 import { type Cline } from '@core/Cline';
 import { McpHub } from '@operation/MCP';
 import { DIContainer } from '@core/services/di';
+import { ClineStatus } from '@/shared/type';
+import { Memory, SearchOption } from '@core/services/type';
 
 export interface IInternalContext{
     cline: Cline;
@@ -17,7 +19,7 @@ export type IBaseCommand = {type:'base'} & ({
 } | {
     cmd: 'think'; //某些思考模型自带的，模型不会主动调用
     content: string;
-} | PlanCommand)
+} | PlanCommand | ChildNodeCommand)
 
 export type PlanCommand = {cmd:'plan'} & ({
   action: 'start';
@@ -31,6 +33,12 @@ export type PlanCommand = {cmd:'plan'} & ({
   action: 'complete_step';
   nextStep?: number;
 })
+
+export type ChildNodeCommand = {
+  cmd: 'complete_parallel_node';
+  message: string;
+  status: ClineStatus;
+}
 
 export type IAskCommand = {type:'ask'; uuid: string, result?: string} & ({
     askType: 'followup';
@@ -73,3 +81,21 @@ export type MCPCommand = { type: 'mcp' } & (
     arguments: any;
   }
   );
+export type MemoryCommand = {
+  type: 'advance',
+  cmd: 'memory',
+} & ({
+  action: 'add',
+} & Memory | { action: 'search' } & SearchOption)
+type CompressCommand = {
+  type: 'advance',
+  cmd: 'compress',
+  history_id: number[],
+  summary: string;
+}
+export type ParallelCommand = {
+  type: 'advance',
+  cmd: 'parallel',
+  sub_tasks: string[]
+}
+export type AdvanceCommand = MemoryCommand | CompressCommand | ParallelCommand;

@@ -6,6 +6,7 @@ export interface IUIMessage {
 	apiReqInfo?: ClineApiReqInfo;
 	clineMessages: ClineMessage[];
 	task: string;
+	parentId?: string;
 	plan?: IPlan
 }
 
