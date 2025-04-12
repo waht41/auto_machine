@@ -25,8 +25,7 @@ export async function handleParallelCommand(command: ParallelCommand, context: I
 	const messageId = context.replacing ? cline.getMessageId() : cline.getNewMessageId();
 	await cline.sayP({sayType:'tool',text:JSON.stringify({...command, ...parallelProp}), partial: false, messageId});
 
-	let remainingNumber = clines.length;
-	const messageBox: string[] = [];
+	cline.remainingChildNum = clines.length;
 
 	const handleInterMessage = async (message: InterClineMessage)=> {
 		logger.debug('handle inter message', message);
@@ -36,24 +35,25 @@ export async function handleParallelCommand(command: ParallelCommand, context: I
 			return;
 		}
 		if (subCline.status === 'running' && message.sourceStatus !== 'running') {
-			remainingNumber--;
+			cline.remainingChildNum--;
 		}
 		if (subCline.status !== 'running' && message.sourceStatus === 'running') {
-			remainingNumber++;
+			cline.remainingChildNum++;
 		}
 		const originTask = clines.find(item => item.id === message.sourceId)?.task ?? '';
-		messageBox.push(`message from sub task ${originTask}:\n ${message.message}`);
+		cline.messageBox.push(`message from sub task ${originTask}:\n ${message.message}`);
 
 		subCline.status = message.sourceStatus;
 		await cline.sayP({sayType:'tool',text:JSON.stringify({...command, ...parallelProp}), partial: false, messageId});
 	};
 
-	cline.clineBus.on('interMessage', handleInterMessage);
+	const parallelHook = async () => {
+		cline.clineBus.on('interMessage', handleInterMessage);
+		await pWaitFor(()=> cline.remainingChildNum === 0);
+		cline.clineBus.off('interMessage', handleInterMessage);
+	};
 
-	await pWaitFor(()=> remainingNumber === 0);
-
-	cline.clineBus.off('interMessage', handleInterMessage);
-
-	return messageBox.join('\n');
+	parallelHook();
+	return null;
 }
 

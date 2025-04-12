@@ -91,6 +91,8 @@ export class Cline {
 	private postService!: PostService;
 	private uiMessageService!: UIMessageService;
 	clineBus = new EventEmitter();
+	messageBox: string[] = [];
+	remainingChildNum = 0;
 
 	constructor(
 		prop: IProp
@@ -582,11 +584,15 @@ export class Cline {
 			return true;
 		}
 		let didEndLoop = false;
+
 		if (assistantMessage.length > 0) {
 			await this.streamChatManager.addToApiConversationHistory({
 				role: 'assistant',
 				content: [{type: 'text', text: assistantMessage}],
 			});
+
+			await this.clearMessageBox();
+
 			console.log(`[cline] final message, task id ${this.taskId}`,this.streamChatManager.getLastClineMessage());
 
 			// if the model did not tool use, then we need to tell it to either use a tool or attempt_completion
@@ -627,6 +633,16 @@ export class Cline {
 
 		await this.streamChatManager.updateApiRequest(state.apiReq);
 		await this.streamChatManager.postClineMessage();
+	}
+
+	private async clearMessageBox(){
+		await pWaitFor(()=> this.remainingChildNum === 0);
+		if (this.messageBox.length>0){
+			await this.sayP({sayType: 'text', text: this.messageBox.join('\n')});
+			this.userMessageContent.push({ type: 'text', text: this.messageBox.join('\n') });
+			this.didGetNewMessage = true;
+			this.messageBox.splice(0, this.messageBox.length);
+		}
 	}
 
 	async recursivelyMakeClineRequests(
