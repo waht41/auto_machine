@@ -15,8 +15,9 @@ adjust:
 complete_step:
     description: 标记plan的当前step为已完成，进入下一个step。  当所有step都完成时，便不可再进行plan相关操作
     params:
-      nextStep: [optional] # 默认为当前step+1，可输入小于0的数字，表示任务已结束
+      nextStep: number # 可输入小于0的数字，表示任务已结束
     example:
       - tool: base
         cmd: plan
         action: complete_step
+        nextStep: -1

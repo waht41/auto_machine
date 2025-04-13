@@ -18,7 +18,7 @@ create:
   description: 创建文件
   params:
     path: 路径
-    content: [optional] # 文件内容
+    content: [optional] # 文件内容，记得用双引号包裹内容
   example:
     - tool: file
       cmd: create
