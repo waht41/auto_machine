@@ -144,14 +144,8 @@ export interface ClineMessage {
 }
 
 export type ClineAsk =
-	| 'followup'
-	| 'completion_result'
+	| 'text'
 	| 'tool'
-	| 'api_req_failed'
-	| 'resume_task'
-	| 'resume_completed_task'
-	| 'mistake_limit_reached'
-	| 'use_mcp_server'
 
 export type ClineSay =
 	| 'task'

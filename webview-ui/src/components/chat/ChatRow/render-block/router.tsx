@@ -7,7 +7,6 @@ import { TextComponent } from './TextComponent';
 import { UserFeedbackComponent } from './UserFeedbackComponent';
 import { ErrorComponent } from './ErrorComponent';
 import { CompletionResultComponent } from './CompletionResultComponent';
-import { MistakeLimitReachedComponent } from './MistakeLimitReachedComponent';
 import { FollowupComponent } from './FollowupComponent';
 import { ComponentRenderer, DefaultComponentProps, RouteNode } from './types';
 
@@ -22,9 +21,7 @@ const componentRoutes: RouteNode = {
 		completion_result: CompletionResultComponent
 	},
 	ask: {
-		mistake_limit_reached: MistakeLimitReachedComponent,
-		completion_result: CompletionResultComponent,
-		followup: FollowupComponent
+		text: FollowupComponent
 	}
 };
 

@@ -599,7 +599,7 @@ export class Cline {
 			// const didToolUse = this.assistantMessageContent.some((block) => block.type === "tool_use")
 			if (!this.didGetNewMessage) {
 				await this.askP({
-					askType: 'followup',
+					askType: 'text',
 					text: this.streamChatManager.endHint,
 					partial: false,
 				});

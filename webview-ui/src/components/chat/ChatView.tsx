@@ -90,11 +90,6 @@ const ButtonsContainer = styled.div<{ opacity: number }>`
 	padding: ${props => props.opacity > 0 ? '10px 15px 0px 15px' : '0px 15px 0px 15px'};
 `;
 
-const PrimaryButton = styled(VSCodeButton)<{ hasSecondary: boolean }>`
-	flex: ${props => props.hasSecondary ? 1 : 2};
-	margin-right: ${props => props.hasSecondary ? '6px' : '0'};
-`;
-
 const SecondaryButton = styled(VSCodeButton)<{ isStreaming: boolean }>`
 	flex: ${props => props.isStreaming ? 2 : 1};
 	margin-left: ${props => props.isStreaming ? 0 : '6px'};
@@ -121,7 +116,6 @@ const ChatView = ({ isHidden }: ChatViewProps) => {
 	// we need to hold on to the ask because useEffect > lastMessage will always let us know when an ask comes in and handle it, but by the time handleMessage is called, the last message might not be the ask anymore (it could be a say that followed)
 	const [clineAsk, setClineAsk] = useState<ClineAsk | undefined>(undefined);
 	const [enableButtons, setEnableButtons] = useState<boolean>(false);
-	const [primaryButtonText, setPrimaryButtonText] = useState<string | undefined>(undefined);
 	const [secondaryButtonText, setSecondaryButtonText] = useState<string | undefined>(undefined);
 	const [didClickCancel, setDidClickCancel] = useState(false);
 	const virtuosoRef = useRef<VirtuosoHandle>(null);
@@ -145,58 +139,14 @@ const ChatView = ({ isHidden }: ChatViewProps) => {
 				case 'ask':
 					const isPartial = lastMessage.partial === true;
 					switch (lastMessage.ask) {
-						case 'api_req_failed':
-							setTextAreaDisabled(true);
-							setClineAsk('api_req_failed');
-							setEnableButtons(true);
-							setPrimaryButtonText('Retry');
-							setSecondaryButtonText('Start New Task');
-							break;
-						case 'mistake_limit_reached':
-							setTextAreaDisabled(false);
-							setClineAsk('mistake_limit_reached');
-							setEnableButtons(true);
-							setPrimaryButtonText('Proceed Anyways');
-							setSecondaryButtonText('Start New Task');
-							break;
-						case 'followup':
+						case 'text':
 							setTextAreaDisabled(isPartial);
-							setClineAsk('followup');
+							setClineAsk('text');
 							setEnableButtons(isPartial);
-							// setPrimaryButtonText(undefined)
-							// setSecondaryButtonText(undefined)
 							break;
 						case 'tool':
 							setTextAreaDisabled(isPartial);
 							setClineAsk('tool');
-							break;
-						case 'use_mcp_server':
-							setTextAreaDisabled(isPartial);
-							setClineAsk('use_mcp_server');
-							break;
-						case 'completion_result':
-							// extension waiting for feedback. but we can just present a new task button
-							setTextAreaDisabled(isPartial);
-							setClineAsk('completion_result');
-							setEnableButtons(!isPartial);
-							setPrimaryButtonText('Start New Task');
-							setSecondaryButtonText(undefined);
-							break;
-						case 'resume_task':
-							setTextAreaDisabled(false);
-							setClineAsk('resume_task');
-							setEnableButtons(true);
-							setPrimaryButtonText('Resume Task');
-							setSecondaryButtonText('Terminate');
-							setDidClickCancel(false); // special case where we reset the cancel button state
-							break;
-						case 'resume_completed_task':
-							setTextAreaDisabled(false);
-							setClineAsk('resume_completed_task');
-							setEnableButtons(true);
-							setPrimaryButtonText('Start New Task');
-							setSecondaryButtonText(undefined);
-							setDidClickCancel(false);
 							break;
 					}
 					break;
@@ -211,7 +161,6 @@ const ChatView = ({ isHidden }: ChatViewProps) => {
 			setTextAreaDisabled(false);
 			setClineAsk(undefined);
 			setEnableButtons(false);
-			setPrimaryButtonText(undefined);
 			setSecondaryButtonText(undefined);
 		}
 	}, [messages.length]);
@@ -227,8 +176,7 @@ const ChatView = ({ isHidden }: ChatViewProps) => {
 		// 判断工具是否处于主动提问状态
 		const isToolActive = lastMessageIsAsk &&
 			clineAsk !== undefined &&
-			enableButtons &&
-			primaryButtonText !== undefined;
+			enableButtons;
 		if (isToolActive) return false;
 
 		// 检查最后一条消息是否为流式传输中的部分响应
@@ -251,7 +199,7 @@ const ChatView = ({ isHidden }: ChatViewProps) => {
 		}
 
 		return false;
-	}, [modifiedMessages, clineAsk, enableButtons, primaryButtonText]);
+	}, [modifiedMessages, clineAsk, enableButtons]);
 
 	const handleSendMessage = useCallback(
 		(text: string, images: string[]) => {
@@ -263,13 +211,8 @@ const ChatView = ({ isHidden }: ChatViewProps) => {
 					vscode.postMessage({ type: 'resumeTask', text, images });
 				} else if (clineAsk) {
 					switch (clineAsk) {
-						case 'followup':
+						case 'text':
 						case 'tool':
-						case 'use_mcp_server':
-						case 'completion_result': // if this happens then the user has feedback for the completion result
-						case 'resume_task':
-						case 'resume_completed_task':
-						case 'mistake_limit_reached':
 							vscode.postMessage({
 								type: 'askResponse',
 								askResponse: 'messageResponse',
@@ -304,17 +247,8 @@ const ChatView = ({ isHidden }: ChatViewProps) => {
 	*/
 	const handlePrimaryButtonClick = useCallback(() => {
 		switch (clineAsk) {
-			case 'api_req_failed':
 			case 'tool':
-			case 'use_mcp_server':
-			case 'resume_task':
-			case 'mistake_limit_reached':
 				vscode.postMessage({ type: 'askResponse', askResponse: 'yesButtonClicked' });
-				break;
-			case 'completion_result':
-			case 'resume_completed_task':
-				// extension waiting for feedback. but we can just present a new task button
-				startNewTask();
 				break;
 		}
 		setTextAreaDisabled(true);
@@ -332,13 +266,7 @@ const ChatView = ({ isHidden }: ChatViewProps) => {
 		}
 
 		switch (clineAsk) {
-			case 'api_req_failed':
-			case 'mistake_limit_reached':
-			case 'resume_task':
-				startNewTask();
-				break;
 			case 'tool':
-			case 'use_mcp_server':
 				// responds to the API with a "This operation failed" and lets it try again
 				vscode.postMessage({ type: 'askResponse', askResponse: 'noButtonClicked' });
 				break;
@@ -430,18 +358,6 @@ const ChatView = ({ isHidden }: ChatViewProps) => {
 
 	const visibleMessages = useMemo(() => {
 		return modifiedMessages.filter((message) => {
-			switch (message.ask) {
-				case 'completion_result':
-					// don't show a chat row for a completion_result ask without text. This specific type of message only occurs if cline wants to execute a command as part of its completion result, in which case we interject the completion_result tool with the execute_command tool.
-					if (message.text === '') {
-						return false;
-					}
-					break;
-				case 'api_req_failed': // this message is used to update the latest api_req_started that the request failed
-				case 'resume_task':
-				case 'resume_completed_task':
-					return false;
-			}
 			switch (message.say) {
 				case 'text':
 					// Sometimes cline returns an empty text message, we don't want to render these. (We also use a say text for user messages, so in case they just sent images we still render that)
@@ -654,21 +570,12 @@ const ChatView = ({ isHidden }: ChatViewProps) => {
 					{!showScrollToBottom && (
 						<ButtonsContainer
 							opacity={
-								primaryButtonText || secondaryButtonText || isStreaming
+								secondaryButtonText || isStreaming
 									? enableButtons || (isStreaming && !didClickCancel)
 										? 1
 										: 0.5
 									: 0
 							}>
-							{primaryButtonText && !isStreaming && (
-								<PrimaryButton
-									appearance="primary"
-									disabled={!enableButtons}
-									hasSecondary={!!secondaryButtonText}
-									onClick={handlePrimaryButtonClick}>
-									{primaryButtonText}
-								</PrimaryButton>
-							)}
 							{(secondaryButtonText || isStreaming) && (
 								<SecondaryButton
 									appearance="secondary"
