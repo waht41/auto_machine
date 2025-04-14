@@ -1,6 +1,5 @@
 import React from 'react';
 import { Tabs } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
 import styled from 'styled-components';
 import { useChatViewTabStore } from '@webview-ui/store/chatViewTabStore';
 
@@ -50,17 +49,6 @@ const TabsContainer = styled.div`
   .ant-tabs {
     flex: 1;
   }
-  
-  .add-tab-button {
-    margin-right: 16px;
-    border: none;
-    background-color: transparent;
-    
-    &:hover {
-      color: #1890ff;
-      background-color: #e6f7ff;
-    }
-  }
 `;
 
 const TabNavigation: React.FC = () => {
@@ -69,7 +57,6 @@ const TabNavigation: React.FC = () => {
 		activeTab, 
 		tabItems, 
 		setActiveTab, 
-		addTab, 
 		closeTab 
 	} = useChatViewTabStore();
 
@@ -83,21 +70,14 @@ const TabNavigation: React.FC = () => {
 		closeTab(targetKey);
 	};
 
-	const handleTabAdd = () => {
-		console.log('Add new tab');
-		addTab(`新标签页 ${tabItems.length + 1}`);
-	};
-
 	return (
 		<TabsContainer>
 			<StyledTabs
-				type="editable-card"
+				type="card"
 				activeKey={activeTab}
 				onChange={handleTabChange}
 				onEdit={(targetKey, action) => {
-					if (action === 'add') {
-						handleTabAdd();
-					} else if (action === 'remove' && typeof targetKey === 'string') {
+					if (action === 'remove' && typeof targetKey === 'string') {
 						handleTabClose(targetKey);
 					}
 				}}
@@ -107,7 +87,6 @@ const TabNavigation: React.FC = () => {
 					closable: item.closable !== false, // 默认可关闭
 					children: null, // 不需要内容，只需要标签
 				}))}
-				addIcon={<PlusOutlined />}
 			/>
 		</TabsContainer>
 	);

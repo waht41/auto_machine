@@ -1,5 +1,5 @@
 import debounce from 'debounce';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useEvent, useMount } from 'react-use';
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 import styled from 'styled-components';
@@ -20,6 +20,7 @@ import { normalizeApiConfiguration } from '@webview-ui/components/settings/ApiOp
 import { VSCodeButton } from '@vscode/webview-ui-toolkit/react';
 import ChatHistory from '@webview-ui/components/chat/ChatHistory';
 import { useClineMessageStore } from '@webview-ui/store/clineMessageStore';
+import TabNavigation from '@webview-ui/components/navigation/TabNavigation';
 
 interface ChatViewProps {
 	isHidden: boolean
@@ -63,7 +64,6 @@ const ScrollToBottomContainer = styled.div`
 `;
 
 const ScrollToBottomButton = styled.div`
-	background-color: color-mix(in srgb, var(--vscode-toolbar-hoverBackground) 75%, transparent);
 	border-radius: 50%;
 	width: 36px;
 	height: 36px;
@@ -75,13 +75,11 @@ const ScrollToBottomButton = styled.div`
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 
 	&:hover {
-		background-color: color-mix(in srgb, var(--vscode-toolbar-hoverBackground) 85%, transparent);
 		transform: translateY(-2px);
 		transition: transform 0.2s ease;
 	}
 
 	&:active {
-		background-color: color-mix(in srgb, var(--vscode-toolbar-hoverBackground) 95%, transparent);
 		transform: translateY(0);
 	}
 `;
@@ -607,6 +605,7 @@ const ChatView = ({ isHidden }: ChatViewProps) => {
 
 			{task && (
 				<>
+					<TabNavigation />
 					<TaskHeader
 						task={task}
 						tokensIn={apiMetrics.totalTokensIn}
