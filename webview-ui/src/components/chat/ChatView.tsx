@@ -22,19 +22,12 @@ import ChatHistory from '@webview-ui/components/chat/ChatHistory';
 import { useClineMessageStore } from '@webview-ui/store/clineMessageStore';
 import TabNavigation from '@webview-ui/components/navigation/TabNavigation';
 
-interface ChatViewProps {
-	isHidden: boolean
-	showAnnouncement: boolean
-	hideAnnouncement: () => void
-	showHistoryView: () => void
-}
-
 export const MAX_IMAGES_PER_MESSAGE = 20; // Anthropic limits to 20 images
 
-const ChatViewContainer = styled.div<{ isHidden: boolean }>`
+const ChatViewContainer = styled.div`
 	height: 100%;
 	width: 100%;
-	display: ${props => props.isHidden ? 'none' : 'flex'};
+	display: flex;
 	flex-direction: column;
 	overflow: hidden;
 `;
@@ -95,7 +88,7 @@ const SecondaryButton = styled(VSCodeButton)<{ isStreaming: boolean }>`
 	margin-left: ${props => props.isStreaming ? 0 : '6px'};
 `;
 
-const ChatView = ({ isHidden }: ChatViewProps) => {
+const ChatView = () => {
 	const {
 		apiConfiguration,
 		toolCategories,
@@ -299,7 +292,7 @@ const ChatView = ({ isHidden }: ChatViewProps) => {
 				case 'action':
 					switch (message.action!) {
 						case 'didBecomeVisible':
-							if (!isHidden && !textAreaDisabled && !enableButtons) {
+							if (!textAreaDisabled && !enableButtons) {
 								textAreaRef.current?.focus();
 							}
 							break;
@@ -329,7 +322,6 @@ const ChatView = ({ isHidden }: ChatViewProps) => {
 			// textAreaRef.current is not explicitly required here since react gaurantees that ref will be stable across re-renders, and we're not using its value but its reference.
 		},
 		[
-			isHidden,
 			textAreaDisabled,
 			enableButtons,
 			handleSendMessage,
@@ -347,14 +339,14 @@ const ChatView = ({ isHidden }: ChatViewProps) => {
 
 	useEffect(() => {
 		const timer = setTimeout(() => {
-			if (!isHidden && !textAreaDisabled && !enableButtons) {
+			if (!textAreaDisabled && !enableButtons) {
 				textAreaRef.current?.focus();
 			}
 		}, 50);
 		return () => {
 			clearTimeout(timer);
 		};
-	}, [isHidden, textAreaDisabled, enableButtons]);
+	}, [textAreaDisabled, enableButtons]);
 
 	const visibleMessages = useMemo(() => {
 		return modifiedMessages.filter((message) => {
@@ -516,7 +508,7 @@ const ChatView = ({ isHidden }: ChatViewProps) => {
 	);
 
 	return (
-		<ChatViewContainer isHidden={isHidden}>
+		<ChatViewContainer>
 			{!task && <ChatHistory/>}
 
 			{task && (

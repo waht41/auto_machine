@@ -1,10 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import ChatView from '@webview-ui/components/chat/ChatView';
 import AgentStream from '@webview-ui/components/chat/AgentStream/AgentStream';
-import { vscode } from '@webview-ui/utils/vscode';
-import { useExtensionState } from '@webview-ui/context/ExtensionStateContext';
-import { useNavigate } from 'react-router-dom';
 import { useClineMessageStore } from '@webview-ui/store/clineMessageStore';
 import { useChatViewTabStore } from '@webview-ui/store/chatViewTabStore';
 
@@ -41,18 +38,8 @@ const AgentStreamContainer = styled.div`
 `;
 
 const MainBoard = () => {
-	const [showAnnouncement, setShowAnnouncement] = useState(false);
-	const { shouldShowAnnouncement } = useExtensionState();
-	const navigate = useNavigate();
 	const task = useClineMessageStore().getTask();
 	const hasTask = !!task;
-
-	useEffect(() => {
-		if (shouldShowAnnouncement) {
-			setShowAnnouncement(true);
-			vscode.postMessage({ type: 'didShowAnnouncement' });
-		}
-	}, [shouldShowAnnouncement]);
 
 	// 初始化clineMessageStore
 	useEffect(() => {
@@ -61,21 +48,11 @@ const MainBoard = () => {
 		useChatViewTabStore.getState().init();
 	}, []);
 
-	const isChatViewHidden = location.pathname !== '/';
 
 	return (
 		<MainContainer>
 			<ChatViewContainer hasTask={hasTask}>
-				<ChatView
-					showHistoryView={() => {
-						navigate('/history');
-					}}
-					isHidden={isChatViewHidden}
-					showAnnouncement={showAnnouncement}
-					hideAnnouncement={() => {
-						setShowAnnouncement(false);
-					}}
-				/>
+				<ChatView />
 			</ChatViewContainer>
 			{hasTask && (
 				<AgentStreamContainer>
