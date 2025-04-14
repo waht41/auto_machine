@@ -101,7 +101,9 @@ const ChatView = ({ isHidden }: ChatViewProps) => {
 		toolCategories,
 		allowedTools
 	} = useExtensionState();
-	const messages = useClineMessageStore().getChatMessages();
+	const getChatMessages = useClineMessageStore(state => state.getChatMessages);
+	const messages = getChatMessages();
+	const clear = useClineMessageStore((state) => state.clearClineMessages);
 
 	const task = useMemo(() => messages.at(0), [messages]); // leaving this less safe version here since if the first message is not a task, then the extension is in a bad state and needs to be debugged (see Cline.abort)
 	const modifiedMessages = useMemo(() => messages.slice(1), [messages]);
@@ -238,9 +240,11 @@ const ChatView = ({ isHidden }: ChatViewProps) => {
 		[messages.length, clineAsk],
 	);
 
-	const startNewTask = useCallback(() => {
+	const clearTask = useCallback(() => {
+		clear();
+		console.log('[waht]','cleartask', task);
 		vscode.postMessage({ type: 'clearTask' });
-	}, []);
+	}, [task]);
 
 	/*
 	This logic depends on the useEffect[messages] above to set clineAsk, after which buttons are shown and we then send an askResponse to the extension.
@@ -255,7 +259,7 @@ const ChatView = ({ isHidden }: ChatViewProps) => {
 		setClineAsk(undefined);
 		setEnableButtons(false);
 		disableAutoScrollRef.current = false;
-	}, [clineAsk, startNewTask]);
+	}, [clineAsk, clearTask]);
 
 	const handleSecondaryButtonClick = useCallback(() => {
 		if (isStreaming) {
@@ -275,11 +279,7 @@ const ChatView = ({ isHidden }: ChatViewProps) => {
 		setClineAsk(undefined);
 		setEnableButtons(false);
 		disableAutoScrollRef.current = false;
-	}, [clineAsk, startNewTask, isStreaming]);
-
-	const handleTaskCloseButtonClick = useCallback(() => {
-		startNewTask();
-	}, [startNewTask]);
+	}, [clineAsk, clearTask, isStreaming]);
 
 	const { selectedModelInfo } = useMemo(() => {
 		return normalizeApiConfiguration(apiConfiguration);
@@ -531,7 +531,7 @@ const ChatView = ({ isHidden }: ChatViewProps) => {
 						cacheReads={apiMetrics.totalCacheReads}
 						totalCost={apiMetrics.totalCost}
 						contextTokens={apiMetrics.contextTokens}
-						onClose={handleTaskCloseButtonClick}
+						onClose={clearTask}
 					/>
 					<ScrollContainer ref={scrollContainerRef}>
 						<VirtuosoContainer

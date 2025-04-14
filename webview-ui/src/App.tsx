@@ -8,7 +8,7 @@ import McpView from './components/mcp/McpView';
 import PromptsView from './components/prompts/PromptsView';
 import { Alert, Spin } from 'antd';
 import styled from 'styled-components';
-import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { HashRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import Home from '@webview-ui/components/Home';
 import messageBus from './store/messageBus';
 import { BACKGROUND_MESSAGE } from '@webview-ui/store/const';
@@ -36,7 +36,6 @@ const ErrorContainer = styled.div`
 const AppContent = () => {
 	const { didHydrateState, showWelcome } = useExtensionState();
 	const navigate = useNavigate();
-	const location = useLocation();
 	const [workerError, setWorkerError] = useState<string | null>(null);
 
 	const handleMessage = useCallback((message: ExtensionMessage) => {
@@ -108,12 +107,9 @@ const AppContent = () => {
 		return <WelcomeView />;
 	}
 
-	// 判断当前路由是否是聊天页面之外的页面
-	const isChatViewHidden = location.pathname !== '/';
-
 	return (
 		<Routes>
-			<Route path="/" element={<Home isChatViewHidden={isChatViewHidden}/>} />
+			<Route path="/" element={<Home/>} />
 			<Route path="/settings" element={<SettingsView onDone={() => navigate('/')} />} />
 			<Route path="/history" element={<HistoryView onDone={() => navigate('/')} />} />
 			<Route path="/mcp" element={<McpView onDone={() => navigate('/')} />} />

@@ -8,10 +8,6 @@ import { useNavigate } from 'react-router-dom';
 import { useClineMessageStore } from '@webview-ui/store/clineMessageStore';
 import { useChatViewTabStore } from '@webview-ui/store/chatViewTabStore';
 
-interface IProp {
-	isChatViewHidden: boolean;
-}
-
 const MainContainer = styled.div`
 	display: flex;
 	width: 100%;
@@ -44,8 +40,7 @@ const AgentStreamContainer = styled.div`
 	overflow: hidden;
 `;
 
-const MainBoard = (prop: IProp) => {
-	const { isChatViewHidden } = prop;
+const MainBoard = () => {
 	const [showAnnouncement, setShowAnnouncement] = useState(false);
 	const { shouldShowAnnouncement } = useExtensionState();
 	const navigate = useNavigate();
@@ -65,6 +60,8 @@ const MainBoard = (prop: IProp) => {
 		useClineMessageStore.getState().init();
 		useChatViewTabStore.getState().init();
 	}, []);
+
+	const isChatViewHidden = location.pathname !== '/';
 
 	return (
 		<MainContainer>
