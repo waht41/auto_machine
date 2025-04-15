@@ -13,12 +13,12 @@ import { CommandExecutor } from '@executors/types';
 import { IInternalContext } from '@core/internal-implementation/type';
 
 export class BrowserCommandExecutor implements CommandExecutor {
-	async execute(command: BrowserCommand, context: IInternalContext): Promise<any> {
+	async execute(command: BrowserCommand, context: IInternalContext): Promise<string> {
 		const { cline } = context;
 		switch (command.cmd) {
 			case 'open':
 				await Browser.open(command);
-				return 'success';
+				return `open ${command.url} success`;
 			case 'search':
 				const searchRes = await Browser.search(command);
 				return yaml.dump(searchRes.data);
@@ -28,17 +28,17 @@ export class BrowserCommandExecutor implements CommandExecutor {
 				return yaml.dump(await Browser.analyze(command));
 			case 'navigation':
 				await Browser.navigate(command);
-				return 'success';
+				return `navigation ${command.action} at ${command.url} success`;
 			case 'interact':
 				const res = await Browser.interact(command);
 				if (res.isNewPage) {
-					return 'success get get new page: ' + yaml.dump(res.data);
+					return `${command.url} interact ${command.action} success, and get get new page: ` + yaml.dump(res.data);
 				} else {
-					return 'success';
+					return `${command.url} interact ${command.action} success`;
 				}
 			case 'auth':
 				await Browser.auth(command);
-				return 'success';
+				return 'auth success';
 			case 'download':
 				let partial = true;
 				const messageId = cline.getNewMessageId();
@@ -60,7 +60,7 @@ export class BrowserCommandExecutor implements CommandExecutor {
 						await cline?.sayP({ sayType:'tool', text: JSON.stringify({...command,...progress}), partial, messageId });
 					}
 				}
-				return 'Download completed';
+				return `Download ${command.url} to ${command.path ?? 'default path'} completed`;
 			default:
 				throw new Error(`Unknown action: ${command}`);
 		}

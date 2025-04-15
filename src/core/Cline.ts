@@ -81,7 +81,6 @@ export class Cline {
 	private blockProcessHandler = new BlockProcessHandler();
 	private userMessageContent: (Anthropic.TextBlockParam | Anthropic.ImageBlockParam)[] = [];
 	private isCurrentStreamEnd = false;
-	private didGetNewMessage = false;
 
 	private toolManager: ToolManager;
 	private asking = false;
@@ -434,8 +433,6 @@ export class Cline {
 			text: textStrings.join('\n'),
 			partial: false,
 		});
-		// once a tool result has been collected, ignore all other tool uses since we should only ever present one tool result per message
-		this.didGetNewMessage = true;
 	}
 
 	async applyToolUse(block: ToolUse, context?: IInternalContext): Promise<string | unknown> {
@@ -495,7 +492,6 @@ export class Cline {
 
 		this.userMessageContent = [];
 		this.isCurrentStreamEnd = false;
-		this.didGetNewMessage = false;
 
 		await this.diffViewProvider.reset();
 	}
@@ -593,11 +589,11 @@ export class Cline {
 
 			await this.clearMessageBox();
 
-			console.log(`[cline] final message, task id ${this.taskId}`,this.streamChatManager.getLastClineMessage());
+			console.log(`[cline] user content message, task id ${this.taskId}`,this.userMessageContent);
 
 			// if the model did not tool use, then we need to tell it to either use a tool or attempt_completion
 			// const didToolUse = this.assistantMessageContent.some((block) => block.type === "tool_use")
-			if (!this.didGetNewMessage) {
+			if (this.userMessageContent.length === 0) {
 				await this.askP({
 					askType: 'text',
 					text: this.streamChatManager.endHint,
@@ -640,7 +636,6 @@ export class Cline {
 		if (this.messageBox.length>0){
 			await this.sayP({sayType: 'text', text: this.messageBox.join('\n')});
 			this.userMessageContent.push({ type: 'text', text: this.messageBox.join('\n') });
-			this.didGetNewMessage = true;
 			this.messageBox.splice(0, this.messageBox.length);
 		}
 	}
