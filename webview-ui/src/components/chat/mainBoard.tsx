@@ -11,10 +11,10 @@ const MainContainer = styled.div`
 	height: 100vh;
 `;
 
-const ChatViewContainer = styled.div<{ hasTask: boolean }>`
-	flex: ${props => props.hasTask ? 6 : 10};
+const ChatViewContainer = styled.div<{ $hasTask: boolean }>`
+	flex: ${props => props.$hasTask ? 6 : 10};
 	height: 100%;
-	border-right: ${props => props.hasTask ? '1px solid #f0f0f0' : 'none'};
+	border-right: ${props => props.$hasTask ? '1px solid #f0f0f0' : 'none'};
 	transition: flex 0.5s ease;
 `;
 
@@ -51,7 +51,7 @@ const MainBoard = () => {
 
 	return (
 		<MainContainer>
-			<ChatViewContainer hasTask={hasTask}>
+			<ChatViewContainer $hasTask={hasTask}>
 				<ChatView />
 			</ChatViewContainer>
 			{hasTask && (

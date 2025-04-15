@@ -13,7 +13,7 @@ const HeaderContainer = styled.div<HeaderContainerProps>`
   display: flex;
   align-items: center;
   font-weight: bold;
-  margin-bottom: ${props => (props.hasError ? '10px' : '0')};
+  margin-bottom: ${props => (props.$hasError ? '10px' : '0')};
   justify-content: space-between;
   cursor: pointer;
   user-select: none;
@@ -42,7 +42,6 @@ const JumpButton = styled.div`
   padding: 2px;
   border-radius: 3px;
   cursor: pointer;
-  color: var(--vscode-foreground);
   opacity: 0.7;
   transition: opacity 0.2s;
   margin-right: 8px;
@@ -63,12 +62,11 @@ const StyledBadge = styled(VSCodeBadge)<StyledBadgeProps>`
 
 // 为HeaderContainer定义接口
 interface HeaderContainerProps {
-  hasError?: boolean;
+  $hasError?: boolean;
 }
 
 const ErrorMessage = styled.p`
   margin: 0 0 10px 0;
-  color: var(--vscode-errorForeground);
 `;
 
 const ExpandedContent = styled.div`
@@ -81,11 +79,11 @@ const ArrowIcon = styled.span.attrs({ className: 'codicon codicon-arrow-right' }
 
 // 为ChevronIcon定义接口
 interface ChevronIconProps {
-  expanded: boolean;
+  $expanded: boolean;
 }
 
 const ChevronIcon = styled.span.attrs<ChevronIconProps>(props => ({
-	className: `codicon codicon-chevron-${props.expanded ? 'up' : 'down'}`
+	className: `codicon codicon-chevron-${props.$expanded ? 'up' : 'down'}`
 }))<ChevronIconProps>``;
 
 /**
@@ -102,7 +100,7 @@ export const ApiRequestComponent = ({ message, isExpanded, onToggleExpand }: Def
 	}, [message.text, message.say]);
 
 	// if request is retried then the latest message is a api_req_retried
-	const apiRequestFailedMessage = message?.ask === 'api_req_failed' ? message?.text : undefined;
+	const apiRequestFailedMessage = undefined;
   
 	// 根据条件确定当前状态
 	const determineStatus = (): ChatStatus => {
@@ -138,14 +136,14 @@ export const ApiRequestComponent = ({ message, isExpanded, onToggleExpand }: Def
 
 	return (
 		<>
-			<HeaderContainer hasError={hasError} onClick={onToggleExpand}>
+			<HeaderContainer $hasError={hasError} onClick={onToggleExpand}>
 				<HeaderLeft>
 					{icon}
 					{title}
 					<StyledBadge cost={cost}>
             ${Number(cost || 0)?.toFixed(4)}
 					</StyledBadge>
-					<ChevronIcon expanded={isExpanded} />
+					<ChevronIcon $expanded={isExpanded} />
 				</HeaderLeft>
 				<HeaderRight>
 					<JumpButton 
@@ -161,19 +159,6 @@ export const ApiRequestComponent = ({ message, isExpanded, onToggleExpand }: Def
 				<>
 					<ErrorMessage>
 						{apiRequestFailedMessage || apiReqStreamingFailedMessage}
-						{apiRequestFailedMessage?.toLowerCase().includes('powershell') && (
-							<>
-								<br />
-								<br />
-                It seems like you're having Windows PowerShell issues, please see this{' '}
-								<a
-									href="https://github.com/cline/cline/wiki/TroubleShooting-%E2%80%90-%22PowerShell-is-not-recognized-as-an-internal-or-external-command%22"
-									style={{ color: 'inherit', textDecoration: 'underline' }}>
-                  troubleshooting guide
-								</a>
-                .
-							</>
-						)}
 					</ErrorMessage>
 				</>
 			)}
