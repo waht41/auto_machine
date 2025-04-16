@@ -48,6 +48,9 @@ jobs:
       - name: Build Project
         run: npm run build
 
+      - name: test
+        run: pwd && ls
+
       - name: Electron Packaging
         run: npm run package -- --x64
         env:
