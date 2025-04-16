@@ -64,10 +64,13 @@ export default defineConfig(({ mode }) => ({
 	build: {
 		outDir: 'build',
 		assetsDir: 'assets',
-		rollupOptions: { external: ['electron'] },
+		rollupOptions: { 
+			external: ['electron', 'antd', 'styled-components'],
+		},
 	},
 	optimizeDeps: {
 		exclude: ['puppeteer-chromium-resolver'],
+		include: ['antd', 'styled-components'],
 	},
 	server: {
 		fs: { strict: false },
