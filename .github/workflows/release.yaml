@@ -52,7 +52,7 @@ jobs:
         run: pwd && ls
 
       - name: Electron Packaging
-        run: npm run package -- --x64
+        run: npm run package -- --x64  -c.debug=true
         env:
           # macOS 签名配置
           CSC_LINK: ${{ secrets.MAC_CERT_BASE64 }}
