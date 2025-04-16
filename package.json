@@ -17,6 +17,9 @@
         "to": "assets/"
       }
     ],
+    "mac": {
+      "target": ["dmg"]
+    },
     "win": {
       "target": [
         {
