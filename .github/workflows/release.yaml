@@ -1,0 +1,60 @@
+name: Electron Release
+on:
+  push:
+    paths:
+      - '.github/'
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest]
+        include:
+          - os: macos-latest
+            arch: x64
+            artifact_name: macOS-package
+            artifact_path: dist/*.dmg
+          - os: windows-latest
+            arch: x64
+            artifact_name: Windows-package
+            artifact_path: dist/*.exe
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.npm
+            ~/.cache/electron
+          key: ${{ runner.os }}-${{ matrix.arch }}-${{ hashFiles('**/package-lock.json') }}
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Project
+        run: npm run build
+
+      - name: Electron Packaging
+        run: npm run package -- --arch=${{ matrix.arch }}
+        env:
+          # macOS 签名配置
+          CSC_LINK: ${{ secrets.MAC_CERT_BASE64 }}
+          CSC_KEY_PASSWORD: ${{ secrets.CERT_PASSWORD }}
+          # Windows 签名配置（可选）
+          WIN_CSC_LINK: ${{ secrets.WIN_CERT_BASE64 }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CERT_PASSWORD }}
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_path }}
