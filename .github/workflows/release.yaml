@@ -7,7 +7,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, windows-latest]
+        os: [macos-latest]
         include:
           - os: macos-latest
             arch: x64
@@ -49,7 +49,7 @@ jobs:
         run: npm run build
 
       - name: Electron Packaging
-        run: npm run package -- --arch=${{ matrix.arch }}
+        run: npm run package -- --x64
         env:
           # macOS 签名配置
           CSC_LINK: ${{ secrets.MAC_CERT_BASE64 }}
