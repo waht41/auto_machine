@@ -72,8 +72,8 @@ jobs:
         env:
           # macOS 签名配置
           CSC_IDENTITY_AUTO_DISCOVERY: false
-          CSC_LINK: ${{ secrets.MAC_CERT_BASE64 }}
-          CSC_KEY_PASSWORD: ${{ secrets.CERT_PASSWORD }}
+          CSC_LINK:
+          CSC_KEY_PASSWORD:
           DEBUG: electron-builder,electron-builder:*
 
       - name: Upload Artifacts
