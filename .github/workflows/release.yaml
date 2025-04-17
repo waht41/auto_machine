@@ -49,9 +49,6 @@ jobs:
         run: npm run build
 
       - name: test
-        run: pwd && ls
-
-      - name: Electron Packaging
         run: |
           echo "Starting Electron packaging process..."
           echo "Node version: $(node -v)"
@@ -59,21 +56,17 @@ jobs:
           echo "Current directory: $(pwd)"
           echo "Directory contents:"
           ls -la
-          echo "Package.json content:"
-          cat package.json | grep -E "version|name|build|electron"
-          echo "Electron builder version:"
-          npx electron-builder --version
-          echo "Environment variables (sanitized):"
           env | grep -v -E "CSC_|SECRET|TOKEN|PASSWORD|KEY" | sort
-          
-          # 运行打包命令并捕获详细输出
-          npm run package -- --x64 --debug || {
+
+      - name: Electron Packaging
+        run: |
+          npm run package -- --x64 || {
             echo "Packaging failed with exit code $?"
             echo "Last 100 lines of npm logs:"
             cat ~/.npm/_logs/$(ls -t ~/.npm/_logs | head -n 1) | tail -n 100
             exit 1
           }
-          
+
           echo "Packaging completed. Checking dist directory:"
           ls -la dist/
         env:
