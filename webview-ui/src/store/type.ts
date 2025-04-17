@@ -7,7 +7,7 @@ export type BackGroundMessageHandler = (data: BackgroundMessage) => void;
 
 export type AgentStreamJumpState = {
 	type: typeof AGENT_STREAM_JUMP;
-	timestamp: number;
+	id?: number;
 };
 
 export type AppMessage = AgentStreamJumpState;

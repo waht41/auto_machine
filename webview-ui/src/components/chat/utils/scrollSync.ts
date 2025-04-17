@@ -39,3 +39,42 @@ export const scrollToNearestTs = (
 		});
 	}
 };
+
+/**
+ * 通过消息ID查找对应的消息索引
+ * @param messages 消息数组
+ * @param messageId 消息ID
+ * @returns 对应的消息索引，如果未找到则返回-1
+ */
+export const findMessageIndexById = (
+	messages: ClineMessage[],
+	messageId: number
+): number => {
+	return messages.findIndex(message => message.messageId === messageId);
+};
+
+/**
+ * 滚动到指定ID的消息
+ * @param virtuosoRef Virtuoso组件的引用
+ * @param messages 消息数组
+ * @param messageId 消息ID
+ * @param behavior 滚动行为
+ */
+export const scrollToMessageById = (
+	virtuosoRef: React.RefObject<VirtuosoHandle>,
+	messages: ClineMessage[],
+	messageId: number,
+	behavior: 'auto' | 'smooth' = 'smooth'
+): void => {
+	if (!virtuosoRef.current || messages.length === 0) return;
+
+	const messageIndex = findMessageIndexById(messages, messageId);
+
+	if (messageIndex >= 0) {
+		virtuosoRef.current.scrollToIndex({
+			index: messageIndex,
+			behavior: behavior || 'smooth', // 确保默认使用平滑滚动
+			align: 'start',
+		});
+	}
+};

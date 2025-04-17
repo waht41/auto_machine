@@ -123,14 +123,11 @@ export const ApiRequestComponent = ({ message, isExpanded, onToggleExpand }: Def
 	// 处理跳转到AgentStream
 	const handleJumpToAgentStream = (e: React.MouseEvent) => {
 		e.stopPropagation(); // 防止触发展开/折叠
-		
-		// 获取当前消息的时间戳
-		const currentTs = message.ts;
-		
+
 		// 使用messageBus发送跳转事件
 		messageBus.emit(APP_MESSAGE, {
 			type: AGENT_STREAM_JUMP,
-			timestamp: currentTs
+			id: message.relateStreamId
 		});
 	};
 
@@ -145,15 +142,15 @@ export const ApiRequestComponent = ({ message, isExpanded, onToggleExpand }: Def
 					</StyledBadge>
 					<ChevronIcon $expanded={isExpanded} />
 				</HeaderLeft>
-				<HeaderRight>
-					<JumpButton 
+				{message.relateStreamId && <HeaderRight>
+					<JumpButton
 						onClick={handleJumpToAgentStream}
 						title="jump to correspond agent stream"
 					>
 						<ArrowIcon />
 					</JumpButton>
 
-				</HeaderRight>
+				</HeaderRight>}
 			</HeaderContainer>
 			{hasError && (
 				<>

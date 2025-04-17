@@ -141,6 +141,7 @@ export interface ClineMessage {
 	partial?: boolean
 	reasoning?: string
 	messageId?: number
+	relateStreamId?: number
 }
 
 export type ClineAsk =

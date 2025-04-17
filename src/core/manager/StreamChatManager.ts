@@ -71,10 +71,6 @@ export class StreamChatManager {
 		return this.apiHistoryService.getHistoryContentWithId(historyId);
 	}
 
-	public getHistoryTextWithId(historyId: number): string | null {
-		return this.apiHistoryService.getHistoryTextWithId(historyId);
-	}
-
 	async halfApiConversationHistory() {
 		await this.apiHistoryService.halfConversation();
 	}
@@ -85,16 +81,11 @@ export class StreamChatManager {
 		}
 		const apiMetrics = getApiMetrics(this.clineMessages.slice(1));
 		const taskMessage = this.clineMessages[0]; // first message is always the task say
-		const lastRelevantMessage =
-			this.clineMessages[
-				findLastIndex(
-					this.clineMessages,
-					(m) => !(m.ask === 'resume_task' || m.ask === 'resume_completed_task'),
-				)
-			];
+		const lastRelevantMessage = this.getLastClineMessage();
+
 		return {
 			id: this.taskId,
-			ts: lastRelevantMessage.ts,
+			ts: lastRelevantMessage?.ts ?? Date.now(),
 			task: taskMessage.text ?? '',
 			tokensIn: apiMetrics.totalTokensIn,
 			tokensOut: apiMetrics.totalTokensOut,
@@ -106,7 +97,7 @@ export class StreamChatManager {
 
 	async checkMessage() {
 		// If the previous API request's total token usage is close to the context window, truncate the conversation history to free up space for the new request
-		const previousApiReqIndex = findLastIndex(this.clineMessages, (m) => m.say === 'api_req_started');
+		const previousApiReqIndex = this.findLastApiRequestIndex();
 		if (previousApiReqIndex >= 0) {
 			const previousRequest = this.clineMessages[previousApiReqIndex];
 			if (previousRequest && previousRequest.text) {
@@ -259,7 +250,7 @@ export class StreamChatManager {
 	}
 
 	public async updateApiRequest(apiReq: ClineApiReqInfo){
-		const lastApiReqIndex = findLastIndex(this.clineMessages, (m) => m.say === 'api_req_started');
+		const lastApiReqIndex = this.findLastApiRequestIndex();
 		this.clineMessages[lastApiReqIndex].text = JSON.stringify(apiReq);
 		await this.uiMessageService.updateApiRequest(apiReq);
 	}
@@ -285,6 +276,18 @@ export class StreamChatManager {
 		};
 
 		await handleCompletion();
+	}
+
+	public async addAgentStream(text: string) {
+		const agentStreamId = this.getNewMessageId();
+		await this.chat({ ts: Date.now(), type: 'say', say: 'agent_stream',messageId: agentStreamId, text});
+		const lastApiIndex = this.findLastApiRequestIndex();
+		const apiReq = this.clineMessages[lastApiIndex];
+		apiReq.relateStreamId ??= agentStreamId;
+	}
+
+	private findLastApiRequestIndex() {
+		return findLastIndex(this.clineMessages, (m) => m.say === 'api_req_started');
 	}
 
 	private async finalizePartialMessage(message: ClineMessage, lastMessage: ClineMessage) {

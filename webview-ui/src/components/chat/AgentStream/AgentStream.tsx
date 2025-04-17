@@ -4,7 +4,10 @@ import { Card, Typography, Tag } from 'antd';
 import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 import { useClineMessageStore } from '@webview-ui/store/clineMessageStore';
 import MarkdownBlock from '@webview-ui/components/common/MarkdownBlock';
-import { scrollToNearestTs, findNearestMessageIndex } from '../utils/scrollSync';
+import {
+	scrollToMessageById,
+	findMessageIndexById
+} from '../utils/scrollSync';
 import messageBus from '@webview-ui/store/messageBus';
 import { AGENT_STREAM_JUMP, APP_MESSAGE } from '@webview-ui/store/const';
 import { AgentStreamJumpState, AppMessageHandler } from '@webview-ui/store/type';
@@ -173,23 +176,23 @@ const AgentStream = () => {
 	// 处理从ApiRequestComponent跳转过来的事件
 	const handleJumpToAgentStream = useCallback((message: AgentStreamJumpState) => {
 		if (message.type === AGENT_STREAM_JUMP && agentStreamMessages.length > 0) {
-			const targetTs = message.timestamp;
+			if (!message.id){
+				return;
+			}
 
-			// 查找最接近的消息索引
-			const nearestIndex = findNearestMessageIndex(agentStreamMessages, targetTs);
+			const messageIndex = findMessageIndexById(agentStreamMessages, message.id);
 
-			// 使用scrollToNearestTs函数滚动到最接近的时间戳，使用平滑滚动
-			scrollToNearestTs(virtuosoRef, agentStreamMessages, targetTs, 'smooth');
+			scrollToMessageById(virtuosoRef, agentStreamMessages, message.id);
 
 			// 设置高亮索引，启动单次完整的淡入淡出动画
-			if (nearestIndex === highlightedIndex) { // 如果高亮索引和最近索引相同，需要置空然后再设置回来
+			if (messageIndex === highlightedIndex) { // 如果高亮索引和最近索引相同，需要置空然后再设置回来
 				setHighlightedIndex(null);
 				// 使用 requestAnimationFrame 确保状态更新后再设置回来
 				requestAnimationFrame(() => {
-					setHighlightedIndex(nearestIndex);
+					setHighlightedIndex(messageIndex);
 				});
 			} else {
-				setHighlightedIndex(nearestIndex);
+				setHighlightedIndex(messageIndex);
 			}
 		}
 	}, [agentStreamMessages]) as AppMessageHandler;

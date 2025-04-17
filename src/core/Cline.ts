@@ -428,11 +428,7 @@ export class Cline {
 		const texts = this.userMessageContent.filter((block) => block.type === 'text');
 		const textStrings = texts.map((block) => block.text);
 		logger.debug('handleAssistantMessage pushToolResult',textStrings);
-		await this.sayP({
-			sayType: 'agent_stream',
-			text: textStrings.join('\n'),
-			partial: false,
-		});
+		await this.streamChatManager.addAgentStream(textStrings.join('\n'));
 	}
 
 	async applyToolUse(block: ToolUse, context?: IInternalContext): Promise<string | unknown> {
