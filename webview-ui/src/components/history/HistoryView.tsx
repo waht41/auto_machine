@@ -4,15 +4,141 @@ import { vscode } from '../../utils/vscode';
 import { Virtuoso } from 'react-virtuoso';
 import React, { memo, useMemo, useState, useEffect } from 'react';
 import { Fzf } from 'fzf';
-import { formatLargeNumber } from '../../utils/format';
 import { highlightFzfMatch } from '../../utils/highlight';
 import { Radio } from 'antd';
+import styled from 'styled-components';
+import HistoryItemComponent from './HistoryItem';
 
 type HistoryViewProps = {
 	onDone: () => void
 }
 
 type SortOption = 'newest' | 'oldest' | 'mostExpensive' | 'mostTokens' | 'mostRelevant'
+
+// 样式化组件
+const Container = styled.div`
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+`;
+
+const Header = styled.div`
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 10px 17px 10px 20px;
+`;
+
+const HeaderTitle = styled.h3`
+	color: var(--vscode-foreground);
+	margin: 0;
+`;
+
+const SearchContainer = styled.div`
+	padding: 5px 17px 6px 17px;
+`;
+
+const SearchControls = styled.div`
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+`;
+
+const ListContainer = styled.div`
+	flex-grow: 1;
+	overflow-y: auto;
+	margin: 0;
+`;
+
+const VirtuosoContainer = styled.div`
+	flex-grow: 1;
+	overflow-y: scroll;
+`;
+
+const CopyModal = styled.div`
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	background-color: var(--vscode-notifications-background);
+	color: var(--vscode-notifications-foreground);
+	padding: 12px 20px;
+	border-radius: 4px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+	z-index: 1000;
+	transition: opacity 0.2s ease-in-out;
+`;
+
+const SearchIcon = styled.div`
+	font-size: 13px;
+	margin-top: 2.5px;
+	opacity: 0.8;
+`;
+
+const ClearButton = styled.div`
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	height: 100%;
+`;
+
+// 搜索和排序组件
+const SearchAndSort = memo(({ 
+	searchQuery, 
+	setSearchQuery, 
+	sortOption, 
+	setSortOption 
+}: { 
+	searchQuery: string, 
+	setSearchQuery: (query: string) => void, 
+	sortOption: SortOption, 
+	setSortOption: (option: SortOption) => void 
+}) => {
+	return (
+		<SearchContainer>
+			<SearchControls>
+				<VSCodeTextField
+					style={{ width: '100%' }}
+					placeholder="Fuzzy search history..."
+					value={searchQuery}
+					onInput={(e) => {
+						const newValue = (e.target as HTMLInputElement)?.value;
+						setSearchQuery(newValue);
+					}}>
+					<SearchIcon slot="start" className="codicon codicon-search" />
+					{searchQuery && (
+						<ClearButton
+							className="input-icon-button codicon codicon-close"
+							aria-label="Clear search"
+							onClick={() => setSearchQuery('')}
+							slot="end"
+						/>
+					)}
+				</VSCodeTextField>
+				<Radio.Group
+					style={{ display: 'flex', flexWrap: 'wrap' }}
+					value={sortOption}
+					onChange={(e) => setSortOption(e.target.value as SortOption)}>
+					<Radio value="newest">Newest</Radio>
+					<Radio value="oldest">Oldest</Radio>
+					<Radio value="mostExpensive">Most Expensive</Radio>
+					<Radio value="mostTokens">Most Tokens</Radio>
+					<Radio
+						value="mostRelevant"
+						disabled={!searchQuery}
+						style={{ opacity: searchQuery ? 1 : 0.5 }}>
+						Most Relevant
+					</Radio>
+				</Radio.Group>
+			</SearchControls>
+		</SearchContainer>
+	);
+});
 
 const HistoryView = ({ onDone }: HistoryViewProps) => {
 	const { taskHistory } = useExtensionState();
@@ -48,21 +174,6 @@ const HistoryView = ({ onDone }: HistoryViewProps) => {
 		} catch (error) {
 			console.error('Failed to copy to clipboard:', error);
 		}
-	};
-
-	const formatDate = (timestamp: number) => {
-		const date = new Date(timestamp);
-		return date
-			?.toLocaleString('en-US', {
-				month: 'long',
-				day: 'numeric',
-				hour: 'numeric',
-				minute: '2-digit',
-				hour12: true,
-			})
-			.replace(', ', ' ')
-			.replace(' at', ',')
-			.toUpperCase();
 	};
 
 	const presentableTasks = useMemo(() => {
@@ -113,8 +224,9 @@ const HistoryView = ({ onDone }: HistoryViewProps) => {
 		<>
 			<style>
 				{`
-					.history-item:hover {
-						background-color: var(--vscode-list-hoverBackground);
+					.history-item-highlight {
+						background-color: var(--vscode-editor-findMatchHighlightBackground);
+						color: inherit;
 					}
 					.delete-button, .export-button, .copy-button {
 						opacity: 0;
@@ -126,340 +238,47 @@ const HistoryView = ({ onDone }: HistoryViewProps) => {
 						opacity: 1;
 						pointer-events: auto;
 					}
-					.history-item-highlight {
-						background-color: var(--vscode-editor-findMatchHighlightBackground);
-						color: inherit;
-					}
-					.copy-modal {
-						position: fixed;
-						top: 50%;
-						left: 50%;
-						transform: translate(-50%, -50%);
-						background-color: var(--vscode-notifications-background);
-						color: var(--vscode-notifications-foreground);
-						padding: 12px 20px;
-						border-radius: 4px;
-						box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-						z-index: 1000;
-						transition: opacity 0.2s ease-in-out;
-					}
 				`}
 			</style>
-			{showCopyModal && <div className="copy-modal">Prompt Copied to Clipboard</div>}
-			<div
-				style={{
-					position: 'fixed',
-					top: 0,
-					left: 0,
-					right: 0,
-					bottom: 0,
-					display: 'flex',
-					flexDirection: 'column',
-					overflow: 'hidden',
-				}}>
-				<div
-					style={{
-						display: 'flex',
-						justifyContent: 'space-between',
-						alignItems: 'center',
-						padding: '10px 17px 10px 20px',
-					}}>
-					<h3 style={{ color: 'var(--vscode-foreground)', margin: 0 }}>History</h3>
+			{showCopyModal && <CopyModal>Prompt Copied to Clipboard</CopyModal>}
+			<Container>
+				<Header>
+					<HeaderTitle>History</HeaderTitle>
 					<VSCodeButton onClick={onDone}>Done</VSCodeButton>
-				</div>
-				<div style={{ padding: '5px 17px 6px 17px' }}>
-					<div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-						<VSCodeTextField
-							style={{ width: '100%' }}
-							placeholder="Fuzzy search history..."
-							value={searchQuery}
-							onInput={(e) => {
-								const newValue = (e.target as HTMLInputElement)?.value;
-								setSearchQuery(newValue);
-								if (newValue && !searchQuery && sortOption !== 'mostRelevant') {
-									setLastNonRelevantSort(sortOption);
-									setSortOption('mostRelevant');
-								}
-							}}>
-							<div
-								slot="start"
-								className="codicon codicon-search"
-								style={{ fontSize: 13, marginTop: 2.5, opacity: 0.8 }}></div>
-							{searchQuery && (
-								<div
-									className="input-icon-button codicon codicon-close"
-									aria-label="Clear search"
-									onClick={() => setSearchQuery('')}
-									slot="end"
-									style={{
-										display: 'flex',
-										justifyContent: 'center',
-										alignItems: 'center',
-										height: '100%',
-									}}
-								/>
-							)}
-						</VSCodeTextField>
-						<Radio.Group
-							style={{ display: 'flex', flexWrap: 'wrap' }}
-							value={sortOption}
-							onChange={(e) => setSortOption(e.target.value as SortOption)}>
-							<Radio value="newest">Newest</Radio>
-							<Radio value="oldest">Oldest</Radio>
-							<Radio value="mostExpensive">Most Expensive</Radio>
-							<Radio value="mostTokens">Most Tokens</Radio>
-							<Radio
-								value="mostRelevant"
-								disabled={!searchQuery}
-								style={{ opacity: searchQuery ? 1 : 0.5 }}>
-								Most Relevant
-							</Radio>
-						</Radio.Group>
-					</div>
-				</div>
-				<div style={{ flexGrow: 1, overflowY: 'auto', margin: 0 }}>
+				</Header>
+				
+				<SearchAndSort 
+					searchQuery={searchQuery}
+					setSearchQuery={setSearchQuery}
+					sortOption={sortOption}
+					setSortOption={setSortOption}
+				/>
+				
+				<ListContainer>
 					<Virtuoso
-						style={{
-							flexGrow: 1,
-							overflowY: 'scroll',
-						}}
+						style={{ height: '100%' }}
 						data={taskHistorySearchResults}
 						data-testid="virtuoso-container"
 						components={{
 							List: React.forwardRef((props, ref) => (
-								<div {...props} ref={ref} data-testid="virtuoso-item-list" />
+								<VirtuosoContainer {...props} ref={ref} data-testid="virtuoso-item-list" />
 							)),
 						}}
 						itemContent={(index, item) => (
-							<div
-								key={item.id}
-								data-testid={`task-item-${item.id}`}
-								className="history-item"
-								style={{
-									cursor: 'pointer',
-									borderBottom:
-										index < taskHistory.length - 1
-											? '1px solid var(--vscode-panel-border)'
-											: 'none',
-								}}
-								onClick={() => handleHistorySelect(item.id)}>
-								<div
-									style={{
-										display: 'flex',
-										flexDirection: 'column',
-										gap: '8px',
-										padding: '12px 20px',
-										position: 'relative',
-									}}>
-									<div
-										style={{
-											display: 'flex',
-											justifyContent: 'space-between',
-											alignItems: 'center',
-										}}>
-										<span
-											style={{
-												color: 'var(--vscode-descriptionForeground)',
-												fontWeight: 500,
-												fontSize: '0.85em',
-												textTransform: 'uppercase',
-											}}>
-											{formatDate(item.ts)}
-										</span>
-										<div style={{ display: 'flex', gap: '4px' }}>
-											<button
-												title="Copy Prompt"
-												className="copy-button"
-												data-appearance="icon"
-												onClick={(e) => handleCopyTask(e, item.task)}>
-												<span className="codicon codicon-copy"></span>
-											</button>
-											<button
-												title="Delete Task"
-												className="delete-button"
-												data-appearance="icon"
-												onClick={(e) => {
-													e.stopPropagation();
-													handleDeleteHistoryItem(item.id);
-												}}>
-												<span className="codicon codicon-trash"></span>
-											</button>
-										</div>
-									</div>
-									<div
-										style={{
-											fontSize: 'var(--vscode-font-size)',
-											color: 'var(--vscode-foreground)',
-											display: '-webkit-box',
-											WebkitLineClamp: 3,
-											WebkitBoxOrient: 'vertical',
-											overflow: 'hidden',
-											whiteSpace: 'pre-wrap',
-											wordBreak: 'break-word',
-											overflowWrap: 'anywhere',
-										}}
-										dangerouslySetInnerHTML={{ __html: item.task }}
-									/>
-									<div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-										<div
-											data-testid="tokens-container"
-											style={{
-												display: 'flex',
-												justifyContent: 'space-between',
-												alignItems: 'center',
-											}}>
-											<div
-												style={{
-													display: 'flex',
-													alignItems: 'center',
-													gap: '4px',
-													flexWrap: 'wrap',
-												}}>
-												<span
-													style={{
-														fontWeight: 500,
-														color: 'var(--vscode-descriptionForeground)',
-													}}>
-													Tokens:
-												</span>
-												<span
-													data-testid="tokens-in"
-													style={{
-														display: 'flex',
-														alignItems: 'center',
-														gap: '3px',
-														color: 'var(--vscode-descriptionForeground)',
-													}}>
-													<i
-														className="codicon codicon-arrow-up"
-														style={{
-															fontSize: '12px',
-															fontWeight: 'bold',
-															marginBottom: '-2px',
-														}}
-													/>
-													{formatLargeNumber(item.tokensIn || 0)}
-												</span>
-												<span
-													data-testid="tokens-out"
-													style={{
-														display: 'flex',
-														alignItems: 'center',
-														gap: '3px',
-														color: 'var(--vscode-descriptionForeground)',
-													}}>
-													<i
-														className="codicon codicon-arrow-down"
-														style={{
-															fontSize: '12px',
-															fontWeight: 'bold',
-															marginBottom: '-2px',
-														}}
-													/>
-													{formatLargeNumber(item.tokensOut || 0)}
-												</span>
-											</div>
-											{!item.totalCost && <ExportButton itemId={item.id} />}
-										</div>
-
-										{!!item.cacheWrites && (
-											<div
-												data-testid="cache-container"
-												style={{
-													display: 'flex',
-													alignItems: 'center',
-													gap: '4px',
-													flexWrap: 'wrap',
-												}}>
-												<span
-													style={{
-														fontWeight: 500,
-														color: 'var(--vscode-descriptionForeground)',
-													}}>
-													Cache:
-												</span>
-												<span
-													data-testid="cache-writes"
-													style={{
-														display: 'flex',
-														alignItems: 'center',
-														gap: '3px',
-														color: 'var(--vscode-descriptionForeground)',
-													}}>
-													<i
-														className="codicon codicon-database"
-														style={{
-															fontSize: '12px',
-															fontWeight: 'bold',
-															marginBottom: '-1px',
-														}}
-													/>
-													+{formatLargeNumber(item.cacheWrites || 0)}
-												</span>
-												<span
-													data-testid="cache-reads"
-													style={{
-														display: 'flex',
-														alignItems: 'center',
-														gap: '3px',
-														color: 'var(--vscode-descriptionForeground)',
-													}}>
-													<i
-														className="codicon codicon-arrow-right"
-														style={{
-															fontSize: '12px',
-															fontWeight: 'bold',
-															marginBottom: 0,
-														}}
-													/>
-													{formatLargeNumber(item.cacheReads || 0)}
-												</span>
-											</div>
-										)}
-										{!!item.totalCost && (
-											<div
-												style={{
-													display: 'flex',
-													justifyContent: 'space-between',
-													alignItems: 'center',
-													marginTop: -2,
-												}}>
-												<div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-													<span
-														style={{
-															fontWeight: 500,
-															color: 'var(--vscode-descriptionForeground)',
-														}}>
-														API Cost:
-													</span>
-													<span style={{ color: 'var(--vscode-descriptionForeground)' }}>
-														${item.totalCost?.toFixed(4)}
-													</span>
-												</div>
-												<ExportButton itemId={item.id} />
-											</div>
-										)}
-									</div>
-								</div>
-							</div>
+							<HistoryItemComponent
+								item={item}
+								index={index}
+								totalItems={taskHistorySearchResults.length}
+								onSelect={handleHistorySelect}
+								onDelete={handleDeleteHistoryItem}
+								onCopy={handleCopyTask}
+							/>
 						)}
 					/>
-				</div>
-			</div>
+				</ListContainer>
+			</Container>
 		</>
 	);
 };
-
-const ExportButton = ({ itemId }: { itemId: string }) => (
-	<VSCodeButton
-		className="export-button"
-		appearance="icon"
-		onClick={(e) => {
-			e.stopPropagation();
-			vscode.postMessage({ type: 'exportTaskWithId', text: itemId });
-		}}>
-		<div style={{ fontSize: '11px', fontWeight: 500, opacity: 1 }}>EXPORT</div>
-	</VSCodeButton>
-);
 
 export default memo(HistoryView);
