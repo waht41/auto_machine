@@ -99,3 +99,14 @@ export type ParallelCommand = {
   sub_tasks: string[]
 }
 export type AdvanceCommand = MemoryCommand | CompressCommand | ParallelCommand;
+
+export type CoderCommand = { type: 'coder' } & (
+  {
+    cmd: 'cmd';
+    content: string;
+  } |
+  {
+    cmd: 'node';
+    content: string;
+  }
+);
