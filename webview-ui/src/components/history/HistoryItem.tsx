@@ -5,9 +5,9 @@ import { formatLargeNumber } from '../../utils/format';
 import { vscode } from '../../utils/vscode';
 
 // 样式化组件
-const HistoryItem = styled.div<{ isLast: boolean }>`
+const HistoryItem = styled.div<{ $isLast: boolean }>`
 	cursor: pointer;
-	border-bottom: ${props => props.isLast ? 'none' : '1px solid var(--vscode-panel-border)'};
+	border-bottom: ${props => props.$isLast ? 'none' : '1px solid var(--vscode-panel-border)'};
 	
 	&:hover {
 		background-color: var(--vscode-list-hoverBackground);
@@ -168,7 +168,7 @@ const HistoryItemComponent = memo(({
 
 	return (
 		<HistoryItem 
-			isLast={index === totalItems - 1}
+			$isLast={index === totalItems - 1}
 			onClick={() => onSelect(item.id)}
 			data-testid={`task-item-${item.id}`}
 			className="history-item"

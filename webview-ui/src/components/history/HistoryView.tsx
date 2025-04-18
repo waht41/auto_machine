@@ -17,12 +17,8 @@ type SortOption = 'newest' | 'oldest' | 'mostExpensive' | 'mostTokens' | 'mostRe
 
 // 样式化组件
 const Container = styled.div`
-	position: fixed;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
 	display: flex;
+	height: 100%;
 	flex-direction: column;
 	overflow: hidden;
 `;
@@ -51,13 +47,13 @@ const SearchControls = styled.div`
 
 const ListContainer = styled.div`
 	flex-grow: 1;
-	overflow-y: auto;
+	overflow: hidden;
 	margin: 0;
 `;
 
 const VirtuosoContainer = styled.div`
 	flex-grow: 1;
-	overflow-y: scroll;
+	overflow-y: auto;
 `;
 
 const CopyModal = styled.div`
@@ -247,7 +243,7 @@ const HistoryView = ({ onDone }: HistoryViewProps) => {
 					<VSCodeButton onClick={onDone}>Done</VSCodeButton>
 				</Header>
 				
-				<SearchAndSort 
+				<SearchAndSort
 					searchQuery={searchQuery}
 					setSearchQuery={setSearchQuery}
 					sortOption={sortOption}
