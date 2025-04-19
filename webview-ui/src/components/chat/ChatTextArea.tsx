@@ -17,8 +17,8 @@ import { WebviewMessage } from '@/shared/WebviewMessage';
 import styled from 'styled-components';
 import { ApprovalButton } from './AutoApproveMenu';
 import EnhanceIcon from '@webview-ui/assets/enhanceIcon.png';
-import { Button } from 'antd';
 import ArrowUp from '@webview-ui/assets/ArrowUp.png';
+import { Button } from 'antd';
 
 interface ChatTextAreaContainerProps {
 	$disabled?: boolean;
@@ -35,6 +35,15 @@ interface StyledTextAreaProps {
 
 interface IconButtonProps {
 	$fontSize?: string;
+	$disabled?: boolean;
+}
+
+interface SendButtonProps {
+  $disabled?: boolean;
+}
+
+interface StyledEnhanceButtonProps {
+  $disabled?: boolean;
 }
 
 const ChatTextAreaContainer = styled.div<ChatTextAreaContainerProps>`
@@ -132,10 +141,55 @@ const LoadingIcon = styled.span`
 const IconButton = styled.span<IconButtonProps>`
   font-size: ${props => props.$fontSize || '16.5px'};
 
-  &.disabled {
+  &.disabled, ${props => props.$disabled ? '&' : ''} {
     opacity: 0.5;
     cursor: not-allowed;
   }
+`;
+
+const StyledEnhanceButton = styled(Button)<StyledEnhanceButtonProps>`
+  padding: 4px;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: ${props => props.$disabled ? 0.5 : 1};
+  cursor: ${props => props.$disabled ? 'not-allowed' : 'pointer'};
+  
+  &:hover, &:focus {
+    background: transparent;
+    border: none;
+  }
+`;
+
+const EnhanceImage = styled.img`
+  width: 20px;
+  height: 20px;
+`;
+
+const SendButton = styled(Button)<SendButtonProps>`
+  border-radius: 50%;
+  background: ${props => props.$disabled ? '#C8C8C8' : '#9233FF'};
+  height: 48px;
+  width: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  opacity: ${props => props.$disabled ? 0.7 : 1};
+  cursor: ${props => props.$disabled ? 'not-allowed' : 'pointer'};
+  transition: all 0.3s ease;
+  
+  &:hover, &:focus {
+    background: ${props => props.$disabled ? '#C8C8C8' : '#A64DFF'};
+    border: none;
+  }
+`;
+
+const SendIcon = styled.img`
+  width: 12px;
+  height: 16px;
 `;
 
 interface ChatTextAreaProps {
@@ -749,9 +803,9 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 							{isEnhancingPrompt ? (
 								<LoadingIcon className="codicon codicon-loading codicon-modifier-spin" />
 							) : (
-								<Button type="text" style={{ padding: '4px' }}>
-									<img src = {EnhanceIcon} 	onClick={() => !textAreaDisabled && handleEnhancePrompt()} alt="auto approval tool" style={{ width: '20px', height: '20px' }}/>
-								</Button>
+								<StyledEnhanceButton onClick={() => !textAreaDisabled && handleEnhancePrompt()} $disabled={textAreaDisabled}>
+									<EnhanceImage src={EnhanceIcon} alt="auto approval tool" />
+								</StyledEnhanceButton>
 							)}
 						</ButtonWrapper>
 					</ButtonGroup>
@@ -760,11 +814,16 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 							className={`input-icon-button ${shouldDisableImages ? 'disabled' : ''} codicon codicon-device-camera`}
 							style={{display: 'none'}} //todo 之后记得加回来
 							$fontSize="16.5px"
+							$disabled={shouldDisableImages}
 							onClick={() => !shouldDisableImages && onSelectImages()}
 						/>
-						<Button type="text" style={{borderRadius:'50%', background:'#9233FF',height: '48px', width:'48px', display:'flex', alignItems:'center',justifyContent:'center'}} onClick={() => !textAreaDisabled && onSend()}>
-							<img alt='send button' src={ArrowUp} style={{width:'12px', height:'16px'}}></img>
-						</Button>
+						<SendButton 
+							type="primary" 
+							onClick={() => !textAreaDisabled && onSend()} 
+							$disabled={textAreaDisabled}
+						>
+							<SendIcon src={ArrowUp} alt="send button" />
+						</SendButton>
 					</ButtonGroup>
 				</ControlsContainer>
 			</ChatTextAreaContainer>

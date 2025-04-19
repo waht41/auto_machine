@@ -153,7 +153,8 @@ export const AutoApprovePopover = ({ allowedTools, treeData, setAllowedTools }: 
 			trigger="click"
 			content={
 				<div style={{ maxHeight: 400, overflow: 'auto', width: 400 }}>
-					<div>hi</div>
+					<div style={{fontSize:20, width:900, fontFamily: 'Roboto',}}>Tool Permissions</div>
+					<p>Roo will use selected tools without asking each time</p>
 					<Tree
 						checkable
 						checkedKeys={allowedTools}
@@ -245,8 +246,8 @@ const convertToNodes = (toolCategories: IToolCategory[]): DataNode[] => {
 	// 创建一个根节点，包含所有工具类别
 	return [{
 		title: (
-			<Tooltip title="所有可用的自动批准工具">
-        所有工具
+			<Tooltip title="all available tools">
+        All
 			</Tooltip>
 		),
 		key: 'all',
