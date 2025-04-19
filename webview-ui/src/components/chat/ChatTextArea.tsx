@@ -7,25 +7,145 @@ import {
 	getContextMenuOptions,
 	insertMention,
 	removeMention,
-	shouldShowContextMenu,
+	shouldShowContextMenu
 } from '../../utils/context-mentions';
 import { MAX_IMAGES_PER_MESSAGE } from './ChatView';
 import ContextMenu from './ContextMenu';
 import Thumbnails from '../common/Thumbnails';
 import { vscode } from '../../utils/vscode';
 import { WebviewMessage } from '@/shared/WebviewMessage';
+import styled from 'styled-components';
+
+interface ChatTextAreaContainerProps {
+	$disabled?: boolean;
+}
+
+interface HighlightLayerProps {
+	$thumbnailsHeight: number;
+}
+
+interface StyledTextAreaProps {
+	$disabled?: boolean;
+	$thumbnailsHeight: number;
+}
+
+interface IconButtonProps {
+	$fontSize?: string;
+}
+
+const ChatTextAreaContainer = styled.div<ChatTextAreaContainerProps>`
+  opacity: ${props => props.$disabled ? 0.5 : 1};
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background-color: var(--vscode-input-background);
+  margin: 10px 15px;
+  padding: 32px 24px 24px 24px;
+  border: 1px solid var(--vscode-input-border);
+  border-radius: 24px;
+  box-shadow: 0 2px 20px 0 #00000014;
+`;
+const TextAreaWrapper = styled.div`
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column-reverse;
+  min-height: 0;
+  overflow: hidden;
+`;
+
+const HighlightLayer = styled.div<HighlightLayerProps>`
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  color: transparent;
+  overflow: hidden;
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-editor-font-size);
+  line-height: var(--vscode-editor-line-height);
+  padding: 8px;
+  margin-bottom: ${props => props.$thumbnailsHeight > 0 ? `${props.$thumbnailsHeight + 16}px` : 0};
+  z-index: 1;
+`;
+
+const StyledTextArea = styled(DynamicTextArea)<StyledTextAreaProps>`
+  width: 100%;
+
+  box-sizing: border-box;
+  background-color: transparent;
+  color: var(--vscode-input-foreground);
+  border-radius: 2px;
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-editor-font-size);
+  line-height: var(--vscode-editor-line-height);
+  resize: none;
+  overflow-x: hidden;
+  overflow-y: auto;
+  border: none;
+  padding: 8px;
+  margin-bottom: ${props => props.$thumbnailsHeight > 0 ? `${props.$thumbnailsHeight + 16}px` : 0};
+  cursor: ${props => props.$disabled ? 'not-allowed' : 'text'};
+  flex: 0 1 auto;
+  z-index: 2;
+`;
+
+const StyledThumbnails = styled(Thumbnails)`
+  position: absolute;
+  bottom: 36px;
+  left: 16px;
+  z-index: 2;
+  margin-bottom: 8px;
+`;
+
+const ControlsContainer = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 8px;
+`;
+
+const ButtonGroup = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+`;
+
+const ButtonWrapper = styled.div`
+  display: flex;
+  align-items: center;
+`;
+
+const LoadingIcon = styled.span`
+  color: var(--vscode-input-foreground);
+  opacity: 0.5;
+  font-size: 16.5px;
+  margin-right: 10px;
+`;
+
+const IconButton = styled.span<IconButtonProps>`
+  font-size: ${props => props.$fontSize || '16.5px'};
+
+  &.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
 
 interface ChatTextAreaProps {
-	inputValue: string
-	setInputValue: (value: string) => void
-	textAreaDisabled: boolean
-	placeholderText: string
-	selectedImages: string[]
-	setSelectedImages: React.Dispatch<React.SetStateAction<string[]>>
-	onSend: () => void
-	onSelectImages: () => void
-	shouldDisableImages: boolean
-	onHeightChange?: (height: number) => void
+	inputValue: string;
+	setInputValue: (value: string) => void;
+	textAreaDisabled: boolean;
+	placeholderText: string;
+	selectedImages: string[];
+	setSelectedImages: React.Dispatch<React.SetStateAction<string[]>>;
+	onSend: () => void;
+	onSelectImages: () => void;
+	shouldDisableImages: boolean;
+	onHeightChange?: (height: number) => void;
 }
 
 const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
@@ -40,9 +160,9 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 			onSend,
 			onSelectImages,
 			shouldDisableImages,
-			onHeightChange,
+			onHeightChange
 		},
-		ref,
+		ref
 	) => {
 		const { filePaths } = useExtensionState();
 		const [gitCommits, setGitCommits] = useState<any[]>([]);
@@ -74,7 +194,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 						value: commit.hash,
 						label: commit.subject,
 						description: `${commit.shortHash} by ${commit.author} on ${commit.date}`,
-						icon: '$(git-commit)',
+						icon: '$(git-commit)'
 					}));
 					setGitCommits(commits);
 				}
@@ -103,7 +223,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 			if (selectedType === ContextMenuOptionType.Git || /^[a-f0-9]+$/i.test(searchQuery)) {
 				const message: WebviewMessage = {
 					type: 'searchCommits',
-					query: searchQuery || '',
+					query: searchQuery || ''
 				} as const;
 				vscode.postMessage(message);
 			}
@@ -116,7 +236,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 					setIsEnhancingPrompt(true);
 					const message = {
 						type: 'enhancePrompt' as const,
-						text: trimmedInput,
+						text: trimmedInput
 					};
 					vscode.postMessage(message);
 				} else {
@@ -135,8 +255,8 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 					.map((file) => '/' + file)
 					.map((path) => ({
 						type: path.endsWith('/') ? ContextMenuOptionType.Folder : ContextMenuOptionType.File,
-						value: path,
-					})),
+						value: path
+					}))
 			];
 		}, [filePaths, gitCommits]);
 
@@ -195,7 +315,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 					const { newValue, mentionIndex } = insertMention(
 						textAreaRef.current.value,
 						cursorPosition,
-						insertValue,
+						insertValue
 					);
 
 					setInputValue(newValue);
@@ -212,7 +332,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 					}, 0);
 				}
 			},
-			[setInputValue, cursorPosition],
+			[setInputValue, cursorPosition]
 		);
 
 		const handleKeyDown = useCallback(
@@ -237,14 +357,14 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 							const selectableOptions = options.filter(
 								(option) =>
 									option.type !== ContextMenuOptionType.URL &&
-									option.type !== ContextMenuOptionType.NoResults,
+									option.type !== ContextMenuOptionType.NoResults
 							);
 
 							if (selectableOptions.length === 0) return -1; // No selectable options
 
 							// Find the index of the next selectable option
 							const currentSelectableIndex = selectableOptions.findIndex(
-								(option) => option === options[prevIndex],
+								(option) => option === options[prevIndex]
 							);
 
 							const newSelectableIndex =
@@ -325,8 +445,8 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 				cursorPosition,
 				setInputValue,
 				justDeletedSpaceAfterMention,
-				queryItems,
-			],
+				queryItems
+			]
 		);
 
 		useLayoutEffect(() => {
@@ -359,7 +479,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 					setSelectedMenuIndex(-1);
 				}
 			},
-			[setInputValue],
+			[setInputValue]
 		);
 
 		useEffect(() => {
@@ -440,7 +560,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 					}
 				}
 			},
-			[shouldDisableImages, setSelectedImages, cursorPosition, setInputValue, inputValue],
+			[shouldDisableImages, setSelectedImages, cursorPosition, setInputValue, inputValue]
 		);
 
 		const handleThumbnailsHeightChange = useCallback((height: number) => {
@@ -487,22 +607,12 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 					updateCursorPosition();
 				}
 			},
-			[updateCursorPosition],
+			[updateCursorPosition]
 		);
 
 		return (
-			<div
-				className="chat-text-area"
-				style={{
-					opacity: textAreaDisabled ? 0.5 : 1,
-					position: 'relative',
-					display: 'flex',
-					flexDirection: 'column',
-					gap: '8px',
-					backgroundColor: 'var(--vscode-input-background)',
-					margin: '10px 15px',
-					padding: '8px',
-				}}
+			<ChatTextAreaContainer
+				$disabled={textAreaDisabled}
 				onDrop={async (e) => {
 					e.preventDefault();
 					const files = Array.from(e.dataTransfer.files);
@@ -540,12 +650,12 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 						const dataUrls = imageDataArray.filter((dataUrl): dataUrl is string => dataUrl !== null);
 						if (dataUrls.length > 0) {
 							setSelectedImages((prevImages) =>
-								[...prevImages, ...dataUrls].slice(0, MAX_IMAGES_PER_MESSAGE),
+								[...prevImages, ...dataUrls].slice(0, MAX_IMAGES_PER_MESSAGE)
 							);
 							if (typeof vscode !== 'undefined') {
 								vscode.postMessage({
 									type: 'draggedImages',
-									dataUrls: dataUrls,
+									dataUrls: dataUrls
 								});
 							}
 						} else {
@@ -570,34 +680,12 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 					</div>
 				)}
 
-				<div
-					style={{
-						position: 'relative',
-						flex: '1 1 auto',
-						display: 'flex',
-						flexDirection: 'column-reverse',
-						minHeight: 0,
-						overflow: 'hidden',
-					}}>
-					<div
+				<TextAreaWrapper>
+					<HighlightLayer
 						ref={highlightLayerRef}
-						style={{
-							position: 'absolute',
-							inset: 0,
-							pointerEvents: 'none',
-							whiteSpace: 'pre-wrap',
-							wordWrap: 'break-word',
-							color: 'transparent',
-							overflow: 'hidden',
-							fontFamily: 'var(--vscode-font-family)',
-							fontSize: 'var(--vscode-editor-font-size)',
-							lineHeight: 'var(--vscode-editor-line-height)',
-							padding: '8px',
-							marginBottom: thumbnailsHeight > 0 ? `${thumbnailsHeight + 16}px` : 0,
-							zIndex: 1,
-						}}
+						$thumbnailsHeight={thumbnailsHeight}
 					/>
-					<DynamicTextArea
+					<StyledTextArea
 						ref={(el) => {
 							if (typeof ref === 'function') {
 								ref(el);
@@ -607,7 +695,8 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 							textAreaRef.current = el;
 						}}
 						value={inputValue}
-						disabled={textAreaDisabled}
+						$disabled={textAreaDisabled}
+						$thumbnailsHeight={thumbnailsHeight}
 						onChange={(e) => {
 							handleInputChange(e);
 							updateHighlights();
@@ -628,100 +717,49 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 						minRows={2}
 						maxRows={20}
 						autoFocus={true}
-						style={{
-							width: '100%',
-							boxSizing: 'border-box',
-							backgroundColor: 'transparent',
-							color: 'var(--vscode-input-foreground)',
-							borderRadius: 2,
-							fontFamily: 'var(--vscode-font-family)',
-							fontSize: 'var(--vscode-editor-font-size)',
-							lineHeight: 'var(--vscode-editor-line-height)',
-							resize: 'none',
-							overflowX: 'hidden',
-							overflowY: 'auto',
-							border: 'none',
-							padding: '8px',
-							marginBottom: thumbnailsHeight > 0 ? `${thumbnailsHeight + 16}px` : 0,
-							cursor: textAreaDisabled ? 'not-allowed' : undefined,
-							flex: '0 1 auto',
-							zIndex: 2,
-						}}
 						onScroll={() => updateHighlights()}
 					/>
-				</div>
+				</TextAreaWrapper>
 
 				{selectedImages.length > 0 && (
-					<Thumbnails
+					<StyledThumbnails
 						images={selectedImages}
 						setImages={setSelectedImages}
 						onHeightChange={handleThumbnailsHeightChange}
-						style={{
-							position: 'absolute',
-							bottom: '36px',
-							left: '16px',
-							zIndex: 2,
-							marginBottom: '8px',
-						}}
 					/>
 				)}
 
-				<div
-					style={{
-						display: 'flex',
-						justifyContent: 'flex-end',
-						alignItems: 'center',
-						marginTop: 'auto',
-						paddingTop: '8px',
-					}}>
-
-					<div
-						style={{
-							display: 'flex',
-							alignItems: 'center',
-							gap: '12px',
-						}}>
-						<div style={{ display: 'flex', alignItems: 'center' }}>
+				<ControlsContainer>
+					<ButtonGroup>
+						<ButtonWrapper>
 							{isEnhancingPrompt ? (
-								<span
-									className="codicon codicon-loading codicon-modifier-spin"
-									style={{
-										color: 'var(--vscode-input-foreground)',
-										opacity: 0.5,
-										fontSize: 16.5,
-										marginRight: 10,
-									}}
-								/>
+								<LoadingIcon className="codicon codicon-loading codicon-modifier-spin" />
 							) : (
-								<span
+								<IconButton
 									role="button"
 									aria-label="enhance prompt"
 									data-testid="enhance-prompt-button"
-									className={`input-icon-button ${
-										textAreaDisabled ? 'disabled' : ''
-									} codicon codicon-sparkle`}
+									className={`input-icon-button ${textAreaDisabled ? 'disabled' : ''} codicon codicon-sparkle`}
+									$fontSize="16.5px"
 									onClick={() => !textAreaDisabled && handleEnhancePrompt()}
-									style={{ fontSize: 16.5 }}
 								/>
 							)}
-						</div>
-						<span
-							className={`input-icon-button ${
-								shouldDisableImages ? 'disabled' : ''
-							} codicon codicon-device-camera`}
+						</ButtonWrapper>
+						<IconButton
+							className={`input-icon-button ${shouldDisableImages ? 'disabled' : ''} codicon codicon-device-camera`}
+							$fontSize="16.5px"
 							onClick={() => !shouldDisableImages && onSelectImages()}
-							style={{ fontSize: 16.5 }}
 						/>
-						<span
+						<IconButton
 							className={`input-icon-button ${textAreaDisabled ? 'disabled' : ''} codicon codicon-send`}
+							$fontSize="15px"
 							onClick={() => !textAreaDisabled && onSend()}
-							style={{ fontSize: 15 }}
 						/>
-					</div>
-				</div>
-			</div>
+					</ButtonGroup>
+				</ControlsContainer>
+			</ChatTextAreaContainer>
 		);
-	},
+	}
 );
 
 export default ChatTextArea;
