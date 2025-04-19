@@ -8,16 +8,15 @@ import {
 } from '@/shared/ExtensionMessage';
 import { getApiMetrics } from '@/shared/getApiMetrics';
 import { useExtensionState } from '../../context/ExtensionStateContext';
-import { vscode } from '../../utils/vscode';
 import ChatRow from './ChatRow/ChatRow';
 import ChatTextArea from './ChatTextArea';
 import TaskHeader from './TaskHeader';
-import AutoApproveMenu from './AutoApproveMenu';
 import { normalizeApiConfiguration } from '@webview-ui/components/settings/ApiOptions/utils';
 import { VSCodeButton } from '@vscode/webview-ui-toolkit/react';
 import { useClineMessageStore } from '@webview-ui/store/clineMessageStore';
 import TabNavigation from '@webview-ui/components/navigation/TabNavigation';
 import { useChatViewStore } from '@webview-ui/store/chatViewStore';
+import NewerExample from '@webview-ui/components/chat/NewerExample';
 
 export const MAX_IMAGES_PER_MESSAGE = 20; // Anthropic limits to 20 images
 
@@ -83,6 +82,22 @@ const ButtonsContainer = styled.div<{ opacity: number }>`
 const SecondaryButton = styled(VSCodeButton)<{ isStreaming: boolean }>`
 	flex: ${props => props.isStreaming ? 2 : 1};
 	margin-left: ${props => props.isStreaming ? 0 : '6px'};
+`;
+
+const EmptyStateContainer = styled.div`
+	display: flex;
+	align-items: stretch;
+	justify-content: center;
+	flex-direction: column;
+	width: 100%;
+	height: 80%;
+`;
+
+const WelcomeText = styled.div`
+	font-size: 40px;
+	font-weight: 500;
+	font-family: 'Roboto';
+	margin: 0 auto;
 `;
 
 const ChatView = () => {
@@ -387,9 +402,48 @@ const ChatView = () => {
 		],
 	);
 
+	// 创建通用的 ChatTextArea 属性对象
+	const createChatTextAreaProps = useCallback(() => ({
+		inputValue,
+		setInputValue,
+		textAreaDisabled,
+		placeholderText,
+		selectedImages,
+		setSelectedImages,
+		onSend: () => handleSendMessage(inputValue, selectedImages),
+		onSelectImages: selectImages,
+		shouldDisableImages,
+		onHeightChange: () => {
+			if (isAtBottom) {
+				scrollToBottomAuto();
+			}
+		},
+		allowedTools,
+		toolCategories
+	}), [
+		inputValue, 
+		setInputValue, 
+		textAreaDisabled, 
+		placeholderText, 
+		selectedImages, 
+		setSelectedImages, 
+		handleSendMessage, 
+		selectImages, 
+		shouldDisableImages, 
+		isAtBottom, 
+		scrollToBottomAuto, 
+		allowedTools, 
+		toolCategories
+	]);
+
+	// 获取通用属性
+	const chatTextAreaProps = useMemo(() => createChatTextAreaProps(), [createChatTextAreaProps]);
+
 	return (
 		<ChatViewContainer>
-			{/*{!task && <ChatHistory/>}*/}
+			{/*
+				{!task && <ChatHistory/>}
+			*/}
 
 			{task && (
 				<>
@@ -403,7 +457,7 @@ const ChatView = () => {
 					<ScrollContainer ref={scrollContainerRef}>
 						<VirtuosoContainer
 							ref={virtuosoRef}
-							key={task.ts} // trick to make sure virtuoso re-renders when task changes, and we use initialTopMostItemIndex to start at the bottom
+							key={task?.ts} // trick to make sure virtuoso re-renders when task changes, and we use initialTopMostItemIndex to start at the bottom
 							className="scrollable"
 							components={{
 								Footer: () => <FooterContainer />, // Add empty padding at the bottom
@@ -456,31 +510,24 @@ const ChatView = () => {
 							)}
 						</ButtonsContainer>
 					)}
+					<ChatTextArea
+						ref={textAreaRef}
+						{...chatTextAreaProps}
+					/>
 				</>
 			)}
-			<AutoApproveMenu toolCategories={toolCategories} allowedTools={allowedTools} setAllowedTools={(toolId)=>{
-				vscode.postMessage({type: 'setAllowedTools', toolId: toolId});
-			}}></AutoApproveMenu>
-			<ChatTextArea
-				ref={textAreaRef}
-				inputValue={inputValue}
-				setInputValue={setInputValue}
-				textAreaDisabled={textAreaDisabled}
-				placeholderText={placeholderText}
-				selectedImages={selectedImages}
-				setSelectedImages={setSelectedImages}
-				onSend={() => handleSendMessage(inputValue, selectedImages)}
-				onSelectImages={selectImages}
-				shouldDisableImages={shouldDisableImages}
-				onHeightChange={() => {
-					if (isAtBottom) {
-						scrollToBottomAuto();
-					}
-				}}
-				allowedTools={allowedTools}
-				toolCategories={toolCategories}
-			/>
+
+			{!task && <EmptyStateContainer>
+				<WelcomeText>what can I do for you?</WelcomeText>
+
+				<ChatTextArea
+					ref={textAreaRef}
+					{...chatTextAreaProps}
+				/>
+				<NewerExample/>
+			</EmptyStateContainer>}
 		</ChatViewContainer>
+
 	);
 };
 
