@@ -1,11 +1,10 @@
-import React, { useEffect, useRef, useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import styled from 'styled-components';
-import { Card, Typography, Tag } from 'antd';
-import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
+import { Card, Typography, Tag, Button, Tooltip } from 'antd';
+import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { useClineMessageStore } from '@webview-ui/store/clineMessageStore';
 import MarkdownBlock from '@webview-ui/components/common/MarkdownBlock';
 import {
-	scrollToMessageById,
 	findMessageIndexById
 } from '../utils/scrollSync';
 import messageBus from '@webview-ui/store/messageBus';
@@ -99,9 +98,9 @@ const StreamBody = styled.div`
   border-radius: 8px;
 `;
 
-const StyledVirtuoso = styled(Virtuoso)`
-  height: 100%;
+const MessagesContainer = styled.div`
   flex: 1;
+  overflow-y: auto;
   padding: 12px 0;
   
   &::-webkit-scrollbar {
@@ -122,10 +121,57 @@ const StyledVirtuoso = styled(Virtuoso)`
   
   /* 添加滚动过渡效果 */
   scroll-behavior: smooth;
+`;
+
+const PaginationContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px 0;
+  border-top: 1px solid #f0f0f0;
+  margin-top: auto;
+`;
+
+const PageButton = styled(Button)`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 8px;
+`;
+
+const ScrollIndicatorContainer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 200px;
+  position: relative;
+  height: 30px;
+`;
+
+const ScrollTrack = styled.div`
+  width: 100%;
+  height: 2px;
+  background-color: #f0f0f0;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+`;
+
+const ScrollIndicator = styled.div<{ position: number }>`
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: #1890ff;
+  position: absolute;
+  top: 50%;
+  left: ${props => props.position}%;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  transition: all 0.3s ease;
   
-  /* 为子元素添加动画效果 */
-  & > div {
-    transition: transform 0.3s ease-out;
+  &:hover {
+    transform: translate(-50%, -50%) scale(1.2);
+    box-shadow: 0 0 0 4px rgba(24, 144, 255, 0.2);
   }
 `;
 
@@ -170,8 +216,40 @@ const formatTimestamp = (ts: number) => {
 const AgentStream = () => {
 	const task = useClineMessageStore().getTask();
 	const agentStreamMessages = useClineMessageStore().getAgentStreamMessages();
-	const virtuosoRef = useRef<VirtuosoHandle | null>(null);
 	const [highlightedIndex, setHighlightedIndex] = useState<number | null>(null);
+	
+	// 分页相关状态
+	const [currentPage, setCurrentPage] = useState(1);
+	const pageSize = 1; // 每页只显示一个消息
+	const totalMessages = agentStreamMessages.length;
+	const totalPages = Math.ceil(totalMessages / pageSize);
+	
+	// 获取当前页的消息
+	const getCurrentPageMessages = () => {
+		const startIndex = (currentPage - 1) * pageSize;
+		const endIndex = Math.min(startIndex + pageSize, totalMessages);
+		return agentStreamMessages.slice(startIndex, endIndex);
+	};
+	
+	// 页面变化处理函数
+	const handlePageChange = (page: number) => {
+		setCurrentPage(page);
+		setHighlightedIndex(null); // 清除高亮状态
+	};
+	
+	// 上一页
+	const handlePrevPage = () => {
+		if (currentPage > 1) {
+			handlePageChange(currentPage - 1);
+		}
+	};
+	
+	// 下一页
+	const handleNextPage = () => {
+		if (currentPage < totalPages) {
+			handlePageChange(currentPage + 1);
+		}
+	};
 
 	// 处理从ApiRequestComponent跳转过来的事件
 	const handleJumpToAgentStream = useCallback((message: AgentStreamJumpState) => {
@@ -181,19 +259,14 @@ const AgentStream = () => {
 			}
 
 			const messageIndex = findMessageIndexById(agentStreamMessages, message.id);
-
-			scrollToMessageById(virtuosoRef, agentStreamMessages, message.id);
-
-			// 设置高亮索引，启动单次完整的淡入淡出动画
-			if (messageIndex === highlightedIndex) { // 如果高亮索引和最近索引相同，需要置空然后再设置回来
-				setHighlightedIndex(null);
-				// 使用 requestAnimationFrame 确保状态更新后再设置回来
-				requestAnimationFrame(() => {
-					setHighlightedIndex(messageIndex);
-				});
-			} else {
-				setHighlightedIndex(messageIndex);
-			}
+			if (messageIndex === -1) return;
+			
+			// 计算消息所在的页码 - 由于每页只有一个消息，页码就是索引+1
+			const targetPage = messageIndex + 1;
+			setCurrentPage(targetPage);
+			
+			// 设置高亮索引 - 由于每页只有一个消息，高亮索引总是0
+			setHighlightedIndex(0);
 		}
 	}, [agentStreamMessages]) as AppMessageHandler;
 
@@ -207,6 +280,13 @@ const AgentStream = () => {
 			messageBus.off(APP_MESSAGE, handleJumpToAgentStream);
 		};
 	}, [handleJumpToAgentStream]);
+	
+	// 当消息总数变化时，自动跳转到最后一页
+	useEffect(() => {
+		if (totalMessages > 0) {
+			setCurrentPage(totalPages);
+		}
+	}, [totalMessages]);
 
 	return (
 		<StreamContainer>
@@ -216,25 +296,51 @@ const AgentStream = () => {
 			</StreamHeader>
 
 			<StreamBody>
-				<StyledVirtuoso
-					ref={virtuosoRef}
-					totalCount={agentStreamMessages.length}
-					followOutput='smooth'
-					itemContent={(index) => {
-						const item = agentStreamMessages[index];
-						return (
-							<ItemCard className={highlightedIndex === index ? 'highlight' : ''}>
-								<MessageHeader>
-									<StyledTag color="blue">
-										{index + 1}
-									</StyledTag>
-									<TimeText type="secondary">{formatTimestamp(item.ts)}</TimeText>
-								</MessageHeader>
-								<MessageText markdown={item.text || ''} />
-							</ItemCard>
-						);
-					}}
-				/>
+				<MessagesContainer>
+					{getCurrentPageMessages().map((item, index) => (
+						<ItemCard 
+							key={index} 
+							className={highlightedIndex === index ? 'highlight' : ''}
+						>
+							<MessageHeader>
+								<StyledTag color="blue">
+									{(currentPage - 1) * pageSize + index + 1}
+								</StyledTag>
+								<TimeText type="secondary">{formatTimestamp(item.ts)}</TimeText>
+							</MessageHeader>
+							<MessageText markdown={item.text || ''} />
+						</ItemCard>
+					))}
+				</MessagesContainer>
+				
+				<PaginationContainer>
+					<PageButton 
+						type="primary" 
+						shape="circle" 
+						icon={<LeftOutlined />} 
+						onClick={handlePrevPage}
+						disabled={currentPage === 1}
+					/>
+					<PageButton 
+						type="primary" 
+						shape="circle" 
+						icon={<RightOutlined />} 
+						onClick={handleNextPage}
+						disabled={currentPage === totalPages}
+					/>
+					<ScrollIndicatorContainer>
+						<ScrollTrack />
+						<Tooltip 
+							title={`${currentPage} / ${totalPages}`} 
+							placement="top"
+						>
+							<ScrollIndicator 
+								position={(currentPage - 1) / Math.max(1, totalPages - 1) * 100 || 0} 
+							/>
+						</Tooltip>
+					</ScrollIndicatorContainer>
+					
+				</PaginationContainer>
 			</StreamBody>
 		</StreamContainer>
 	);
