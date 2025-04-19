@@ -1,7 +1,9 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { IToolCategory, IToolNode } from '@core/tool-adapter/type';
 import styled from 'styled-components';
-import { Tooltip, TreeSelect } from 'antd';
+import { Tooltip, Button, Popover, Tree } from 'antd';
+import type { DataNode } from 'antd/es/tree';
+import approvalIcon from '@webview-ui/assets/approvalIcon.png';
 
 // 使用styled-components定义样式组件
 const Container = styled.div`
@@ -16,7 +18,6 @@ const HeaderContainer = styled.div`
   align-items: center;
   gap: 8px;
   padding: 8px 0;
-  cursor: pointer;
 `;
 
 const HeaderContent = styled.div`
@@ -39,19 +40,6 @@ const BodyContainer = styled.div``;
 const Description = styled.div`
   color: #687076;
   font-size: 12px;
-`;
-
-const StyledHeaderTreeSelect = styled(TreeSelect)`
-  width: 400px;
-  margin-right: 8px;
-  flex: 1;
-  && .ant-select-selection-overflow {
-    width: 100%;
-    flex-wrap: nowrap;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
 `;
 
 const tools: IToolCategory[] = [
@@ -148,6 +136,45 @@ const AutoApproveMenu = ({toolCategories, allowedTools, setAllowedTools}:IProp) 
 	);
 };
 
+interface AutoApprovePopoverProps {
+  allowedTools: string[]
+  treeData: DataNode[]
+  setAllowedTools: (toolId: string[]) => void
+}
+
+// 抽取的Popover组件
+export const AutoApprovePopover = ({ allowedTools, treeData, setAllowedTools }: AutoApprovePopoverProps) => {
+	const [open, setOpen] = useState(false);
+	
+	return (
+		<Popover
+			open={open}
+			onOpenChange={setOpen}
+			trigger="click"
+			content={
+				<div style={{ maxHeight: 400, overflow: 'auto', width: 400 }}>
+					<div>hi</div>
+					<Tree
+						checkable
+						checkedKeys={allowedTools}
+						onCheck={(checkedKeys) => {
+							console.log('[waht] menu header',checkedKeys);
+							setAllowedTools(checkedKeys as string[]);
+						}}
+						treeData={treeData}
+						defaultExpandAll
+						checkStrictly={false}
+					/>
+				</div>
+			}
+		>
+			<Button type="text" style={{ padding: '4px' }}>
+				<img src={approvalIcon} alt="自动批准设置" style={{ width: '20px', height: '20px' }} />
+			</Button>
+		</Popover>
+	);
+};
+
 interface MenuHeaderProps {
   allowedTools: string[]
   tools: IToolCategory[]
@@ -155,25 +182,19 @@ interface MenuHeaderProps {
 }
 
 const MenuHeader = ({ allowedTools, tools, setAllowedTools }: MenuHeaderProps) => {
-	// 阻止事件冒泡，防止点击 TreeSelect 时触发 HeaderContainer 的点击事件
-	const convertedTools = useMemo(() => convertToNodes(tools), [tools]);
+	// 转换工具数据为 Tree 需要的 DataNode 结构
+	const treeData = useMemo(() => {
+		return convertToNodes(tools);
+	}, [tools]);
 
 	return (
 		<HeaderContainer>
 			<HeaderContent>
 				<HeaderTitle>Auto-approve:</HeaderTitle>
-				<StyledHeaderTreeSelect
-					treeData={convertedTools}
-					value={allowedTools}
-					onChange={(checked) => {
-						setAllowedTools(checked);
-					}}
-					treeCheckable={true}
-					showCheckedStrategy={TreeSelect.SHOW_CHILD}
-					placeholder="click here to choose tools"
-					dropdownStyle={{ maxHeight: 400, overflow: 'auto' }}
-					treeDefaultExpandAll
-					treeNodeLabelProp="title"
+				<AutoApprovePopover 
+					allowedTools={allowedTools} 
+					treeData={treeData} 
+					setAllowedTools={setAllowedTools} 
 				/>
 			</HeaderContent>
 		</HeaderContainer>
@@ -185,17 +206,16 @@ const isCategory = (node: IToolNode): node is IToolCategory => {
 	return 'tools' in node && Array.isArray((node as IToolCategory).tools);
 };
 
-// 将工具数据转换为 TreeSelect 所需的节点格式
-const convertToNodes = (toolCategories: IToolCategory[]): any[] => {
+// 将工具数据转换为 Tree 所需的节点格式
+const convertToNodes = (toolCategories: IToolCategory[]): DataNode[] => {
 	// 递归处理节点
-	const processNode = (node: IToolNode): any => {
-		const processedNode: any = {
+	const processNode = (node: IToolNode): DataNode => {
+		const processedNode: DataNode = {
 			title: (
 				<Tooltip title={node.description}>
 					{node.label}
 				</Tooltip>
 			),
-			value: node.id,
 			key: node.id,
 		};
 
@@ -213,7 +233,6 @@ const convertToNodes = (toolCategories: IToolCategory[]): any[] => {
         所有工具
 			</Tooltip>
 		),
-		value: 'all',
 		key: 'all',
 		children: toolCategories.map(category => processNode(category))
 	}];
