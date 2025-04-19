@@ -1,14 +1,12 @@
 import debounce from 'debounce';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useEvent, useMount } from 'react-use';
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 import styled from 'styled-components';
 import {
-	ClineAsk,
 	ClineMessage,
 	ExtensionMessage,
 } from '@/shared/ExtensionMessage';
-import { findLast } from '@/shared/array';
 import { getApiMetrics } from '@/shared/getApiMetrics';
 import { useExtensionState } from '../../context/ExtensionStateContext';
 import { vscode } from '../../utils/vscode';
@@ -21,6 +19,7 @@ import { VSCodeButton } from '@vscode/webview-ui-toolkit/react';
 import ChatHistory from '@webview-ui/components/chat/ChatHistory';
 import { useClineMessageStore } from '@webview-ui/store/clineMessageStore';
 import TabNavigation from '@webview-ui/components/navigation/TabNavigation';
+import { useChatViewStore } from '@webview-ui/store/chatViewStore';
 
 export const MAX_IMAGES_PER_MESSAGE = 20; // Anthropic limits to 20 images
 
@@ -96,34 +95,54 @@ const ChatView = () => {
 	} = useExtensionState();
 	const getChatMessages = useClineMessageStore(state => state.getChatMessages);
 	const messages = getChatMessages();
-	const clear = useClineMessageStore((state) => state.clearClineMessages);
+
+	// 使用 chatViewStore 中的状态和方法
+	const {
+		inputValue,
+		setInputValue,
+		textAreaDisabled,
+		setTextAreaDisabled, // Add this line
+		selectedImages,
+		setSelectedImages,
+		clineAsk,
+		setClineAsk,
+		enableButtons,
+		setEnableButtons,
+		secondaryButtonText,
+		didClickCancel,
+		expandedRows,
+		setExpandedRows,
+		showScrollToBottom,
+		setShowScrollToBottom,
+		isAtBottom,
+		setIsAtBottom,
+		setDisableAutoScroll,
+		handleSendMessage,
+		clearTask,
+		handlePrimaryButtonClick,
+		handleSecondaryButtonClick,
+		toggleRowExpansion,
+		selectImages,
+		isStreaming: getIsStreaming,
+		getPlaceholderText,
+		resetAllState
+	} = useChatViewStore();
 
 	const task = useMemo(() => messages.at(0), [messages]); // leaving this less safe version here since if the first message is not a task, then the extension is in a bad state and needs to be debugged (see Cline.abort)
 	const modifiedMessages = useMemo(() => messages.slice(1), [messages]);
 	// has to be after api_req_finished are all reduced into api_req_started messages
 	const apiMetrics = useMemo(() => getApiMetrics(modifiedMessages), [modifiedMessages]);
 
-	const [inputValue, setInputValue] = useState('');
 	const textAreaRef = useRef<HTMLTextAreaElement>(null);
-	const [textAreaDisabled, setTextAreaDisabled] = useState(false);
-	const [selectedImages, setSelectedImages] = useState<string[]>([]);
-
-	// we need to hold on to the ask because useEffect > lastMessage will always let us know when an ask comes in and handle it, but by the time handleMessage is called, the last message might not be the ask anymore (it could be a say that followed)
-	const [clineAsk, setClineAsk] = useState<ClineAsk | undefined>(undefined);
-	const [enableButtons, setEnableButtons] = useState<boolean>(false);
-	const [secondaryButtonText, setSecondaryButtonText] = useState<string | undefined>(undefined);
-	const [didClickCancel, setDidClickCancel] = useState(false);
 	const virtuosoRef = useRef<VirtuosoHandle>(null);
-	const [expandedRows, setExpandedRows] = useState<Record<number, boolean>>({});
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	const disableAutoScrollRef = useRef(false);
-	const [showScrollToBottom, setShowScrollToBottom] = useState(false);
-	const [isAtBottom, setIsAtBottom] = useState(false);
 
 	// UI layout depends on the last 2 messages
 	// (since it relies on the content of these messages, we are deep comparing. i.e. the button state after hitting button sets enableButtons to false, and this effect otherwise would have to true again even if messages didn't change
 	const lastMessage = useMemo(() => messages.at(-1), [messages]);
 	const secondLastMessage = useMemo(() => messages.at(-2), [messages]);
+	const isStreaming = useMemo(() => getIsStreaming(), [modifiedMessages, clineAsk, enableButtons]);
 
 	useEffect(() => {
 		// if last message is an ask, show user ask UI
@@ -149,138 +168,21 @@ const ChatView = () => {
 					break;
 			}
 		}
-	}, [lastMessage, secondLastMessage]);
+	}, [lastMessage, secondLastMessage, setTextAreaDisabled, setClineAsk, setEnableButtons]);
 
 	useEffect(() => {
 		if (messages.length === 0) {
-			setTextAreaDisabled(false);
-			setClineAsk(undefined);
-			setEnableButtons(false);
-			setSecondaryButtonText(undefined);
+			resetAllState();
 		}
-	}, [messages.length]);
+	}, [messages.length, resetAllState]);
 
 	useEffect(() => {
 		setExpandedRows({});
-	}, [task?.ts]);
-
-	const isStreaming = useMemo(() => {
-		const lastMessage = modifiedMessages.at(-1);
-		const lastMessageIsAsk = !!lastMessage?.ask;
-
-		// 判断工具是否处于主动提问状态
-		const isToolActive = lastMessageIsAsk &&
-			clineAsk !== undefined &&
-			enableButtons;
-		if (isToolActive) return false;
-
-		// 检查最后一条消息是否为流式传输中的部分响应
-		if (lastMessage?.partial) return true;
-
-		// 检查未完成的API请求
-		const lastApiRequest = findLast(
-			modifiedMessages,
-			(msg) => msg.say === 'api_req_started'
-		);
-
-		if (lastApiRequest?.text) {
-			try {
-				const { cost } = JSON.parse(lastApiRequest.text);
-				// 当cost未定义时表示请求尚未完成
-				return cost === undefined;
-			} catch (e) {
-				console.error('Invalid API request JSON:', lastApiRequest.text);
-			}
-		}
-
-		return false;
-	}, [modifiedMessages, clineAsk, enableButtons]);
-
-	const handleSendMessage = useCallback(
-		(text: string, images: string[]) => {
-			text = text.trim();
-			if (text || images.length > 0) {
-				if (messages.length === 0) {
-					vscode.postMessage({ type: 'newTask', text, images });
-				} else if (messages.length > 0) {
-					vscode.postMessage({ type: 'resumeTask', text, images });
-				} else if (clineAsk) {
-					switch (clineAsk) {
-						case 'text':
-						case 'tool':
-							vscode.postMessage({
-								type: 'askResponse',
-								askResponse: 'messageResponse',
-								text,
-								images,
-							});
-							break;
-						// there is no other case that a textfield should be enabled
-					}
-				}
-				// Only reset message-specific state, preserving mode
-				setInputValue('');
-				setTextAreaDisabled(true);
-				setSelectedImages([]);
-				setClineAsk(undefined);
-				setEnableButtons(false);
-				// Do not reset mode here as it should persist
-				// setPrimaryButtonText(undefined)
-				// setSecondaryButtonText(undefined)
-				disableAutoScrollRef.current = false;
-			}
-		},
-		[messages.length, clineAsk],
-	);
-
-	const clearTask = useCallback(() => {
-		clear();
-		console.log('[waht]','cleartask', task);
-		vscode.postMessage({ type: 'clearTask' });
-	}, [task]);
-
-	/*
-	This logic depends on the useEffect[messages] above to set clineAsk, after which buttons are shown and we then send an askResponse to the extension.
-	*/
-	const handlePrimaryButtonClick = useCallback(() => {
-		switch (clineAsk) {
-			case 'tool':
-				vscode.postMessage({ type: 'askResponse', askResponse: 'yesButtonClicked' });
-				break;
-		}
-		setTextAreaDisabled(true);
-		setClineAsk(undefined);
-		setEnableButtons(false);
-		disableAutoScrollRef.current = false;
-	}, [clineAsk, clearTask]);
-
-	const handleSecondaryButtonClick = useCallback(() => {
-		if (isStreaming) {
-			vscode.postMessage({ type: 'cancelTask' });
-			setDidClickCancel(true);
-			setTextAreaDisabled(false);
-			return;
-		}
-
-		switch (clineAsk) {
-			case 'tool':
-				// responds to the API with a "This operation failed" and lets it try again
-				vscode.postMessage({ type: 'askResponse', askResponse: 'noButtonClicked' });
-				break;
-		}
-		setTextAreaDisabled(true);
-		setClineAsk(undefined);
-		setEnableButtons(false);
-		disableAutoScrollRef.current = false;
-	}, [clineAsk, clearTask, isStreaming]);
+	}, [task?.ts, setExpandedRows]);
 
 	const { selectedModelInfo } = useMemo(() => {
 		return normalizeApiConfiguration(apiConfiguration);
 	}, [apiConfiguration]);
-
-	const selectImages = useCallback(() => {
-		vscode.postMessage({ type: 'selectImages' });
-	}, []);
 
 	const shouldDisableImages =
 		!selectedModelInfo.supportsImages || textAreaDisabled || selectedImages.length >= MAX_IMAGES_PER_MESSAGE;
@@ -301,7 +203,7 @@ const ChatView = () => {
 				case 'selectedImages':
 					const newImages = message.images ?? [];
 					if (newImages.length > 0) {
-						setSelectedImages((prevImages) =>
+						setSelectedImages((prevImages: string[]) =>
 							[...prevImages, ...newImages].slice(0, MAX_IMAGES_PER_MESSAGE),
 						);
 					}
@@ -327,6 +229,7 @@ const ChatView = () => {
 			handleSendMessage,
 			handlePrimaryButtonClick,
 			handleSecondaryButtonClick,
+			setSelectedImages
 		],
 	);
 
@@ -386,10 +289,26 @@ const ChatView = () => {
 		});
 	}, []);
 
-	// scroll when user toggles certain rows
-	const toggleRowExpansion = useCallback(
+	// 处理行高度变化
+	const handleRowHeightChange = useCallback(
+		(isTaller: boolean) => {
+			if (!disableAutoScrollRef.current) {
+				if (isTaller) {
+					scrollToBottomSmooth();
+				} else {
+					setTimeout(() => {
+						scrollToBottomAuto();
+					}, 0);
+				}
+			}
+		},
+		[scrollToBottomSmooth, scrollToBottomAuto],
+	);
+
+	// 处理行展开/折叠
+	const handleToggleRowExpansion = useCallback(
 		(ts: number) => {
-			const isCollapsing = expandedRows[ts] ?? false;
+			const isCollapsing = expandedRows[ts] || false;
 			const lastVisibleMessage = visibleMessages.at(-1);
 			const isLast = Array.isArray(lastVisibleMessage) ? lastVisibleMessage[0].ts === ts : lastVisibleMessage?.ts === ts;
 			const secondVisibleMessage = visibleMessages.at(-2);
@@ -402,16 +321,9 @@ const ChatView = () => {
 				lastVisibleMessage?.say === 'api_req_started' &&
 				!expandedRows[lastVisibleMessage.ts];
 
-			setExpandedRows((prev) => ({
-				...prev,
-				[ts]: !prev[ts],
-			}));
+			toggleRowExpansion(ts);
 
-			// disable auto scroll when user expands row
-			if (!isCollapsing) {
-				disableAutoScrollRef.current = true;
-			}
-
+			// 根据展开/折叠状态和位置处理滚动
 			if (isCollapsing && isAtBottom) {
 				const timer = setTimeout(() => {
 					scrollToBottomAuto();
@@ -437,22 +349,7 @@ const ChatView = () => {
 				}
 			}
 		},
-		[visibleMessages, expandedRows, scrollToBottomAuto, isAtBottom],
-	);
-
-	const handleRowHeightChange = useCallback(
-		(isTaller: boolean) => {
-			if (!disableAutoScrollRef.current) {
-				if (isTaller) {
-					scrollToBottomSmooth();
-				} else {
-					setTimeout(() => {
-						scrollToBottomAuto();
-					}, 0);
-				}
-			}
-		},
-		[scrollToBottomSmooth, scrollToBottomAuto],
+		[visibleMessages, expandedRows, scrollToBottomAuto, isAtBottom, toggleRowExpansion],
 	);
 
 	useEffect(() => {
@@ -470,18 +367,16 @@ const ChatView = () => {
 			if (scrollContainerRef.current?.contains(wheelEvent.target as Node)) {
 				// user scrolled up
 				disableAutoScrollRef.current = true;
+				setDisableAutoScroll(true);
 			}
 		}
-	}, []);
+	}, [setDisableAutoScroll]);
+	
 	useEvent('wheel', handleWheel, window, { passive: true }); // passive improves scrolling performance
 
 	const placeholderText = useMemo(() => {
-		const baseText = task ? 'Type a message...' : 'Type your task here...';
-		const contextText = '(@ to add context';
-		const imageText = shouldDisableImages ? '' : ', hold shift to drag in images';
-		const helpText = imageText ? `\n${contextText}${imageText})` : `\n${contextText})`;
-		return baseText + helpText;
-	}, [task, shouldDisableImages]);
+		return getPlaceholderText(task, shouldDisableImages);
+	}, [task, shouldDisableImages, getPlaceholderText]);
 
 	const itemContent = useCallback(
 		(index: number, message: ClineMessage) => {
@@ -490,7 +385,7 @@ const ChatView = () => {
 					key={message.ts}
 					message={message}
 					isExpanded={expandedRows[message.ts] || false}
-					onToggleExpand={() => toggleRowExpansion(message.ts)}
+					onToggleExpand={() => handleToggleRowExpansion(message.ts)}
 					isLast={index === visibleMessages.length - 1}
 					onHeightChange={handleRowHeightChange}
 					isStreaming={isStreaming}
@@ -503,7 +398,7 @@ const ChatView = () => {
 			visibleMessages.length,
 			handleRowHeightChange,
 			isStreaming,
-			toggleRowExpansion,
+			handleToggleRowExpansion,
 		],
 	);
 
@@ -537,12 +432,13 @@ const ChatView = () => {
 							increaseViewportBy={{ top: 3_000, bottom: Number.MAX_SAFE_INTEGER }} // hack to make sure the last message is always rendered to get truly perfect scroll to bottom animation when new messages are added (Number.MAX_SAFE_INTEGER is safe for arithmetic operations, which is all virtuoso uses this value for in src/sizeRangeSystem.ts)
 							data={visibleMessages} // messages is the raw format returned by extension, modifiedMessages is the manipulated structure that combines certain messages of related type, and visibleMessages is the filtered structure that removes messages that should not be rendered
 							itemContent={itemContent}
-							atBottomStateChange={(isAtBottom) => {
-								setIsAtBottom(isAtBottom);
-								if (isAtBottom) {
+							atBottomStateChange={(atBottom) => {
+								setIsAtBottom(atBottom);
+								if (atBottom) {
 									disableAutoScrollRef.current = false;
+									setDisableAutoScroll(false);
 								}
-								setShowScrollToBottom(disableAutoScrollRef.current && !isAtBottom);
+								setShowScrollToBottom(disableAutoScrollRef.current && !atBottom);
 							}}
 							atBottomThreshold={10} // anything lower causes issues with followOutput
 							initialTopMostItemIndex={visibleMessages.length - 1}
@@ -553,6 +449,7 @@ const ChatView = () => {
 									onClick={() => {
 										scrollToBottomSmooth();
 										disableAutoScrollRef.current = false;
+										setDisableAutoScroll(false);
 									}}>
 									<span className="codicon codicon-chevron-down" style={{ fontSize: '20px' }}></span>
 								</ScrollToBottomButton>
