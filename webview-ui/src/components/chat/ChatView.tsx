@@ -477,6 +477,8 @@ const ChatView = () => {
 						scrollToBottomAuto();
 					}
 				}}
+				allowedTools={allowedTools}
+				toolCategories={toolCategories}
 			/>
 		</ChatViewContainer>
 	);

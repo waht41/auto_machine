@@ -162,16 +162,37 @@ export const AutoApprovePopover = ({ allowedTools, treeData, setAllowedTools }: 
 							setAllowedTools(checkedKeys as string[]);
 						}}
 						treeData={treeData}
-						defaultExpandAll
+						defaultExpandAll={true}
 						checkStrictly={false}
 					/>
 				</div>
 			}
 		>
 			<Button type="text" style={{ padding: '4px' }}>
-				<img src={approvalIcon} alt="自动批准设置" style={{ width: '20px', height: '20px' }} />
+				<img src={approvalIcon} alt="auto approval tool" style={{ width: '20px', height: '20px' }} />
 			</Button>
 		</Popover>
+	);
+};
+
+interface ApprovalButtonProps {
+  allowedTools: string[]
+  toolCategories: IToolCategory[]
+  setAllowedTools: (toolId: string[]) => void
+}
+
+export const ApprovalButton = ({ allowedTools, toolCategories, setAllowedTools }: ApprovalButtonProps) => {
+	// 转换工具数据为 Tree 需要的 DataNode 结构
+	const treeData = useMemo(() => {
+		return convertToNodes(toolCategories);
+	}, [toolCategories]);
+
+	return (
+		<AutoApprovePopover 
+			allowedTools={allowedTools} 
+			treeData={treeData} 
+			setAllowedTools={setAllowedTools} 
+		/>
 	);
 };
 
@@ -182,18 +203,13 @@ interface MenuHeaderProps {
 }
 
 const MenuHeader = ({ allowedTools, tools, setAllowedTools }: MenuHeaderProps) => {
-	// 转换工具数据为 Tree 需要的 DataNode 结构
-	const treeData = useMemo(() => {
-		return convertToNodes(tools);
-	}, [tools]);
-
 	return (
 		<HeaderContainer>
 			<HeaderContent>
 				<HeaderTitle>Auto-approve:</HeaderTitle>
-				<AutoApprovePopover 
+				<ApprovalButton 
 					allowedTools={allowedTools} 
-					treeData={treeData} 
+					toolCategories={tools} 
 					setAllowedTools={setAllowedTools} 
 				/>
 			</HeaderContent>

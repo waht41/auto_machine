@@ -15,6 +15,9 @@ import Thumbnails from '../common/Thumbnails';
 import { vscode } from '../../utils/vscode';
 import { WebviewMessage } from '@/shared/WebviewMessage';
 import styled from 'styled-components';
+import { ApprovalButton } from './AutoApproveMenu';
+import EnhanceIcon from '@webview-ui/assets/enhanceIcon.png';
+import { Button } from 'antd';
 
 interface ChatTextAreaContainerProps {
 	$disabled?: boolean;
@@ -102,7 +105,7 @@ const StyledThumbnails = styled(Thumbnails)`
 
 const ControlsContainer = styled.div`
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
   margin-top: auto;
   padding-top: 8px;
@@ -111,7 +114,6 @@ const ControlsContainer = styled.div`
 const ButtonGroup = styled.div`
   display: flex;
   align-items: center;
-  gap: 12px;
 `;
 
 const ButtonWrapper = styled.div`
@@ -146,6 +148,8 @@ interface ChatTextAreaProps {
 	onSelectImages: () => void;
 	shouldDisableImages: boolean;
 	onHeightChange?: (height: number) => void;
+	allowedTools: any[];
+	toolCategories: any[];
 }
 
 const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
@@ -160,7 +164,9 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 			onSend,
 			onSelectImages,
 			shouldDisableImages,
-			onHeightChange
+			onHeightChange,
+			allowedTools,
+			toolCategories,
 		},
 		ref
 	) => {
@@ -732,19 +738,23 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 				<ControlsContainer>
 					<ButtonGroup>
 						<ButtonWrapper>
+							<ApprovalButton
+								allowedTools={allowedTools}
+								toolCategories={toolCategories}
+								setAllowedTools={(toolId) => {
+									vscode.postMessage({type: 'setAllowedTools', toolId: toolId});
+								}}
+							/>
 							{isEnhancingPrompt ? (
 								<LoadingIcon className="codicon codicon-loading codicon-modifier-spin" />
 							) : (
-								<IconButton
-									role="button"
-									aria-label="enhance prompt"
-									data-testid="enhance-prompt-button"
-									className={`input-icon-button ${textAreaDisabled ? 'disabled' : ''} codicon codicon-sparkle`}
-									$fontSize="16.5px"
-									onClick={() => !textAreaDisabled && handleEnhancePrompt()}
-								/>
+								<Button type="text" style={{ padding: '4px' }}>
+									<img src = {EnhanceIcon} 	onClick={() => !textAreaDisabled && handleEnhancePrompt()} alt="auto approval tool" style={{ width: '20px', height: '20px' }}/>
+								</Button>
 							)}
 						</ButtonWrapper>
+					</ButtonGroup>
+					<ButtonGroup>
 						<IconButton
 							className={`input-icon-button ${shouldDisableImages ? 'disabled' : ''} codicon codicon-device-camera`}
 							$fontSize="16.5px"
