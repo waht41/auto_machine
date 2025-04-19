@@ -4,43 +4,63 @@ import { DefaultComponentProps } from './types';
 import { highlightMentions } from '../../TaskHeader';
 import Thumbnails from '@webview-ui/components/common/Thumbnails';
 import { vscode } from '@webview-ui/utils/vscode';
+import styled from 'styled-components';
+
+/**
+ * 样式组件定义
+ */
+const FeedbackContainer = styled.div`
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+`;
+
+const ContentWrapper = styled.div`
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	gap: 10px;
+`;
+
+const TextContent = styled.span`
+  display: inline-block;
+  padding: 16px 24px;
+  border-radius: 22px 4px 22px 22px;
+  background: linear-gradient(0deg, rgba(146, 51, 255, 0.1), rgba(146, 51, 255, 0.1));
+  white-space: pre-line;
+  word-wrap: break-word;
+  color: var(--vscode-badge-foreground);
+  text-align: right;
+`;
+
+const DeleteButton = styled(VSCodeButton)`
+	padding: 3px;
+	flex-shrink: 0;
+	height: 24px;
+	margin-top: 13px;
+	margin-right: -6px;
+	display: none;
+`;
+
+const ThumbnailsWrapper = styled(Thumbnails)`
+	margin-top: 8px;
+	width: 100%;
+`;
 
 /**
  * 渲染用户反馈组件
  */
 export const UserFeedbackComponent = ({ message, isStreaming }: DefaultComponentProps) => {
 	return (
-		<div
-			style={{
-				backgroundColor: 'var(--vscode-badge-background)',
-				color: 'var(--vscode-badge-foreground)',
-				borderRadius: '3px',
-				padding: '9px',
-				whiteSpace: 'pre-line',
-				wordWrap: 'break-word',
-			}}>
-			<div
-				style={{
-					display: 'flex',
-					justifyContent: 'space-between',
-					alignItems: 'flex-start',
-					gap: '10px',
-				}}>
-				<span style={{ display: 'block', flexGrow: 1, padding: '4px' }}>
+		<FeedbackContainer>
+			<ContentWrapper>
+				<TextContent>
 					{highlightMentions(message.text)}
-				</span>
-				<VSCodeButton
+				</TextContent>
+				<DeleteButton
 					appearance="icon"
-					style={{
-						padding: '3px',
-						flexShrink: 0,
-						height: '24px',
-						marginTop: '-3px',
-						marginBottom: '-3px',
-						marginRight: '-6px',
-					}}
 					disabled={isStreaming}
-					onClick={(e) => {
+					onClick={(e: React.MouseEvent<HTMLElement>) => {
 						e.stopPropagation();
 						vscode.postMessage({
 							type: 'deleteMessage',
@@ -48,11 +68,11 @@ export const UserFeedbackComponent = ({ message, isStreaming }: DefaultComponent
 						});
 					}}>
 					<span className="codicon codicon-trash"></span>
-				</VSCodeButton>
-			</div>
+				</DeleteButton>
+			</ContentWrapper>
 			{message.images && message.images.length > 0 && (
-				<Thumbnails images={message.images} style={{ marginTop: '8px' }} />
+				<ThumbnailsWrapper images={message.images} />
 			)}
-		</div>
+		</FeedbackContainer>
 	);
 };
