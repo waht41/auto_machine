@@ -18,6 +18,7 @@ import styled from 'styled-components';
 import { ApprovalButton } from './AutoApproveMenu';
 import EnhanceIcon from '@webview-ui/assets/enhanceIcon.png';
 import { Button } from 'antd';
+import ArrowUp from '@webview-ui/assets/ArrowUp.png';
 
 interface ChatTextAreaContainerProps {
 	$disabled?: boolean;
@@ -757,14 +758,13 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 					<ButtonGroup>
 						<IconButton
 							className={`input-icon-button ${shouldDisableImages ? 'disabled' : ''} codicon codicon-device-camera`}
+							style={{display: 'none'}} //todo 之后记得加回来
 							$fontSize="16.5px"
 							onClick={() => !shouldDisableImages && onSelectImages()}
 						/>
-						<IconButton
-							className={`input-icon-button ${textAreaDisabled ? 'disabled' : ''} codicon codicon-send`}
-							$fontSize="15px"
-							onClick={() => !textAreaDisabled && onSend()}
-						/>
+						<Button type="text" style={{borderRadius:'50%', background:'#9233FF',height: '48px', width:'48px', display:'flex', alignItems:'center',justifyContent:'center'}} onClick={() => !textAreaDisabled && onSend()}>
+							<img alt='send button' src={ArrowUp} style={{width:'12px', height:'16px'}}></img>
+						</Button>
 					</ButtonGroup>
 				</ControlsContainer>
 			</ChatTextAreaContainer>
