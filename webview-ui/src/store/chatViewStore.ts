@@ -1,8 +1,11 @@
 import { create } from 'zustand';
-import { ClineAsk, ClineMessage } from '@/shared/ExtensionMessage';
+import { ClineAsk, ClineMessage, ExtensionMessage } from '@/shared/ExtensionMessage';
 import { findLast } from '@/shared/array';
 import { vscode } from '@webview-ui/utils/vscode';
 import { useClineMessageStore } from './clineMessageStore';
+import messageBus from './messageBus';
+import { BACKGROUND_MESSAGE } from './const';
+import { BackGroundMessageHandler } from './type';
 
 // 定义聊天视图存储的状态类型
 interface IChatViewStore {
@@ -49,6 +52,10 @@ interface IChatViewStore {
   // 重置方法
   resetMessageState: () => void;
   resetAllState: () => void;
+  
+  // 消息处理
+  handleMessage: (message: ExtensionMessage, textAreaRef?: React.RefObject<HTMLTextAreaElement>) => void;
+  init: () => () => void;
 }
 
 export const useChatViewStore = create<IChatViewStore>((set, get) => ({
@@ -252,5 +259,65 @@ export const useChatViewStore = create<IChatViewStore>((set, get) => ({
 			isAtBottom: false,
 			disableAutoScroll: false
 		});
+	},
+  
+	// 消息处理
+	handleMessage: (message, textAreaRef) => {
+		const {
+			textAreaDisabled,
+			enableButtons,
+			handleSendMessage,
+			handlePrimaryButtonClick,
+			handleSecondaryButtonClick,
+			setSelectedImages
+		} = get();
+    
+		switch (message.type) {
+			case 'action':
+				switch (message.action!) {
+					case 'didBecomeVisible':
+						if (!textAreaDisabled && !enableButtons && textAreaRef?.current) {
+							textAreaRef.current.focus();
+						}
+						break;
+				}
+				break;
+			case 'selectedImages':
+				const newImages = message.images ?? [];
+				if (newImages.length > 0) {
+					setSelectedImages((prevImages: string[]) =>
+						[...prevImages, ...newImages].slice(0, 20) // 使用常量 MAX_IMAGES_PER_MESSAGE
+					);
+				}
+				break;
+			case 'invoke':
+				switch (message.invoke!) {
+					case 'sendMessage':
+						handleSendMessage(message.text ?? '', message.images ?? []);
+						break;
+					case 'primaryButtonClick':
+						handlePrimaryButtonClick();
+						break;
+					case 'secondaryButtonClick':
+						handleSecondaryButtonClick();
+						break;
+				}
+		}
+	},
+  
+	// 初始化方法
+	init: () => {
+		// 消息处理函数
+		const handleExtensionMessage = (message: ExtensionMessage) => {
+			get().handleMessage(message);
+		};
+    
+		// 使用消息总线订阅扩展消息
+		messageBus.on(BACKGROUND_MESSAGE, handleExtensionMessage as BackGroundMessageHandler);
+    
+		// 返回清理函数
+		return () => {
+			messageBus.off(BACKGROUND_MESSAGE, handleExtensionMessage as BackGroundMessageHandler);
+		};
 	}
 }));

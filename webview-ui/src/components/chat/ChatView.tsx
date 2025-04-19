@@ -1,11 +1,10 @@
 import debounce from 'debounce';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
-import { useEvent, useMount } from 'react-use';
+import { useMount } from 'react-use';
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 import styled from 'styled-components';
 import {
 	ClineMessage,
-	ExtensionMessage,
 } from '@/shared/ExtensionMessage';
 import { getApiMetrics } from '@/shared/getApiMetrics';
 import { useExtensionState } from '../../context/ExtensionStateContext';
@@ -16,7 +15,6 @@ import TaskHeader from './TaskHeader';
 import AutoApproveMenu from './AutoApproveMenu';
 import { normalizeApiConfiguration } from '@webview-ui/components/settings/ApiOptions/utils';
 import { VSCodeButton } from '@vscode/webview-ui-toolkit/react';
-import ChatHistory from '@webview-ui/components/chat/ChatHistory';
 import { useClineMessageStore } from '@webview-ui/store/clineMessageStore';
 import TabNavigation from '@webview-ui/components/navigation/TabNavigation';
 import { useChatViewStore } from '@webview-ui/store/chatViewStore';
@@ -101,7 +99,7 @@ const ChatView = () => {
 		inputValue,
 		setInputValue,
 		textAreaDisabled,
-		setTextAreaDisabled, // Add this line
+		setTextAreaDisabled,
 		selectedImages,
 		setSelectedImages,
 		clineAsk,
@@ -119,13 +117,14 @@ const ChatView = () => {
 		setDisableAutoScroll,
 		handleSendMessage,
 		clearTask,
-		handlePrimaryButtonClick,
 		handleSecondaryButtonClick,
 		toggleRowExpansion,
 		selectImages,
 		isStreaming: getIsStreaming,
 		getPlaceholderText,
-		resetAllState
+		resetAllState,
+		handleMessage,
+		init
 	} = useChatViewStore();
 
 	const task = useMemo(() => messages.at(0), [messages]); // leaving this less safe version here since if the first message is not a task, then the extension is in a bad state and needs to be debugged (see Cline.abort)
@@ -143,6 +142,33 @@ const ChatView = () => {
 	const lastMessage = useMemo(() => messages.at(-1), [messages]);
 	const secondLastMessage = useMemo(() => messages.at(-2), [messages]);
 	const isStreaming = useMemo(() => getIsStreaming(), [modifiedMessages, clineAsk, enableButtons]);
+
+	// 初始化消息监听
+	useEffect(() => {
+		// 初始化消息监听
+		const cleanup = init();
+		
+		// 组件卸载时清理
+		return () => {
+			cleanup();
+		};
+	}, [init]);
+	
+	// 提供 textAreaRef 给 handleMessage
+	useEffect(() => {
+		// 创建一个函数，将消息和 textAreaRef 传递给 handleMessage
+		const handleExtensionMessage = (event: MessageEvent) => {
+			handleMessage(event.data, textAreaRef);
+		};
+		
+		// 添加事件监听器
+		window.addEventListener('message', handleExtensionMessage);
+		
+		// 清理函数
+		return () => {
+			window.removeEventListener('message', handleExtensionMessage);
+		};
+	}, [handleMessage]);
 
 	useEffect(() => {
 		// if last message is an ask, show user ask UI
@@ -186,54 +212,6 @@ const ChatView = () => {
 
 	const shouldDisableImages =
 		!selectedModelInfo.supportsImages || textAreaDisabled || selectedImages.length >= MAX_IMAGES_PER_MESSAGE;
-
-	const handleMessage = useCallback(
-		(e: MessageEvent) => {
-			const message: ExtensionMessage = e.data;
-			switch (message.type) {
-				case 'action':
-					switch (message.action!) {
-						case 'didBecomeVisible':
-							if (!textAreaDisabled && !enableButtons) {
-								textAreaRef.current?.focus();
-							}
-							break;
-					}
-					break;
-				case 'selectedImages':
-					const newImages = message.images ?? [];
-					if (newImages.length > 0) {
-						setSelectedImages((prevImages: string[]) =>
-							[...prevImages, ...newImages].slice(0, MAX_IMAGES_PER_MESSAGE),
-						);
-					}
-					break;
-				case 'invoke':
-					switch (message.invoke!) {
-						case 'sendMessage':
-							handleSendMessage(message.text ?? '', message.images ?? []);
-							break;
-						case 'primaryButtonClick':
-							handlePrimaryButtonClick();
-							break;
-						case 'secondaryButtonClick':
-							handleSecondaryButtonClick();
-							break;
-					}
-			}
-			// textAreaRef.current is not explicitly required here since react gaurantees that ref will be stable across re-renders, and we're not using its value but its reference.
-		},
-		[
-			textAreaDisabled,
-			enableButtons,
-			handleSendMessage,
-			handlePrimaryButtonClick,
-			handleSecondaryButtonClick,
-			setSelectedImages
-		],
-	);
-
-	useEvent('message', handleMessage);
 
 	useMount(() => {
 		// NOTE: the vscode window needs to be focused for this to work
@@ -372,7 +350,14 @@ const ChatView = () => {
 		}
 	}, [setDisableAutoScroll]);
 	
-	useEvent('wheel', handleWheel, window, { passive: true }); // passive improves scrolling performance
+	// 使用原生事件监听，而不是 useEvent
+	useEffect(() => {
+		window.addEventListener('wheel', handleWheel, { passive: true });
+		
+		return () => {
+			window.removeEventListener('wheel', handleWheel);
+		};
+	}, [handleWheel]);
 
 	const placeholderText = useMemo(() => {
 		return getPlaceholderText(task, shouldDisableImages);
@@ -404,7 +389,7 @@ const ChatView = () => {
 
 	return (
 		<ChatViewContainer>
-			{!task && <ChatHistory/>}
+			{/*{!task && <ChatHistory/>}*/}
 
 			{task && (
 				<>
