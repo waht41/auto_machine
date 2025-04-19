@@ -1,36 +1,28 @@
 import { VSCodeButton } from '@vscode/webview-ui-toolkit/react';
 import React, { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useWindowSize } from 'react-use';
-import { ClineMessage } from '../../../../src/shared/ExtensionMessage';
+import { ClineMessage } from '@/shared/ExtensionMessage';
 import { useExtensionState } from '../../context/ExtensionStateContext';
 import { vscode } from '../../utils/vscode';
 import Thumbnails from '../common/Thumbnails';
-import { mentionRegexGlobal } from '../../../../src/shared/context-mentions';
+import { mentionRegexGlobal } from '@/shared/context-mentions';
 import { formatLargeNumber } from '../../utils/format';
+import { ApiMetrics } from '@/shared/type';
 
 interface TaskHeaderProps {
 	task: ClineMessage
-	tokensIn: number
-	tokensOut: number
 	doesModelSupportPromptCache: boolean
-	cacheWrites?: number
-	cacheReads?: number
-	totalCost: number
-	contextTokens: number
+	apiMetrics: ApiMetrics,
 	onClose: () => void
 }
 
 const TaskHeader: React.FC<TaskHeaderProps> = ({
 	task,
-	tokensIn,
-	tokensOut,
 	doesModelSupportPromptCache,
-	cacheWrites,
-	cacheReads,
-	totalCost,
-	contextTokens,
+	apiMetrics,
 	onClose,
 }) => {
+	const {totalCost, totalTokensIn: tokensIn, totalTokensOut: tokensOut, contextTokens, totalCacheWrites: cacheWrites, totalCacheReads: cacheReads} = apiMetrics;
 	const { apiConfiguration } = useExtensionState();
 	const [isTaskExpanded, setIsTaskExpanded] = useState(true);
 	const [isTextExpanded, setIsTextExpanded] = useState(false);

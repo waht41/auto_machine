@@ -3,6 +3,7 @@ import { Button } from 'antd';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
 import { PlusOutlined, HistoryOutlined, SettingOutlined, GlobalOutlined } from '@ant-design/icons';
+import { useClineMessageStore } from '@webview-ui/store/clineMessageStore';
 
 const SideBarContainer = styled.div`
 	width: 210px;
@@ -41,12 +42,13 @@ const LogoText = styled.div`
 
 const SideBar: React.FC = () => {
 	const navigate = useNavigate();
+	const clearTask = useClineMessageStore(state => state.clearClineMessages);
 
 	return (
 		<SideBarContainer>
 			<Logo>
-				<LogoImage>Z</LogoImage>
-				<LogoText>Rooooooo</LogoText>
+				<LogoImage>R</LogoImage>
+				<LogoText>Roo</LogoText>
 			</Logo>
 
 			<Button 
@@ -55,7 +57,10 @@ const SideBar: React.FC = () => {
 				size="large" 
 				style={{ borderRadius: '8px' }}
 				block
-				onClick={() => navigate('/')}
+				onClick={() => {
+					navigate('/');
+					clearTask();
+				}}
 			>
 				New task
 			</Button>

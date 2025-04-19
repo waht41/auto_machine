@@ -15,3 +15,12 @@ export type SharedClineMessage = {
 	id: string;
 	partialMessage: ClineMessage
 }
+
+export interface ApiMetrics {
+	totalTokensIn: number;
+	totalTokensOut: number;
+	totalCacheWrites?: number;
+	totalCacheReads?: number;
+	totalCost: number;
+	contextTokens: number; // Total tokens in conversation (last message's tokensIn + tokensOut)
+}

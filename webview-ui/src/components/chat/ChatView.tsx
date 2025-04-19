@@ -396,13 +396,8 @@ const ChatView = () => {
 					<TabNavigation />
 					<TaskHeader
 						task={task}
-						tokensIn={apiMetrics.totalTokensIn}
-						tokensOut={apiMetrics.totalTokensOut}
+						apiMetrics={apiMetrics}
 						doesModelSupportPromptCache={selectedModelInfo.supportsPromptCache}
-						cacheWrites={apiMetrics.totalCacheWrites}
-						cacheReads={apiMetrics.totalCacheReads}
-						totalCost={apiMetrics.totalCost}
-						contextTokens={apiMetrics.contextTokens}
 						onClose={clearTask}
 					/>
 					<ScrollContainer ref={scrollContainerRef}>
