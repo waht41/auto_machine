@@ -6,7 +6,9 @@ type ExternalHandler = {
 };
 
 const additionalPromptHandler: ExternalHandler = {
-	'Coder': getCoderAdditional
+	'Coder': getCoderAdditional,
+	'File': getBasicInfo,
+	'Browser': getBasicInfo,
 };
 
 export function getAdditionalPrompt(fileNames: string[]) {
@@ -21,4 +23,11 @@ export function getAdditionalPrompt(fileNames: string[]) {
 
 function getCoderAdditional() {
 	return `current platform ${os.platform()}, current shell ${detectShell()}`;
+}
+
+function getBasicInfo() {
+	const platform = os.platform();
+	const userName = os.userInfo().username;
+	const homedir = os.homedir();
+	return `current platform: ${platform}, current user name: ${userName}, home dir: ${homedir}`;
 }
