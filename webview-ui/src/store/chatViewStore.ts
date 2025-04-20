@@ -6,6 +6,7 @@ import { useClineMessageStore } from './clineMessageStore';
 import messageBus from './messageBus';
 import { BACKGROUND_MESSAGE } from './const';
 import { BackGroundMessageHandler } from './type';
+import { ShowedMessage } from '@webview-ui/components/chat/type';
 
 // 定义聊天视图存储的状态类型
 interface IChatViewStore {
@@ -48,6 +49,7 @@ interface IChatViewStore {
   // 计算属性
   isStreaming: () => boolean;
   getPlaceholderText: (task: ClineMessage | undefined, shouldDisableImages: boolean) => string;
+  getShowedMessage: (clineMessages: ClineMessage[]) => (ClineMessage | ClineMessage[])[];
   
   // 重置方法
   resetMessageState: () => void;
@@ -231,6 +233,46 @@ export const useChatViewStore = create<IChatViewStore>((set, get) => ({
 		const imageText = shouldDisableImages ? '' : ', hold shift to drag in images';
 		const helpText = imageText ? `\n${contextText}${imageText})` : `\n${contextText})`;
 		return baseText + helpText;
+	},
+  
+	getShowedMessage: (clineMessages) => {
+		const showedMessages: ShowedMessage[] = [];
+		let currentGroup: ClineMessage[] = [];
+    
+		// 辅助函数：添加当前消息组到结果中
+		const addCurrentGroup = () => {
+			if (currentGroup.length > 0) {
+				// 如果当前组只有一个消息，直接添加该消息
+				if (currentGroup.length === 1) {
+					showedMessages.push(currentGroup[0]);
+				} 
+				// 如果当组有两条消息且第一条是 api_req_started 时，分别添加两条消息
+				else if (currentGroup.length === 2 && currentGroup[0].say === 'api_req_started') {
+					showedMessages.push(currentGroup[0]);
+					showedMessages.push(currentGroup[1]);
+				} 
+				// 其他情况，添加为数组
+				else {
+					showedMessages.push(currentGroup);
+				}
+				currentGroup = [];
+			}
+		};
+    
+		for (const message of clineMessages) {
+			if (message.say === 'text' || message.say === 'tool' || message.say === 'api_req_started') {
+				currentGroup.push(message);
+			} else {
+				addCurrentGroup();
+				showedMessages.push(message);
+			}
+		}
+    
+		addCurrentGroup();
+
+		console.log('[waht]','shoedmessages',showedMessages);
+    
+		return showedMessages;
 	},
   
 	// 重置方法

@@ -3,9 +3,6 @@ import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useMount } from 'react-use';
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 import styled from 'styled-components';
-import {
-	ClineMessage,
-} from '@/shared/ExtensionMessage';
 import { getApiMetrics } from '@/shared/getApiMetrics';
 import { useExtensionState } from '../../context/ExtensionStateContext';
 import ChatRow from './ChatRow/ChatRow';
@@ -17,6 +14,7 @@ import { useClineMessageStore } from '@webview-ui/store/clineMessageStore';
 import TabNavigation from '@webview-ui/components/navigation/TabNavigation';
 import { useChatViewStore } from '@webview-ui/store/chatViewStore';
 import NewerExample from '@webview-ui/components/chat/NewerExample';
+import { ShowedMessage } from '@webview-ui/components/chat/type';
 
 export const MAX_IMAGES_PER_MESSAGE = 20; // Anthropic limits to 20 images
 
@@ -35,7 +33,7 @@ const ScrollContainer = styled.div`
 	position: relative; /* 添加相对定位，作为绝对定位按钮的参考点 */
 `;
 
-const VirtuosoContainer = styled(Virtuoso<ClineMessage, unknown>)`
+const VirtuosoContainer = styled(Virtuoso<ShowedMessage, unknown>)`
 	flex: 1 1 auto;
 	height: 100%;
 	overflow-y: scroll; /* always show scrollbar */
@@ -139,11 +137,14 @@ const ChatView = () => {
 		getPlaceholderText,
 		resetAllState,
 		handleMessage,
-		init
+		init,
+		getShowedMessage
 	} = useChatViewStore();
 
 	const task = useMemo(() => messages.at(0), [messages]); // leaving this less safe version here since if the first message is not a task, then the extension is in a bad state and needs to be debugged (see Cline.abort)
 	const modifiedMessages = useMemo(() => messages.slice(1), [messages]);
+	// 使用 getShowedMessage 函数处理消息
+	const showedMessages = useMemo(() => getShowedMessage(modifiedMessages), [modifiedMessages, getShowedMessage]);
 	// has to be after api_req_finished are all reduced into api_req_started messages
 	const apiMetrics = useMemo(() => getApiMetrics(modifiedMessages), [modifiedMessages]);
 
@@ -245,18 +246,22 @@ const ChatView = () => {
 	}, [textAreaDisabled, enableButtons]);
 
 	const visibleMessages = useMemo(() => {
-		return modifiedMessages.filter((message) => {
-			switch (message.say) {
-				case 'text':
-					// Sometimes cline returns an empty text message, we don't want to render these. (We also use a say text for user messages, so in case they just sent images we still render that)
-					if ((message.text ?? '') === '' && (message.images?.length ?? 0) === 0) {
-						return false;
-					}
-					break;
+		return showedMessages.filter((message) => {
+			// 如果是消息数组，始终显示
+			if (Array.isArray(message)) {
+				return true;
+			}
+			
+			// 对单个消息进行过滤
+			if (message.say === 'text') {
+				// Sometimes cline returns an empty text message, we don't want to render these. (We also use a say text for user messages, so in case they just sent images we still render that)
+				if ((message.text ?? '') === '' && (message.images?.length ?? 0) === 0) {
+					return false;
+				}
 			}
 			return true;
 		});
-	}, [modifiedMessages]);
+	}, [showedMessages]);
 
 	// scrolling
 
@@ -303,16 +308,28 @@ const ChatView = () => {
 		(ts: number) => {
 			const isCollapsing = expandedRows[ts] || false;
 			const lastVisibleMessage = visibleMessages.at(-1);
-			const isLast = Array.isArray(lastVisibleMessage) ? lastVisibleMessage[0].ts === ts : lastVisibleMessage?.ts === ts;
+			
+			// 处理最后一条消息是数组的情况
+			const isLast = Array.isArray(lastVisibleMessage) 
+				? lastVisibleMessage.some(msg => msg.ts === ts)
+				: lastVisibleMessage?.ts === ts;
+				
 			const secondVisibleMessage = visibleMessages.at(-2);
 			const isSecondToLast = Array.isArray(secondVisibleMessage)
-				? secondVisibleMessage[0].ts === ts
+				? secondVisibleMessage.some(msg => msg.ts === ts)
 				: secondVisibleMessage?.ts === ts;
 
-			const isLastCollapsedApiReq =
-				isLast &&
-				lastVisibleMessage?.say === 'api_req_started' &&
-				!expandedRows[lastVisibleMessage.ts];
+			// 处理最后一条消息是 api_req_started 且未展开的情况
+			let isLastCollapsedApiReq = false;
+			if (Array.isArray(lastVisibleMessage)) {
+				isLastCollapsedApiReq = lastVisibleMessage.some(msg => 
+					msg.ts === ts && msg.say === 'api_req_started' && !expandedRows[msg.ts]
+				);
+			} else {
+				isLastCollapsedApiReq = isLast &&
+					lastVisibleMessage?.say === 'api_req_started' &&
+					!expandedRows[lastVisibleMessage.ts];
+			}
 
 			toggleRowExpansion(ts);
 
@@ -379,13 +396,14 @@ const ChatView = () => {
 	}, [task, shouldDisableImages, getPlaceholderText]);
 
 	const itemContent = useCallback(
-		(index: number, message: ClineMessage) => {
+		(index: number, message: ShowedMessage) => {
+			const ts = Array.isArray(message)? message[0].ts : message.ts;
 			return (
 				<ChatRow
-					key={message.ts}
+					key={ts}
 					message={message}
-					isExpanded={expandedRows[message.ts] || false}
-					onToggleExpand={() => handleToggleRowExpansion(message.ts)}
+					isExpanded={expandedRows[ts] || false}
+					onToggleExpand={() => handleToggleRowExpansion(ts)}
 					isLast={index === visibleMessages.length - 1}
 					onHeightChange={handleRowHeightChange}
 					isStreaming={isStreaming}
@@ -394,7 +412,6 @@ const ChatView = () => {
 		},
 		[
 			expandedRows,
-			modifiedMessages,
 			visibleMessages.length,
 			handleRowHeightChange,
 			isStreaming,

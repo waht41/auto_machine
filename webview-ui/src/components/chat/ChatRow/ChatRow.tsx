@@ -5,9 +5,11 @@ import { ClineMessage, ClineSayTool } from '@/shared/ExtensionMessage';
 import { ToolComponent } from '../../special-tool';
 import { Tool } from '../../special-tool/type';
 import { MessageComponent } from '@webview-ui/components/chat/ChatRow/render-block/router';
+import { ShowedMessage } from '@webview-ui/components/chat/type';
+import { Timeline } from 'antd';
 
 interface ChatRowProps {
-	message: ClineMessage
+	message: ShowedMessage;
 	isExpanded: boolean
 	onToggleExpand: () => void
 	isLast: boolean
@@ -55,8 +57,55 @@ const ChatRow = memo(
 
 export default ChatRow;
 
+// 渲染消息数组的函数
+const renderMessageArray = (messages: ClineMessage[], props: ChatRowContentProps) => {
+	// 筛选出 api_req_started 类型的消息作为 Timeline 的项
+	const apiReqStartedMessages = messages.filter(msg => msg.say === 'api_req_started');
+	
+	// 如果没有 api_req_started 消息，则使用普通方式渲染所有消息
+	if (apiReqStartedMessages.length === 0) {
+		const items = messages.map((msg) => ({
+			children: <ChatRowContent {...props} message={msg} />
+		}));
+		return <Timeline items={items} />;
+	}
+	
+	// 根据 api_req_started 消息构建 Timeline 项
+	const items = apiReqStartedMessages.map((apiMsg, index) => {
+
+		// 查找当前 api_req_started 消息之后，下一个 api_req_started 消息之前的所有消息
+		const currentIndex = messages.indexOf(apiMsg);
+		const nextApiIndex = index < apiReqStartedMessages.length - 1 
+			? messages.indexOf(apiReqStartedMessages[index + 1]) 
+			: messages.length;
+		
+		// 获取当前 api_req_started 消息后的所有相关消息（不包括下一个 api_req_started）
+		const relatedMessages = messages.slice(currentIndex + 1, nextApiIndex);
+		
+		return {
+			children: (
+				<div>
+					<ChatRowContent {...props} message={apiMsg} />
+					{relatedMessages.map((msg, i) => (
+						<div key={i} style={{ marginLeft: '20px', marginTop: '8px' }}>
+							<ChatRowContent {...props} message={msg} />
+						</div>
+					))}
+				</div>
+			)
+		};
+	});
+	
+	return <Timeline items={items} />;
+};
+
 export const ChatRowContent = (prop: ChatRowContentProps) => {
 	const {message} = prop;
+
+	// 如果消息是数组，使用 renderMessageArray 函数处理
+	if (Array.isArray(message)) {
+		return renderMessageArray(message, prop);
+	}
 
 	const tool = useMemo(() => {
 		if (message.ask === 'tool' || message.say === 'tool') {
@@ -70,5 +119,7 @@ export const ChatRowContent = (prop: ChatRowContentProps) => {
 		return <ToolComponent {...toolProp}/>;
 	}
 
-	return <MessageComponent {...prop}/>;
+	// 由于已经排除了数组类型，message 此时肯定是 ClineMessage 类型
+	// 但为了类型安全，还是进行显式类型断言
+	return <MessageComponent {...{...prop, message: message as ClineMessage}} />;
 };
