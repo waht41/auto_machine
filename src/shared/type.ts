@@ -6,6 +6,7 @@ export type ParallelProp = {
 
 export type ClineIdentifier = {task:string, id:string, status:ClineStatus};
 export type ClineStatus = 'running' | 'error' | 'completed' | 'pending';
+export type ApiStatus = 'running' | 'error' | 'completed' | 'cancelled';
 export type SharedClineMessage = {
 	type: 'clineMessage';
 	id: string;

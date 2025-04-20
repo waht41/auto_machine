@@ -72,6 +72,33 @@ const renderMessageArray = (messages: ClineMessage[], props: ChatRowContentProps
 	
 	// 根据 api_req_started 消息构建 Timeline 项
 	const items = apiReqStartedMessages.map((apiMsg, index) => {
+		// 根据 status 确定颜色和图标
+		let color = 'blue'; // 默认颜色
+		let dot = null; // 默认不设置自定义dot
+		
+		if (apiMsg.status) {
+			switch (apiMsg.status) {
+				case 'running':
+					color = 'blue';
+					dot = <span className="codicon codicon-loading" style={{ fontSize: '16px', color: 'blue' }} />;
+					break;
+				case 'error':
+					color = 'red';
+					dot = <span className="codicon codicon-error" style={{ fontSize: '16px', color: 'red' }} />;
+					break;
+				case 'completed':
+					color = 'green';
+					dot = <span className="codicon codicon-check" style={{ fontSize: '16px', color: 'green' }} />;
+					break;
+				case 'cancelled':
+					color = 'gray';
+					dot = <span className="codicon codicon-circle-slash" style={{ fontSize: '16px', color: 'gray' }} />;
+					break;
+				default:
+					color = 'blue';
+					break;
+			}
+		}
 
 		// 查找当前 api_req_started 消息之后，下一个 api_req_started 消息之前的所有消息
 		const currentIndex = messages.indexOf(apiMsg);
@@ -83,6 +110,8 @@ const renderMessageArray = (messages: ClineMessage[], props: ChatRowContentProps
 		const relatedMessages = messages.slice(currentIndex + 1, nextApiIndex);
 		
 		return {
+			color: color, // 设置颜色
+			dot: dot, // 设置自定义dot
 			children: (
 				<div>
 					<ChatRowContent {...props} message={apiMsg} />

@@ -3,7 +3,7 @@ import { VSCodeBadge } from '@vscode/webview-ui-toolkit/react';
 import CodeAccordian from '@webview-ui/components/common/CodeAccordian';
 import { DefaultComponentProps } from './types';
 import { ClineApiReqInfo } from '@/shared/ExtensionMessage';
-import { StatusIcon, StatusText, ChatStatus } from '@webview-ui/components/chat/ChatRow/Header';
+import { StatusText, ChatStatus } from '@webview-ui/components/chat/ChatRow/Header';
 import messageBus from '@webview-ui/store/messageBus';
 import { AGENT_STREAM_JUMP, APP_MESSAGE } from '@webview-ui/store/const';
 import styled from 'styled-components';
@@ -115,7 +115,6 @@ export const ApiRequestComponent = ({ message, isExpanded, onToggleExpand }: Def
 	};
 
 	const currentStatus = determineStatus();
-	const icon = <StatusIcon status={currentStatus} />;
 	const title = <StatusText status={currentStatus} />;
   
 	const hasError = !!((cost == null && apiRequestFailedMessage) || apiReqStreamingFailedMessage);
@@ -135,7 +134,6 @@ export const ApiRequestComponent = ({ message, isExpanded, onToggleExpand }: Def
 		<>
 			<HeaderContainer $hasError={hasError} onClick={onToggleExpand}>
 				<HeaderLeft>
-					{icon}
 					{title}
 					<StyledBadge cost={cost}>
             ${Number(cost || 0)?.toFixed(4)}

@@ -376,6 +376,7 @@ export class Cline {
 					await this.sayP({ sayType: 'text', text: `apply tool \n ${yaml.dump(block.params)}`, partial: false, messageId: currentMessageId });
 
 					const handleError = async (action: string, error: Error) => {
+						await this.streamChatManager.changeLastApiReqStatus('error');
 						const errorString = `Error ${action}:\n${error.message ?? JSON.stringify(serializeError(error), null, 2)}`;
 						await this.sayP({ sayType: 'error', text: errorString });
 						await this.pushToolResult(formatResponse.toolError(errorString));
@@ -428,6 +429,7 @@ export class Cline {
 		const texts = this.userMessageContent.filter((block) => block.type === 'text');
 		const textStrings = texts.map((block) => block.text);
 		logger.debug('handleAssistantMessage pushToolResult',textStrings);
+		await this.streamChatManager.changeLastApiReqStatus('completed');
 		await this.streamChatManager.addAgentStream(textStrings.join('\n'));
 	}
 
@@ -478,6 +480,7 @@ export class Cline {
 		this.isCurrentStreamEnd = true;
 		this.blockProcessHandler.markPartialBlockAsComplete();
 		this.abortTask(); // if the stream failed, there's various states the task could be in (i.e. could have streamed some tools the user may have executed), so we just resort to replicating a cancel task
+		await this.streamChatManager.changeLastApiReqStatus('error');
 		await this.abortStream(streamState);
 	}
 
@@ -550,6 +553,7 @@ export class Cline {
 				if (this.abort) {
 					console.log('aborting stream...');
 					if (!this.abortComplete) {
+						await this.streamChatManager.changeLastApiReqStatus('cancelled');
 						// only need to gracefully abort if this instance isn't abandoned (sometimes openrouter stream hangs, in which case this would affect future instances of cline)
 						streamState.apiReq.cancelReason = 'user_cancelled';
 						await this.abortStream(streamState);
@@ -570,6 +574,7 @@ export class Cline {
 	async handleAssistantMessageComplete(streamState: ProcessingState) {
 		await this.finalizeProcessing(streamState);
 		const assistantMessage = streamState.assistantMessage;
+		await this.streamChatManager.postClineMessage();
 		// now add to apiconversationhistory
 		// need to save assistant responses to file before proceeding to tool use since user can exit at any moment and we wouldn't be able to save the assistant's response
 		if (this.abort) {

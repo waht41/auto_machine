@@ -7,6 +7,7 @@ import { GitCommit } from '@/utils/git';
 import { CustomModePrompts, Mode, ModeConfig } from './modes';
 import { CustomSupportPrompts } from './support-prompt';
 import { IToolCategory } from '@core/tool-adapter/type';
+import { ApiStatus } from '@/shared/type';
 
 export interface LanguageModelChatSelector {
 	vendor?: string
@@ -142,6 +143,7 @@ export interface ClineMessage {
 	reasoning?: string
 	messageId?: number
 	relateStreamId?: number
+	status?: ApiStatus
 }
 
 export type ClineAsk =
