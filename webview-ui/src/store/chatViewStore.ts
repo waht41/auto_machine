@@ -24,6 +24,7 @@ interface IChatViewStore {
   showScrollToBottom: boolean;
   isAtBottom: boolean;
   disableAutoScroll: boolean;
+  showAgentStream: boolean;
   
   // 设置方法
   setInputValue: (value: string) => void;
@@ -37,6 +38,8 @@ interface IChatViewStore {
   setShowScrollToBottom: (show: boolean) => void;
   setIsAtBottom: (isBottom: boolean) => void;
   setDisableAutoScroll: (disable: boolean) => void;
+  setShowAgentStream: (show: boolean) => void;
+  toggleAgentStream: () => void;
   
   // 操作方法
   handleSendMessage: (text: string, images: string[]) => void;
@@ -73,6 +76,7 @@ export const useChatViewStore = create<IChatViewStore>((set, get) => ({
 	showScrollToBottom: false,
 	isAtBottom: false,
 	disableAutoScroll: false,
+	showAgentStream: true,
   
 	// 设置方法
 	setInputValue: (value) => set({ inputValue: value }),
@@ -90,6 +94,8 @@ export const useChatViewStore = create<IChatViewStore>((set, get) => ({
 	setShowScrollToBottom: (show) => set({ showScrollToBottom: show }),
 	setIsAtBottom: (isBottom) => set({ isAtBottom: isBottom }),
 	setDisableAutoScroll: (disable) => set({ disableAutoScroll: disable }),
+	setShowAgentStream: (show) => set({ showAgentStream: show }),
+	toggleAgentStream: () => set((state) => ({ showAgentStream: !state.showAgentStream })),
   
 	// 操作方法
 	handleSendMessage: (text, images) => {

@@ -3,11 +3,9 @@ import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useMount } from 'react-use';
 import { Virtuoso, type VirtuosoHandle } from 'react-virtuoso';
 import styled from 'styled-components';
-import { getApiMetrics } from '@/shared/getApiMetrics';
 import { useExtensionState } from '../../context/ExtensionStateContext';
 import ChatRow from './ChatRow/ChatRow';
 import ChatTextArea from './ChatTextArea';
-import TaskHeader from './TaskHeader';
 import { normalizeApiConfiguration } from '@webview-ui/components/settings/ApiOptions/utils';
 import { VSCodeButton } from '@vscode/webview-ui-toolkit/react';
 import { useClineMessageStore } from '@webview-ui/store/clineMessageStore';
@@ -129,7 +127,6 @@ const ChatView = () => {
 		setIsAtBottom,
 		setDisableAutoScroll,
 		handleSendMessage,
-		clearTask,
 		handleSecondaryButtonClick,
 		toggleRowExpansion,
 		selectImages,
@@ -145,8 +142,6 @@ const ChatView = () => {
 	const modifiedMessages = useMemo(() => messages.slice(1), [messages]);
 	// 使用 getShowedMessage 函数处理消息
 	const showedMessages = useMemo(() => getShowedMessage(modifiedMessages), [modifiedMessages, getShowedMessage]);
-	// has to be after api_req_finished are all reduced into api_req_started messages
-	const apiMetrics = useMemo(() => getApiMetrics(modifiedMessages), [modifiedMessages]);
 
 	const textAreaRef = useRef<HTMLTextAreaElement>(null);
 	const virtuosoRef = useRef<VirtuosoHandle>(null);
@@ -465,12 +460,6 @@ const ChatView = () => {
 			{task && (
 				<>
 					<TabNavigation />
-					<TaskHeader
-						task={task}
-						apiMetrics={apiMetrics}
-						doesModelSupportPromptCache={selectedModelInfo.supportsPromptCache}
-						onClose={clearTask}
-					/>
 					<ScrollContainer ref={scrollContainerRef}>
 						<VirtuosoContainer
 							ref={virtuosoRef}

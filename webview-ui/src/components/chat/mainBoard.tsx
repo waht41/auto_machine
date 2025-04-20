@@ -1,14 +1,30 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import styled, { keyframes } from 'styled-components';
 import ChatView from '@webview-ui/components/chat/ChatView';
 import AgentStream from '@webview-ui/components/chat/AgentStream/AgentStream';
+import TaskHeaderNew from '@webview-ui/components/chat/TaskHeaderNew';
 import { useClineMessageStore } from '@webview-ui/store/clineMessageStore';
 import { useChatViewTabStore } from '@webview-ui/store/chatViewTabStore';
+import { useChatViewStore } from '@webview-ui/store/chatViewStore';
+import { getApiMetrics } from '@/shared/getApiMetrics';
 
 const MainContainer = styled.div`
 	display: flex;
+	flex-direction: column;
 	width: 100%;
 	height: 100vh;
+`;
+
+const HeaderContainer = styled.div`
+	width: 100%;
+	padding: 0;
+`;
+
+const ContentContainer = styled.div`
+	display: flex;
+	width: 100%;
+	flex: 1;
+	overflow: hidden;
 `;
 
 const ChatViewContainer = styled.div<{ $hasTask: boolean }>`
@@ -38,8 +54,14 @@ const AgentStreamContainer = styled.div`
 `;
 
 const MainBoard = () => {
-	const task = useClineMessageStore().getTask();
-	const hasTask = !!task;
+	const clineMessages = useClineMessageStore(state => state.clineMessages);
+	const task = useClineMessageStore(state => state.getTask)();
+	const { showAgentStream } = useChatViewStore();
+	const isShowAgentStream = !!task && showAgentStream;
+
+	
+	// 计算 API 指标
+	const apiMetrics = useMemo(() => getApiMetrics(clineMessages), [clineMessages]);
 
 	// 初始化clineMessageStore
 	useEffect(() => {
@@ -51,14 +73,29 @@ const MainBoard = () => {
 
 	return (
 		<MainContainer>
-			<ChatViewContainer $hasTask={hasTask}>
-				<ChatView />
-			</ChatViewContainer>
-			{hasTask && (
-				<AgentStreamContainer>
-					<AgentStream />
-				</AgentStreamContainer>
+			{!!task && (
+				<HeaderContainer>
+					<TaskHeaderNew
+						task={{
+							type: 'ask',
+							text: task,
+							ts: clineMessages[0]?.ts || Date.now(),
+							messageId: clineMessages[0]?.messageId || 0
+						}}
+						apiMetrics={apiMetrics}
+					/>
+				</HeaderContainer>
 			)}
+			<ContentContainer>
+				<ChatViewContainer $hasTask={isShowAgentStream}>
+					<ChatView />
+				</ChatViewContainer>
+				{isShowAgentStream && (
+					<AgentStreamContainer>
+						<AgentStream />
+					</AgentStreamContainer>
+				)}
+			</ContentContainer>
 		</MainContainer>
 	);
 };
