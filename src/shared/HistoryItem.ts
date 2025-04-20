@@ -9,4 +9,6 @@ export type HistoryItem = {
 	totalCost: number
 	newMessage?: string
 	newImages?: string[]
+	children?: string[]
+	parent?: string;
 }

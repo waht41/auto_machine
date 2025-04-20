@@ -425,7 +425,15 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 	}
 
 	async updateTaskHistory(item: HistoryItem) {
-		await this.stateService.addTaskHistory(item);
+		const cline = this.clineTree.get(item.id);
+		let parent = undefined;
+		let children = undefined;
+		if (cline) {
+			parent = cline.parentId;
+			children = cline.children;
+		}
+		await this.stateService.addTaskHistory({ ...item, parent, children });
+		await this.postStateToWebview();
 	}
 
 	// global

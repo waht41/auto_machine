@@ -1,8 +1,9 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useExtensionState } from '../../context/ExtensionStateContext';
 import { vscode } from '../../utils/vscode';
 import styled from 'styled-components';
 import { Virtuoso } from 'react-virtuoso';
+import { HistoryItem } from '@/shared/HistoryItem';
 
 // 样式组件
 const HistoryContainer = styled.div`
@@ -62,7 +63,7 @@ const TimeHeader = styled.div`
   border-bottom: 1px solid rgba(128, 128, 128, 0.2);
 `;
 
-const HistoryItem = styled.div`
+const HistoryItemContainer = styled.div`
   background-color: color-mix(in srgb, var(--vscode-toolbar-hoverBackground) 65%, transparent);
   border-radius: 4px;
   position: relative;
@@ -104,24 +105,21 @@ type HistoryPreviewNewProps = {
   showHistoryView: () => void;
 };
 
-interface HistoryItem {
-  id: string;
-  ts: number;
-  task: string;
-}
-
 // 定义时间分组的类型
 type TimeGroup = 'today' | 'yesterday' | 'last7Days' | 'last30Days' | 'older';
 
 // 为虚拟滚动定义的列表项类型
 type VirtualItem = {
-  type: 'header' | 'item';
+  type: 'header' | 'item' | 'childItem';
   group?: TimeGroup;
   item?: HistoryItem;
+  parent?: HistoryItem;
+  isExpanded?: boolean;
 }
 
 const HistoryPreviewNew: React.FC<HistoryPreviewNewProps> = () => {
 	const { taskHistory } = useExtensionState();
+	const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
 
 	// 按时间分组历史记录
 	const groupedHistory = useMemo(() => {
@@ -185,36 +183,130 @@ const HistoryPreviewNew: React.FC<HistoryPreviewNewProps> = () => {
 		}
 	};
 
+	// 查找指定父项的所有子项
+	const findChildren = (parentId: string): HistoryItem[] => {
+		return taskHistory.filter(item => item.parent === parentId);
+	};
+
+	// 切换项目展开/折叠状态
+	const toggleItemExpanded = (id: string) => {
+		setExpandedItems(prev => ({
+			...prev,
+			[id]: !prev[id]
+		}));
+	};
+
 	// 为虚拟滚动准备数据
 	const virtualItems = useMemo(() => {
 		const items: VirtualItem[] = [];
-
 		const groups: TimeGroup[] = ['today', 'yesterday', 'last7Days', 'last30Days', 'older'];
+
+		// 创建一个映射来跟踪已经添加的项目
+		const addedItems = new Set<string>();
 
 		groups.forEach(group => {
 			if (groupedHistory[group].length > 0) {
 				// 添加组标题
 				items.push({ type: 'header', group });
 
-				// 添加组内的历史项
+				// 添加组内的历史项（只添加没有父项的条目）
 				groupedHistory[group].forEach(item => {
-					items.push({ type: 'item', item });
+					// 只处理没有父项的条目
+					if (!item.parent) {
+						items.push({ 
+							type: 'item', 
+							item,
+							isExpanded: expandedItems[item.id]
+						});
+						addedItems.add(item.id);
+
+						// 如果该项已展开且有子项，则添加其子项
+						if (expandedItems[item.id]) {
+							const children = findChildren(item.id);
+							children.forEach(child => {
+								items.push({ 
+									type: 'childItem', 
+									item: child,
+									parent: item
+								});
+								addedItems.add(child.id);
+							});
+						}
+					}
+				});
+
+				// 检查是否有未添加的项目（这些项目的父项不在当前分组中）
+				groupedHistory[group].forEach(item => {
+					if (item.parent && !addedItems.has(item.id)) {
+						const parentItem = taskHistory.find(p => p.id === item.parent);
+						// 如果找不到父项或父项未展开，则作为独立项显示
+						if (!parentItem || !expandedItems[parentItem.id]) {
+							items.push({ type: 'item', item });
+							addedItems.add(item.id);
+						}
+					}
 				});
 			}
 		});
 
 		return items;
-	}, [groupedHistory]);
+	}, [groupedHistory, taskHistory, expandedItems]);
 
 	// 渲染历史记录项（标题或任务项）
 	const renderHistoryItem = (index: number, item: VirtualItem) => {
 		if (item.type === 'header' && item.group) {
 			return <TimeHeader>{getGroupTitle(item.group)}</TimeHeader>;
-		} else if (item.type === 'item' && item.item) {
+		} else if ((item.type === 'item' || item.type === 'childItem') && item.item) {
+			// 检查是否有子项
+			const hasChildren = item.item.children && item.item.children.length > 0;
+      
 			return (
-				<HistoryItem onClick={() => handleHistorySelect(item.item!.id)}>
-					<TaskText>{item.item.task}</TaskText>
-				</HistoryItem>
+				<HistoryItemContainer 
+					onClick={() => {
+						if (item.item) {
+							// 无论是什么类型的项目，都发送消息显示任务详情
+							handleHistorySelect(item.item.id);
+              
+							// 如果是父项且有子项，则同时切换展开/折叠状态
+							if (item.type === 'item' && hasChildren) {
+								toggleItemExpanded(item.item.id);
+							}
+						}
+					}}
+					style={{ 
+						marginLeft: item.type === 'childItem' ? '20px' : '0',
+						borderLeft: item.type === 'childItem' ? '2px solid rgba(128, 128, 128, 0.3)' : 'none',
+						position: 'relative'
+					}}
+				>
+					{/* 展开/折叠图标 */}
+					{item.type === 'item' && hasChildren && item.item && (
+						<span 
+							className={`codicon codicon-${expandedItems[item.item.id] ? 'chevron-down' : 'chevron-right'}`} 
+							style={{ 
+								position: 'absolute',
+								left: '-15px',
+								top: '10px',
+								fontSize: '12px'
+							}}
+						/>
+					)}
+					<div style={{ display: 'flex', alignItems: 'center' }}>
+						<TaskText>
+							{hasChildren && (
+								<span 
+									className="codicon codicon-symbol-array" 
+									style={{ 
+										marginRight: '6px',
+										fontSize: '12px',
+										color: 'var(--vscode-symbolIcon-arrayForeground)'
+									}}
+								/>
+							)}
+							{item.item.task}
+						</TaskText>
+					</div>
+				</HistoryItemContainer>
 			);
 		}
 		return null;
