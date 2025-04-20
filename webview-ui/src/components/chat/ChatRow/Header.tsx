@@ -59,3 +59,7 @@ export const StatusText = ({ status, title }: { status: ApiStatus, title?: strin
 		{title || STATUS_CONFIG[status].text}
 	</span>
 );
+
+export const AssistantTitle = ()=>{
+	return <div style={{fontSize:'32px', padding:'10px 0'}}>Roo</div>;
+};

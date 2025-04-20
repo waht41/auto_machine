@@ -7,6 +7,7 @@ import { Tool } from '../../special-tool/type';
 import { MessageComponent } from '@webview-ui/components/chat/ChatRow/render-block/router';
 import { ShowedMessage } from '@webview-ui/components/chat/type';
 import { Timeline } from 'antd';
+import { AssistantTitle } from '@webview-ui/components/chat/ChatRow/Header';
 
 interface ChatRowProps {
 	message: ShowedMessage;
@@ -26,12 +27,13 @@ const ChatRow = memo(
 		// This allows us to detect changes without causing re-renders
 		const prevHeightRef = useRef(0);
 
+
 		const [chatrow, { height }] = useSize(
 			<div
 				style={{
 					padding: '10px 6px 10px 15px',
 				}}>
-				<ChatRowContent {...props} />
+				<ChatRowContent {...props}  />
 			</div>,
 		);
 
@@ -114,7 +116,8 @@ const renderMessageArray = (messages: ClineMessage[], props: ChatRowContentProps
 			dot: dot, // 设置自定义dot
 			children: (
 				<div>
-					<ChatRowContent {...props} message={apiMsg} />
+					{/* @ts-ignore todo 记得调整ts类型*/}
+					<ChatRowContent {...props} message={apiMsg} isInArray={true}/>
 					{relatedMessages.map((msg, i) => (
 						<div key={i} style={{ marginLeft: '20px', marginTop: '8px' }}>
 							<ChatRowContent {...props} message={msg} />
@@ -125,7 +128,10 @@ const renderMessageArray = (messages: ClineMessage[], props: ChatRowContentProps
 		};
 	});
 	
-	return <Timeline items={items} />;
+	return <>
+		<AssistantTitle/>
+		<Timeline items={items} />
+	</>;
 };
 
 export const ChatRowContent = (prop: ChatRowContentProps) => {

@@ -18,5 +18,6 @@ export type DefaultComponentProps = {
 	onToggleExpand: () => void
 	isLast: boolean
 	onHeightChange?: (isTaller: boolean) => void
-	isStreaming: boolean
+	isStreaming: boolean,
+	isInArray?: boolean,
 }

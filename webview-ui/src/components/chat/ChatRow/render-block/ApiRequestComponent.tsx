@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { DefaultComponentProps } from './types';
 import { ClineApiReqInfo } from '@/shared/ExtensionMessage';
-import { StatusText } from '@webview-ui/components/chat/ChatRow/Header';
+import { AssistantTitle, StatusText } from '@webview-ui/components/chat/ChatRow/Header';
 import messageBus from '@webview-ui/store/messageBus';
 import { AGENT_STREAM_JUMP, APP_MESSAGE } from '@webview-ui/store/const';
 import styled from 'styled-components';
@@ -67,7 +67,10 @@ const ArrowIcon = styled.span.attrs({ className: 'codicon codicon-arrow-right' }
 /**
  * 渲染API请求组件
  */
-export const ApiRequestComponent = ({ message }: DefaultComponentProps) => {
+export const ApiRequestComponent = ({ message, isInArray }: DefaultComponentProps) => {
+	if (!isInArray) {
+		return <AssistantTitle/>;
+	}
 	// 从消息中提取API请求信息
 	const [cost, apiReqCancelReason, apiReqStreamingFailedMessage] = useMemo(() => {
 		if (message.text != null && message.say === 'api_req_started') {
