@@ -305,7 +305,11 @@ export class Cline {
 
 	async receiveApproval({tool}: { tool: Command }) {
 		const result = await this.toolManager.applyCommand(tool, this.getInternalContext());
-		this.resume({text: typeof result === 'string' ? result : undefined, images: []});
+		const text = result ?? '';
+		await this.streamChatManager.resumeHistory();
+		await this.streamChatManager.addAgentStream(text);
+		const userContent: UserContent = toUserContent(text, undefined);
+		this.initiateTaskLoop(userContent);
 	}
 
 	private async initiateTaskLoop(userContent: UserContent): Promise<void> {

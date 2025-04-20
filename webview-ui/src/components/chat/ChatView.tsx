@@ -9,7 +9,6 @@ import ChatTextArea from './ChatTextArea';
 import { normalizeApiConfiguration } from '@webview-ui/components/settings/ApiOptions/utils';
 import { VSCodeButton } from '@vscode/webview-ui-toolkit/react';
 import { useClineMessageStore } from '@webview-ui/store/clineMessageStore';
-import TabNavigation from '@webview-ui/components/navigation/TabNavigation';
 import { useChatViewStore } from '@webview-ui/store/chatViewStore';
 import NewerExample from '@webview-ui/components/chat/NewerExample';
 import { ShowedMessage } from '@webview-ui/components/chat/type';
@@ -453,13 +452,8 @@ const ChatView = () => {
 
 	return (
 		<ChatViewContainer>
-			{/*
-				{!task && <ChatHistory/>}
-			*/}
-
 			{task && (
 				<>
-					<TabNavigation />
 					<ScrollContainer ref={scrollContainerRef}>
 						<VirtuosoContainer
 							ref={virtuosoRef}

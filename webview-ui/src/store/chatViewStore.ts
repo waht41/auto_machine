@@ -266,7 +266,7 @@ export const useChatViewStore = create<IChatViewStore>((set, get) => ({
 		};
     
 		for (const message of clineMessages) {
-			if (message.say === 'text' || message.say === 'tool' || message.say === 'api_req_started') {
+			if (message.say === 'text' || message.say === 'tool' || message.say === 'api_req_started' || message.ask === 'tool') {
 				currentGroup.push(message);
 			} else {
 				addCurrentGroup();
