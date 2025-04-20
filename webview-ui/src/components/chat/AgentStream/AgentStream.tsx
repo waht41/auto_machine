@@ -1,15 +1,13 @@
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import styled from 'styled-components';
-import { Card, Typography, Tag, Button, Tooltip } from 'antd';
-import { LeftOutlined, RightOutlined } from '@ant-design/icons';
+import { Card, Tag, Typography } from 'antd';
 import { useClineMessageStore } from '@webview-ui/store/clineMessageStore';
 import MarkdownBlock from '@webview-ui/components/common/MarkdownBlock';
-import {
-	findMessageIndexById
-} from '../utils/scrollSync';
+import { findMessageIndexById } from '../utils/scrollSync';
 import messageBus from '@webview-ui/store/messageBus';
 import { AGENT_STREAM_JUMP, APP_MESSAGE } from '@webview-ui/store/const';
 import { AgentStreamJumpState, AppMessageHandler } from '@webview-ui/store/type';
+import Pagination from './Pagination';
 
 const { Title, Text } = Typography;
 
@@ -19,55 +17,6 @@ const StreamContainer = styled.div`
   display: flex;
   flex-direction: column;
   background-color: #f5f7fa;
-`;
-
-const ItemCard = styled(Card)`
-  margin-bottom: 32px;
-  border-radius: 12px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-  border: none;
-  background-color: #ffffff;
-  overflow: hidden;
-  
-  &:last-child {
-    margin-bottom: 16px;
-  }
-  
-  /* 添加卡片动画效果 */
-  transition: all 0.3s ease;
-  
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
-  }
-  
-  /* 添加滚动到视图时的高亮效果 */
-  &.highlight {
-    animation: highlight 2s ease-in-out;
-  }
-  
-  @keyframes highlight {
-    0% {
-      background-color: #ffffff;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-    }
-    25% {
-      background-color: rgba(24, 144, 255, 0.15);
-      box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
-    }
-    50% {
-      background-color: rgba(24, 144, 255, 0.3);
-      box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.4);
-    }
-    75% {
-      background-color: rgba(24, 144, 255, 0.15);
-      box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
-    }
-    100% {
-      background-color: #ffffff;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-    }
-  }
 `;
 
 const StreamHeader = styled.div`
@@ -90,88 +39,26 @@ const TaskDescription = styled(Text)`
 
 const StreamBody = styled.div`
   flex: 1;
-  overflow: hidden;
-  padding: 0 8px;
+  overflow-y: auto;
+  padding: 0 20px 20px;
   display: flex;
   flex-direction: column;
-  background-color: rgba(255, 255, 255, 0.5);
-  border-radius: 8px;
 `;
 
 const MessagesContainer = styled.div`
   flex: 1;
   overflow-y: auto;
-  padding: 12px 0;
-  
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-  
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  
-  &::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.2);
-    border-radius: 6px;
-  }
-  
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
-  
-  /* 添加滚动过渡效果 */
-  scroll-behavior: smooth;
 `;
 
-const PaginationContainer = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 16px 0;
-  border-top: 1px solid #f0f0f0;
-  margin-top: auto;
-`;
-
-const PageButton = styled(Button)`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 8px;
-`;
-
-const ScrollIndicatorContainer = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 200px;
-  position: relative;
-  height: 30px;
-`;
-
-const ScrollTrack = styled.div`
-  width: 100%;
-  height: 2px;
-  background-color: #f0f0f0;
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-`;
-
-const ScrollIndicator = styled.div<{ position: number }>`
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background-color: #1890ff;
-  position: absolute;
-  top: 50%;
-  left: ${props => props.position}%;
-  transform: translate(-50%, -50%);
-  cursor: pointer;
+const ItemCard = styled(Card)`
+  margin-bottom: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
   
-  &:hover {
-    transform: translate(-50%, -50%) scale(1.2);
-    box-shadow: 0 0 0 4px rgba(24, 144, 255, 0.2);
+  &.highlight {
+    border: 2px solid #1890ff;
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
   }
 `;
 
@@ -237,20 +124,6 @@ const AgentStream = () => {
 		setHighlightedIndex(null); // 清除高亮状态
 	};
 	
-	// 上一页
-	const handlePrevPage = () => {
-		if (currentPage > 1) {
-			handlePageChange(currentPage - 1);
-		}
-	};
-	
-	// 下一页
-	const handleNextPage = () => {
-		if (currentPage < totalPages) {
-			handlePageChange(currentPage + 1);
-		}
-	};
-
 	// 处理从ApiRequestComponent跳转过来的事件
 	const handleJumpToAgentStream = useCallback((message: AgentStreamJumpState) => {
 		if (message.type === AGENT_STREAM_JUMP && agentStreamMessages.length > 0) {
@@ -313,34 +186,11 @@ const AgentStream = () => {
 					))}
 				</MessagesContainer>
 				
-				<PaginationContainer>
-					<PageButton 
-						type="primary" 
-						shape="circle" 
-						icon={<LeftOutlined />} 
-						onClick={handlePrevPage}
-						disabled={currentPage === 1}
-					/>
-					<PageButton 
-						type="primary" 
-						shape="circle" 
-						icon={<RightOutlined />} 
-						onClick={handleNextPage}
-						disabled={currentPage === totalPages}
-					/>
-					<ScrollIndicatorContainer>
-						<ScrollTrack />
-						<Tooltip 
-							title={`${currentPage} / ${totalPages}`} 
-							placement="top"
-						>
-							<ScrollIndicator 
-								position={(currentPage - 1) / Math.max(1, totalPages - 1) * 100 || 0} 
-							/>
-						</Tooltip>
-					</ScrollIndicatorContainer>
-					
-				</PaginationContainer>
+				<Pagination 
+					currentPage={currentPage}
+					totalPages={totalPages}
+					onPageChange={handlePageChange}
+				/>
 			</StreamBody>
 		</StreamContainer>
 	);
