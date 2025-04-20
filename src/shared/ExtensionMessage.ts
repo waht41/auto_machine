@@ -144,6 +144,7 @@ export interface ClineMessage {
 	messageId?: number
 	relateStreamId?: number
 	status?: ApiStatus
+	title?: string;
 }
 
 export type ClineAsk =

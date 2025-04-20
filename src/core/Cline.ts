@@ -376,7 +376,7 @@ export class Cline {
 					await this.sayP({ sayType: 'text', text: `apply tool \n ${yaml.dump(block.params)}`, partial: false, messageId: currentMessageId });
 
 					const handleError = async (action: string, error: Error) => {
-						await this.streamChatManager.changeLastApiReqStatus('error');
+						await this.streamChatManager.changeLastApiReqStatus('error',`Error when executing tool ${block.name}`);
 						const errorString = `Error ${action}:\n${error.message ?? JSON.stringify(serializeError(error), null, 2)}`;
 						await this.sayP({ sayType: 'error', text: errorString });
 						await this.pushToolResult(formatResponse.toolError(errorString));
@@ -390,6 +390,7 @@ export class Cline {
 						const isReplacing = !this.blockProcessHandler.hasNewBlock();
 						const res = await this.applyToolUse(block, this.getInternalContext(isReplacing));
 						if (typeof res === 'string') {
+							await this.streamChatManager.changeLastApiReqStatus('completed', `Tool ${block.name} executed successfully`);
 							await this.pushToolResult(res);
 						}
 					} catch (e) {
@@ -429,7 +430,6 @@ export class Cline {
 		const texts = this.userMessageContent.filter((block) => block.type === 'text');
 		const textStrings = texts.map((block) => block.text);
 		logger.debug('handleAssistantMessage pushToolResult',textStrings);
-		await this.streamChatManager.changeLastApiReqStatus('completed');
 		await this.streamChatManager.addAgentStream(textStrings.join('\n'));
 	}
 
@@ -480,7 +480,7 @@ export class Cline {
 		this.isCurrentStreamEnd = true;
 		this.blockProcessHandler.markPartialBlockAsComplete();
 		this.abortTask(); // if the stream failed, there's various states the task could be in (i.e. could have streamed some tools the user may have executed), so we just resort to replicating a cancel task
-		await this.streamChatManager.changeLastApiReqStatus('error');
+		await this.streamChatManager.changeLastApiReqStatus('error','Error when receiving message');
 		await this.abortStream(streamState);
 	}
 
@@ -553,7 +553,7 @@ export class Cline {
 				if (this.abort) {
 					console.log('aborting stream...');
 					if (!this.abortComplete) {
-						await this.streamChatManager.changeLastApiReqStatus('cancelled');
+						await this.streamChatManager.changeLastApiReqStatus('cancelled', 'Uer canceled message');
 						// only need to gracefully abort if this instance isn't abandoned (sometimes openrouter stream hangs, in which case this would affect future instances of cline)
 						streamState.apiReq.cancelReason = 'user_cancelled';
 						await this.abortStream(streamState);
@@ -595,6 +595,10 @@ export class Cline {
 			// if the model did not tool use, then we need to tell it to either use a tool or attempt_completion
 			// const didToolUse = this.assistantMessageContent.some((block) => block.type === "tool_use")
 			if (this.userMessageContent.length === 0) {
+				const status = this.streamChatManager.getLastApiReqStatus();
+				if (!status) {
+					await this.streamChatManager.changeLastApiReqStatus('completed', 'Message completed');
+				}
 				await this.askP({
 					askType: 'text',
 					text: this.streamChatManager.endHint,
