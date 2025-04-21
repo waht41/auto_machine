@@ -1,9 +1,27 @@
 import React from 'react';
 
-export const normalColor = 'var(--vscode-foreground)';
-export const errorColor = 'var(--vscode-errorForeground)';
-export const successColor = 'var(--vscode-charts-green)';
-export const cancelledColor = 'var(--vscode-descriptionForeground)';
+export const colors = {
+	primary: '#7C4DFF',
+	primaryHover: '#9575CD',
+	primaryLight: '#EDE7F6',
+	secondary: '#00C896',
+	accent: '#FFD700',
+	success: '#4CAF50',
+	warning: '#FFC107',
+	error: '#F44336',
+	textPrimary: '#1A1A1A',
+	textSecondary: '#555555',
+	textPlaceholder: '#888888',
+	backgroundMain: '#F9FAFB',
+	backgroundPanel: '#FFFFFF',
+	backgroundMuted: '#F1F3F5',
+	borderDivider: '#E0E0E0'
+};
+
+export const normalColor = colors.textPrimary;
+export const errorColor = colors.error;
+export const successColor = colors.success;
+export const cancelledColor = colors.textSecondary;
 
 export const headerStyle: React.CSSProperties = {
 	display: 'flex',

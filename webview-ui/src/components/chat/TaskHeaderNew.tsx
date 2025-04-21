@@ -5,6 +5,7 @@ import { ClineMessage } from '@/shared/ExtensionMessage';
 import { formatLargeNumber } from '../../utils/format';
 import { ApiMetrics } from '@/shared/type';
 import { useChatViewStore } from '@webview-ui/store/chatViewStore';
+import { colors } from '../common/styles';
 
 interface TaskHeaderNewProps {
   task: ClineMessage;
@@ -17,8 +18,8 @@ const HeaderContainer = styled.div`
   justify-content: space-between;
   align-items: center;
   padding: 10px 13px;
-  background-color: var(--vscode-badge-background);
-  color: var(--vscode-badge-foreground);
+  background-color: ${colors.backgroundMuted};
+  color: ${colors.textPrimary};
   border-radius: 3px;
 `;
 
@@ -33,7 +34,6 @@ const StyledTaskText = styled(Typography.Text)`
   font-weight: 500;
   font-size: 20px;
   line-height: 30px;
-  letter-spacing: 0%;
   max-width: 300px;
 `;
 
@@ -106,9 +106,9 @@ const TaskHeaderNew: React.FC<TaskHeaderNewProps> = ({ task, apiMetrics }) => {
 					type="primary" 
 					onClick={handleButtonClick}
 					style={{ 
-						backgroundColor: 'var(--vscode-button-background)',
-						borderColor: 'var(--vscode-button-background)',
-						color: 'var(--vscode-button-foreground)'
+						backgroundColor: colors.primary,
+						borderColor: colors.primary,
+						color: colors.backgroundPanel
 					}}
 				>
 					{showAgentStream ? '隐藏Agent流' : '显示Agent流'}

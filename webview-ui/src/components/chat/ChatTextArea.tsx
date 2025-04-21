@@ -19,6 +19,7 @@ import { ApprovalButton } from './AutoApproveMenu';
 import EnhanceIcon from '@webview-ui/assets/enhanceIcon.png';
 import ArrowUp from '@webview-ui/assets/ArrowUp.png';
 import { Button } from 'antd';
+import { colors } from '../common/styles';
 
 interface ChatTextAreaContainerProps {
 	$disabled?: boolean;
@@ -52,12 +53,12 @@ const ChatTextAreaContainer = styled.div<ChatTextAreaContainerProps>`
   display: flex;
   flex-direction: column;
   gap: 8px;
-  background-color: var(--vscode-input-background);
+  background-color: ${colors.backgroundPanel};
   margin: 10px 15px;
   padding: 32px 24px 24px 24px;
-  border: 1px solid var(--vscode-input-border);
+  border: 1px solid ${colors.borderDivider};
   border-radius: 24px;
-  box-shadow: 0 2px 20px 0 #00000014;
+  box-shadow: 0 2px 20px 0 rgba(0, 0, 0, 0.08);
 `;
 const TextAreaWrapper = styled.div`
   position: relative;
@@ -76,9 +77,6 @@ const HighlightLayer = styled.div<HighlightLayerProps>`
   word-wrap: break-word;
   color: transparent;
   overflow: hidden;
-  font-family: var(--vscode-font-family);
-  font-size: var(--vscode-editor-font-size);
-  line-height: var(--vscode-editor-line-height);
   padding: 8px;
   margin-bottom: ${props => props.$thumbnailsHeight > 0 ? `${props.$thumbnailsHeight + 16}px` : 0};
   z-index: 1;
@@ -89,11 +87,9 @@ const StyledTextArea = styled(DynamicTextArea)<StyledTextAreaProps>`
 
   box-sizing: border-box;
   background-color: transparent;
-  color: var(--vscode-input-foreground);
+  color: ${colors.textPrimary};
   border-radius: 2px;
-  font-family: var(--vscode-font-family);
-  font-size: var(--vscode-editor-font-size);
-  line-height: var(--vscode-editor-line-height);
+	font-size: 16px;
   resize: none;
   overflow-x: hidden;
   overflow-y: auto;
@@ -132,7 +128,7 @@ const ButtonWrapper = styled.div`
 `;
 
 const LoadingIcon = styled.span`
-  color: var(--vscode-input-foreground);
+  color: ${colors.textSecondary};
   opacity: 0.5;
   font-size: 16.5px;
   margin-right: 10px;
@@ -170,7 +166,7 @@ const EnhanceImage = styled.img`
 
 const SendButton = styled(Button)<SendButtonProps>`
   border-radius: 50%;
-  background: ${props => props.$disabled ? '#C8C8C8' : '#9233FF'};
+  background: ${props => props.$disabled ? colors.borderDivider : colors.primary};
   height: 48px;
   width: 48px;
   display: flex;
@@ -182,7 +178,7 @@ const SendButton = styled(Button)<SendButtonProps>`
   transition: all 0.3s ease;
   
   &:hover, &:focus {
-    background: ${props => props.$disabled ? '#C8C8C8' : '#A64DFF'};
+    background: ${props => props.$disabled ? colors.borderDivider : colors.primaryHover};
     border: none;
   }
 `;

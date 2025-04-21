@@ -6,11 +6,12 @@ import { PlusOutlined, HistoryOutlined, SettingOutlined, GlobalOutlined } from '
 import { useClineMessageStore } from '@webview-ui/store/clineMessageStore';
 import HistoryPreviewNew from './history/HistoryPreviewNew';
 import { useExtensionState } from '../context/ExtensionStateContext';
+import { colors } from './common/styles';
 
 const SideBarContainer = styled.div`
 	width: 210px;
-	background-color: #fff;
-	border-right: 1px solid #e8e8e8;
+	background-color: ${colors.backgroundPanel};
+	border-right: 1px solid ${colors.borderDivider};
 	padding: 16px;
 	display: flex;
 	flex-direction: column;
@@ -28,18 +29,18 @@ const LogoImage = styled.div`
 	width: 32px;
 	height: 32px;
 	border-radius: 50%;
-	background-color: #1890ff;
+	background-color: ${colors.primary};
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	color: white;
+	color: ${colors.backgroundPanel};
 	font-weight: bold;
 `;
 
 const LogoText = styled.div`
 	font-size: 18px;
 	font-weight: bold;
-	color: #333;
+	color: ${colors.textPrimary};
 `;
 
 const NavigationSection = styled.div`
@@ -49,7 +50,7 @@ const NavigationSection = styled.div`
 const HistorySection = styled.div`
 	flex: 1;
 	margin-top: auto;
-	border-top: 1px solid #e8e8e8;
+	border-top: 1px solid ${colors.borderDivider};
 	padding-top: 16px;
 `;
 
