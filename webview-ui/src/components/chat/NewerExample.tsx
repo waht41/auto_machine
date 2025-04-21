@@ -2,6 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import { Typography } from 'antd';
 import { FileTextOutlined, RobotOutlined, CodeOutlined, BulbOutlined, ToolOutlined, BookOutlined } from '@ant-design/icons';
+import { colors } from '../common/styles';
 
 const { Text } = Typography;
 
@@ -21,6 +22,7 @@ const ExampleContainer = styled.div`
   padding: 16px;
   width: 100%;
   margin: 0 auto;
+  background-color: ${colors.backgroundPanel};
 `;
 
 // 单个示例项目样式
@@ -29,7 +31,7 @@ const ExampleItemWrapper = styled.div`
   align-items: center;
   padding: 8px 16px;
   border-radius: 8px;
-  background-color: rgba(0, 0, 0, 0.04);
+  background-color: ${colors.primaryLight};
   cursor: pointer;
   transition: all 0.3s;
 

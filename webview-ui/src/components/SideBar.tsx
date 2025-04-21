@@ -16,6 +16,9 @@ const SideBarContainer = styled.div`
 	display: flex;
 	flex-direction: column;
 	gap: 16px;
+	.ant-btn{
+		justify-content: left;
+	}
 `;
 
 const Logo = styled.div`
@@ -45,12 +48,12 @@ const LogoText = styled.div`
 
 const NavigationSection = styled.div`
 	flex: 0 0 auto;
+	text-align: left;
 `;
 
 const HistorySection = styled.div`
 	flex: 1;
 	margin-top: auto;
-	border-top: 1px solid ${colors.borderDivider};
 	padding-top: 16px;
 `;
 
@@ -75,7 +78,12 @@ const SideBar: React.FC = () => {
 					type="primary" 
 					icon={<PlusOutlined />} 
 					size="large" 
-					style={{ borderRadius: '8px' }}
+					style={{ 
+						borderRadius: '8px',
+						backgroundColor: colors.primary,
+						display: 'flex',
+						justifyContent: 'center'
+					}}
 					block
 					onClick={() => {
 						navigate('/');

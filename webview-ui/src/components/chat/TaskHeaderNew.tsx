@@ -6,6 +6,8 @@ import { formatLargeNumber } from '../../utils/format';
 import { ApiMetrics } from '@/shared/type';
 import { useChatViewStore } from '@webview-ui/store/chatViewStore';
 import { colors } from '../common/styles';
+import { ReactComponent as AgentStreamIcon } from '@webview-ui/assets/agentStreamIcon.svg';
+import SVGComponent from '@webview-ui/components/common/SVGComponent';
 
 interface TaskHeaderNewProps {
   task: ClineMessage;
@@ -103,15 +105,10 @@ const TaskHeaderNew: React.FC<TaskHeaderNewProps> = ({ task, apiMetrics }) => {
       
 			<RightSection>
 				<Button 
-					type="primary" 
+					type="text"
 					onClick={handleButtonClick}
-					style={{ 
-						backgroundColor: colors.primary,
-						borderColor: colors.primary,
-						color: colors.backgroundPanel
-					}}
 				>
-					{showAgentStream ? '隐藏Agent流' : '显示Agent流'}
+					<SVGComponent component={AgentStreamIcon} stroke={showAgentStream ? colors.primary : undefined} />
 				</Button>
 			</RightSection>
 		</HeaderContainer>

@@ -6,6 +6,7 @@ import messageBus from '@webview-ui/store/messageBus';
 import { AGENT_STREAM_JUMP, APP_MESSAGE } from '@webview-ui/store/const';
 import styled from 'styled-components';
 import { ApiStatus } from '@/shared/type';
+import { useChatViewStore } from '@webview-ui/store/chatViewStore';
 
 // 使用styled-components定义样式组件
 const HeaderContainer = styled.div<HeaderContainerProps>`
@@ -100,10 +101,13 @@ export const ApiRequestComponent = ({ message, isInArray }: DefaultComponentProp
   
 	const hasError = !!((cost == null && apiRequestFailedMessage) || apiReqStreamingFailedMessage);
 
+	const setShowAgentStream = useChatViewStore(state => state.setShowAgentStream);
+
 	// 处理跳转到AgentStream
 	const handleJumpToAgentStream = (e: React.MouseEvent) => {
 		e.stopPropagation(); // 防止触发展开/折叠
 
+		setShowAgentStream(true);
 		// 使用messageBus发送跳转事件
 		messageBus.emit(APP_MESSAGE, {
 			type: AGENT_STREAM_JUMP,

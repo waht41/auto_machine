@@ -4,6 +4,7 @@ import { vscode } from '../../utils/vscode';
 import styled from 'styled-components';
 import { Virtuoso } from 'react-virtuoso';
 import { HistoryItem } from '@/shared/HistoryItem';
+import { colors } from '../common/styles';
 
 // 样式组件
 const HistoryContainer = styled.div`
@@ -11,19 +12,6 @@ const HistoryContainer = styled.div`
   display: flex;
   flex-direction: column;
   height: 100%;
-`;
-
-const SectionHeader = styled.div`
-  color: var(--vscode-descriptionForeground);
-  margin: 10px 20px 10px 20px;
-  display: flex;
-  align-items: center;
-`;
-
-const HeaderText = styled.span`
-  font-weight: 500;
-  font-size: 0.85em;
-  text-transform: uppercase;
 `;
 
 const HistoryContent = styled.div`
@@ -54,17 +42,17 @@ const CustomScroller = styled.div`
 `;
 
 const TimeHeader = styled.div`
-  color: var(--vscode-descriptionForeground);
+  color: ${colors.textSecondary};
   font-weight: 500;
   font-size: 0.75em;
   text-transform: uppercase;
   margin: 16px 0 8px 0;
   padding-bottom: 4px;
-  border-bottom: 1px solid rgba(128, 128, 128, 0.2);
+  border-bottom: 1px solid ${colors.borderDivider};
 `;
 
-const HistoryItemContainer = styled.div`
-  background-color: color-mix(in srgb, var(--vscode-toolbar-hoverBackground) 65%, transparent);
+const HistoryItemContainer = styled.div<{ $isSelected?: boolean }>`
+  background-color: ${props => props.$isSelected ? colors.primaryLight : colors.backgroundMuted};
   border-radius: 4px;
   position: relative;
   overflow: hidden;
@@ -74,14 +62,14 @@ const HistoryItemContainer = styled.div`
   padding: 8px;
 
   &:hover {
-    background-color: color-mix(in srgb, var(--vscode-toolbar-hoverBackground) 100%, transparent);
+    background-color: ${colors.backgroundMuted};
     opacity: 1;
   }
 `;
 
 const TaskText = styled.div`
-  font-size: var(--vscode-font-size);
-  color: var(--vscode-descriptionForeground);
+  font-size: 14px;
+  color: ${colors.textSecondary};
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -89,11 +77,6 @@ const TaskText = styled.div`
   white-space: pre-wrap;
   word-break: break-word;
   overflow-wrap: anywhere;
-`;
-
-const CodiconIcon = styled.span.attrs({ className: 'codicon codicon-comment-discussion' })`
-  margin-right: 4px;
-  transform: scale(0.9);
 `;
 
 const StyledVirtuoso = styled(Virtuoso)`
@@ -318,10 +301,6 @@ const HistoryPreviewNew: React.FC<HistoryPreviewNewProps> = () => {
 
 	return (
 		<HistoryContainer>
-			<SectionHeader>
-				<CodiconIcon />
-				<HeaderText>Recent Tasks</HeaderText>
-			</SectionHeader>
 			<HistoryContent>
 				<StyledVirtuoso
 					totalCount={virtualItems.length}

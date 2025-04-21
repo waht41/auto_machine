@@ -76,7 +76,7 @@ export const useChatViewStore = create<IChatViewStore>((set, get) => ({
 	showScrollToBottom: false,
 	isAtBottom: false,
 	disableAutoScroll: false,
-	showAgentStream: true,
+	showAgentStream: false,
   
 	// 设置方法
 	setInputValue: (value) => set({ inputValue: value }),
