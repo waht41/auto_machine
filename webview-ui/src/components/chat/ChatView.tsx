@@ -77,6 +77,7 @@ const ButtonsContainer = styled.div<{ opacity: number }>`
 const SecondaryButton = styled(VSCodeButton)<{ isStreaming: boolean }>`
 	flex: ${props => props.isStreaming ? 2 : 1};
 	margin-left: ${props => props.isStreaming ? 0 : '6px'};
+	display: none; //todo 记得删
 `;
 
 const EmptyStateContainer = styled.div`
@@ -422,6 +423,7 @@ const ChatView = () => {
 		selectedImages,
 		setSelectedImages,
 		onSend: () => handleSendMessage(inputValue, selectedImages),
+		onCancel: handleSecondaryButtonClick,
 		onSelectImages: selectImages,
 		shouldDisableImages,
 		onHeightChange: () => {
@@ -438,7 +440,8 @@ const ChatView = () => {
 		placeholderText, 
 		selectedImages, 
 		setSelectedImages, 
-		handleSendMessage, 
+		handleSendMessage,
+		handleSecondaryButtonClick,
 		selectImages, 
 		shouldDisableImages, 
 		isAtBottom, 

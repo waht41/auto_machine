@@ -21,10 +21,6 @@ import ArrowUp from '@webview-ui/assets/ArrowUp.png';
 import { Button } from 'antd';
 import { colors } from '../common/styles';
 
-interface ChatTextAreaContainerProps {
-	$disabled?: boolean;
-}
-
 interface HighlightLayerProps {
 	$thumbnailsHeight: number;
 }
@@ -39,16 +35,11 @@ interface IconButtonProps {
 	$disabled?: boolean;
 }
 
-interface SendButtonProps {
-  $disabled?: boolean;
-}
-
 interface StyledEnhanceButtonProps {
   $disabled?: boolean;
 }
 
-const ChatTextAreaContainer = styled.div<ChatTextAreaContainerProps>`
-  opacity: ${props => props.$disabled ? 0.5 : 1};
+const ChatTextAreaContainer = styled.div`
   position: relative;
   display: flex;
   flex-direction: column;
@@ -128,7 +119,7 @@ const ButtonWrapper = styled.div`
 `;
 
 const LoadingIcon = styled.span`
-  color: ${colors.textSecondary};
+  color: ${colors.primary};
   opacity: 0.5;
   font-size: 16.5px;
   margin-right: 10px;
@@ -164,21 +155,19 @@ const EnhanceImage = styled.img`
   height: 20px;
 `;
 
-const SendButton = styled(Button)<SendButtonProps>`
+const SendButton = styled(Button)`
   border-radius: 50%;
-  background: ${props => props.$disabled ? colors.borderDivider : colors.primary};
+  background: ${colors.primary};
   height: 48px;
   width: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
-  opacity: ${props => props.$disabled ? 0.7 : 1};
-  cursor: ${props => props.$disabled ? 'not-allowed' : 'pointer'};
   transition: all 0.3s ease;
   
   &:hover, &:focus {
-    background: ${props => props.$disabled ? colors.borderDivider : colors.primaryHover};
+    background: ${colors.primaryHover};
     border: none;
   }
 `;
@@ -186,6 +175,11 @@ const SendButton = styled(Button)<SendButtonProps>`
 const SendIcon = styled.img`
   width: 12px;
   height: 16px;
+`;
+const CancelIcon = styled.div`
+  background: ${colors.backgroundPanel};
+	height: 13px;
+	width: 13px;
 `;
 
 interface ChatTextAreaProps {
@@ -196,6 +190,7 @@ interface ChatTextAreaProps {
 	selectedImages: string[];
 	setSelectedImages: React.Dispatch<React.SetStateAction<string[]>>;
 	onSend: () => void;
+	onCancel: ()	=> void;
 	onSelectImages: () => void;
 	shouldDisableImages: boolean;
 	onHeightChange?: (height: number) => void;
@@ -213,6 +208,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 			selectedImages,
 			setSelectedImages,
 			onSend,
+			onCancel,
 			onSelectImages,
 			shouldDisableImages,
 			onHeightChange,
@@ -669,7 +665,6 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 
 		return (
 			<ChatTextAreaContainer
-				$disabled={textAreaDisabled}
 				onDrop={async (e) => {
 					e.preventDefault();
 					const files = Array.from(e.dataTransfer.files);
@@ -815,10 +810,17 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 						/>
 						<SendButton 
 							type="primary" 
-							onClick={() => !textAreaDisabled && onSend()} 
-							$disabled={textAreaDisabled}
+							onClick={() => {
+								if (!textAreaDisabled) {
+									onSend();
+								} else {
+									onCancel();
+								}
+
+							}}
 						>
-							<SendIcon src={ArrowUp} alt="send button" />
+							{!textAreaDisabled && <SendIcon src={ArrowUp} alt="send button" />}
+							{textAreaDisabled && <CancelIcon/>}
 						</SendButton>
 					</ButtonGroup>
 				</ControlsContainer>

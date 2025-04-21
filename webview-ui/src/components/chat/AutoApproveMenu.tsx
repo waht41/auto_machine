@@ -3,7 +3,9 @@ import { IToolCategory, IToolNode } from '@core/tool-adapter/type';
 import styled from 'styled-components';
 import { Tooltip, Button, Popover, Tree } from 'antd';
 import type { DataNode } from 'antd/es/tree';
-import approvalIcon from '@webview-ui/assets/approvalIcon.png';
+import { ReactComponent as ApprovalIcon } from '@webview-ui/assets/approvalIcon.svg';
+import { colors } from '../common/styles';
+import SVGComponent from '@webview-ui/components/common/SVGComponent';
 
 // 使用styled-components定义样式组件
 const Container = styled.div`
@@ -40,6 +42,16 @@ const BodyContainer = styled.div``;
 const Description = styled.div`
   color: #687076;
   font-size: 12px;
+`;
+
+const PopoverTitle = styled.div`
+  font-size: 20px;
+  font-family: 'Roboto';
+  color: ${colors.textPrimary};
+`;
+
+const PopoverDescription = styled.p`
+  color: ${colors.textSecondary};
 `;
 
 const tools: IToolCategory[] = [
@@ -153,8 +165,8 @@ export const AutoApprovePopover = ({ allowedTools, treeData, setAllowedTools }: 
 			trigger="click"
 			content={
 				<div style={{ maxHeight: 400, overflow: 'auto', width: 400 }}>
-					<div style={{fontSize:20, width:900, fontFamily: 'Roboto',}}>Tool Permissions</div>
-					<p>Roo will use selected tools without asking each time</p>
+					<PopoverTitle>Tool Permissions</PopoverTitle>
+					<PopoverDescription>Roo will use selected tools without asking each time</PopoverDescription>
 					<Tree
 						checkable
 						checkedKeys={allowedTools}
@@ -170,7 +182,7 @@ export const AutoApprovePopover = ({ allowedTools, treeData, setAllowedTools }: 
 			}
 		>
 			<Button type="text" style={{ padding: '4px' }}>
-				<img src={approvalIcon} alt="auto approval tool" style={{ width: '20px', height: '20px' }} />
+				<SVGComponent src={ApprovalIcon} stroke={open? colors.primary : undefined}/>
 			</Button>
 		</Popover>
 	);

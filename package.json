@@ -84,7 +84,8 @@
     "undici": "^7.3.0",
     "vite": "^5.2.0",
     "vite-plugin-commonjs": "^0.10.4",
-    "vite-plugin-electron": "^0.29.0"
+    "vite-plugin-electron": "^0.29.0",
+    "vite-plugin-svgr": "^4.3.0"
   },
   "dependencies": {
     "@anthropic-ai/bedrock-sdk": "^0.10.2",
