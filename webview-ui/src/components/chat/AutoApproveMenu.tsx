@@ -182,7 +182,7 @@ export const AutoApprovePopover = ({ allowedTools, treeData, setAllowedTools }: 
 			}
 		>
 			<Button type="text" style={{ padding: '4px' }}>
-				<SVGComponent src={ApprovalIcon} stroke={open? colors.primary : undefined}/>
+				<SVGComponent component={ApprovalIcon} stroke={open? colors.primary : undefined} width={28} height={28}/>
 			</Button>
 		</Popover>
 	);

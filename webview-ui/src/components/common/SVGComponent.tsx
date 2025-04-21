@@ -2,7 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 
 interface SVGComponentProps {
-  src: React.FC<React.SVGProps<SVGSVGElement>>;
+  component: React.FC<React.SVGProps<SVGSVGElement>>;
   width?: number | string;
   height?: number | string;
   fill?: string;
@@ -24,7 +24,7 @@ interface StyledSVGProps {
 }
 
 const SVGComponent: React.FC<SVGComponentProps> = ({
-	src,
+	component,
 	width = 24,
 	height = 24,
 	fill,
@@ -35,7 +35,7 @@ const SVGComponent: React.FC<SVGComponentProps> = ({
 	...restProps
 }) => {
 	// 创建一个带有样式属性的 styled component
-	const StyledSVG = styled(src)<StyledSVGProps>`
+	const StyledSVG = styled(component)<StyledSVGProps>`
     width: ${props => props.$width || width}px;
     height: ${props => props.$height || height}px;
     

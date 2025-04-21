@@ -16,10 +16,11 @@ import { vscode } from '../../utils/vscode';
 import { WebviewMessage } from '@/shared/WebviewMessage';
 import styled from 'styled-components';
 import { ApprovalButton } from './AutoApproveMenu';
-import EnhanceIcon from '@webview-ui/assets/enhanceIcon.png';
+import { ReactComponent as EnhanceIcon } from '@webview-ui/assets/enhanceIcon.svg';
 import ArrowUp from '@webview-ui/assets/ArrowUp.png';
 import { Button } from 'antd';
 import { colors } from '../common/styles';
+import SVGComponent from '@webview-ui/components/common/SVGComponent';
 
 interface HighlightLayerProps {
 	$thumbnailsHeight: number;
@@ -148,11 +149,6 @@ const StyledEnhanceButton = styled(Button)<StyledEnhanceButtonProps>`
     background: transparent;
     border: none;
   }
-`;
-
-const EnhanceImage = styled.img`
-  width: 20px;
-  height: 20px;
 `;
 
 const SendButton = styled(Button)`
@@ -795,7 +791,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 								<LoadingIcon className="codicon codicon-loading codicon-modifier-spin" />
 							) : (
 								<StyledEnhanceButton onClick={() => !textAreaDisabled && handleEnhancePrompt()} $disabled={textAreaDisabled}>
-									<EnhanceImage src={EnhanceIcon} alt="auto approval tool" />
+									<SVGComponent component={EnhanceIcon} width={20} height={20}/>
 								</StyledEnhanceButton>
 							)}
 						</ButtonWrapper>
