@@ -46,12 +46,15 @@ const Description = styled.div`
 
 const PopoverTitle = styled.div`
   font-size: 20px;
-  font-family: 'Roboto';
   color: ${colors.textPrimary};
 `;
 
 const PopoverDescription = styled.p`
   color: ${colors.textSecondary};
+`;
+
+// 自定义Tree样式，修改checkbox背景色为primary
+const StyledTree = styled(Tree)`
 `;
 
 const tools: IToolCategory[] = [
@@ -167,7 +170,7 @@ export const AutoApprovePopover = ({ allowedTools, treeData, setAllowedTools }: 
 				<div style={{ maxHeight: 400, overflow: 'auto', width: 400 }}>
 					<PopoverTitle>Tool Permissions</PopoverTitle>
 					<PopoverDescription>Roo will use selected tools without asking each time</PopoverDescription>
-					<Tree
+					<StyledTree
 						checkable
 						checkedKeys={allowedTools}
 						onCheck={(checkedKeys) => {

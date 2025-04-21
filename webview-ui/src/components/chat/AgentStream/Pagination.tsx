@@ -167,14 +167,16 @@ const Pagination: React.FC<PaginationProps> = ({
 			<PageButton 
 				type="text"
 				shape="circle" 
-				icon={<SVGComponent component={LeftPageIcon} stroke={leftDisabled ? colors.textPlaceholder : undefined}/>}
+				icon={<SVGComponent component={LeftPageIcon} stroke={leftDisabled ? colors.textPlaceholder : undefined}
+					width={16} height={16}/>}
 				onClick={handlePrevPage}
 				disabled={leftDisabled}
 			/>
 			<PageButton 
 				type="text"
 				shape="circle" 
-				icon={<SVGComponent component={RightPageIcon} stroke={rightDisabled ? colors.textPlaceholder : undefined}/>}
+				icon={<SVGComponent component={RightPageIcon} stroke={rightDisabled ? colors.textPlaceholder : undefined}
+					width={16} height={16}/>}
 				onClick={handleNextPage}
 				disabled={currentPage === totalPages}
 			/>

@@ -51,25 +51,29 @@ const TimeHeader = styled.div`
   border-bottom: 1px solid ${colors.borderDivider};
 `;
 
-const HistoryItemContainer = styled.div<{ $isSelected?: boolean }>`
-  background-color: ${props => props.$isSelected ? colors.primaryLight : colors.backgroundMuted};
+const HistoryItemContainer = styled.div<{ $isSelected?: boolean; $isChild?: boolean }>`
   border-radius: 4px;
   position: relative;
   overflow: hidden;
-  opacity: 0.8;
   cursor: pointer;
   margin-bottom: 8px;
   padding: 8px;
+  margin-left: ${props => props.$isChild ? '20px' : '0'};
+  border-left: ${props => props.$isChild ? '2px solid rgba(128, 128, 128, 0.3)' : 'none'};
 
   &:hover {
     background-color: ${colors.backgroundMuted};
-    opacity: 1;
   }
+
+  ${props => props.$isSelected && `
+    background-color: ${colors.primaryLight};
+  `}
 `;
 
 const TaskText = styled.div`
-  font-size: 14px;
-  color: ${colors.textSecondary};
+  font-size: 17px;
+  color: ${colors.textPrimary};
+	font-weight: 400;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -82,6 +86,19 @@ const TaskText = styled.div`
 const StyledVirtuoso = styled(Virtuoso)`
   height: 100%;
   width: 100%;
+`;
+
+const ParentIcon = styled.span`
+  margin-left: 6px;
+  font-size: 12px;
+  color: ${colors.textSecondary};
+`;
+
+const TaskContent = styled.div`
+  display: flex;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
 `;
 
 type HistoryPreviewNewProps = {
@@ -256,39 +273,17 @@ const HistoryPreviewNew: React.FC<HistoryPreviewNewProps> = () => {
 							}
 						}
 					}}
-					style={{ 
-						marginLeft: item.type === 'childItem' ? '20px' : '0',
-						borderLeft: item.type === 'childItem' ? '2px solid rgba(128, 128, 128, 0.3)' : 'none',
-						position: 'relative'
-					}}
+					$isChild={item.type === 'childItem'}
 				>
-					{/* 展开/折叠图标 */}
-					{item.type === 'item' && hasChildren && item.item && (
-						<span 
-							className={`codicon codicon-${expandedItems[item.item.id] ? 'chevron-down' : 'chevron-right'}`} 
-							style={{ 
-								position: 'absolute',
-								left: '-15px',
-								top: '10px',
-								fontSize: '12px'
-							}}
-						/>
-					)}
-					<div style={{ display: 'flex', alignItems: 'center' }}>
+					<TaskContent>
 						<TaskText>
-							{hasChildren && (
-								<span 
-									className="codicon codicon-symbol-array" 
-									style={{ 
-										marginRight: '6px',
-										fontSize: '12px',
-										color: 'var(--vscode-symbolIcon-arrayForeground)'
-									}}
-								/>
-							)}
 							{item.item.task}
+							{/* 将parentIcon移到末尾 */}
+							{hasChildren && (
+								<ParentIcon>▼</ParentIcon>
+							)}
 						</TaskText>
-					</div>
+					</TaskContent>
 				</HistoryItemContainer>
 			);
 		}

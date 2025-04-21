@@ -7,6 +7,7 @@ import { useClineMessageStore } from '@webview-ui/store/clineMessageStore';
 import HistoryPreviewNew from './history/HistoryPreviewNew';
 import { useExtensionState } from '../context/ExtensionStateContext';
 import { colors } from './common/styles';
+import NavButton from './common/NavButton';
 
 const SideBarContainer = styled.div`
 	width: 210px;
@@ -93,35 +94,26 @@ const SideBar: React.FC = () => {
 					New task
 				</Button>
 
-				<Button 
-					type="text" 
-					icon={<GlobalOutlined />} 
-					size="large" 
-					block
+				<NavButton 
+					icon={<GlobalOutlined />}
 					onClick={() => navigate('/mcp')}
 				>
 					MCP
-				</Button>
+				</NavButton>
 
-				<Button 
-					type="text" 
-					icon={<HistoryOutlined />} 
-					size="large" 
-					block
+				<NavButton 
+					icon={<HistoryOutlined />}
 					onClick={() => navigate('/history')}
 				>
 					History
-				</Button>
+				</NavButton>
 
-				<Button 
-					type="text" 
-					icon={<SettingOutlined />} 
-					size="large" 
-					block
+				<NavButton 
+					icon={<SettingOutlined />}
 					onClick={() => navigate('/settings')}
 				>
 					setting
-				</Button>
+				</NavButton>
 			</NavigationSection>
 			
 			{taskHistory.length > 0 && (
