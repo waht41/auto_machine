@@ -8,6 +8,7 @@ import { AskApprovalComponent } from './AskApproval';
 import { FollowupComponent } from '@webview-ui/components/special-tool/FollowupComponent';
 import { DownloadComponent } from '@webview-ui/components/special-tool/DownloadComponent';
 import { ParallelComponent } from '@webview-ui/components/special-tool/ParallelComponent';
+import { SearchComponent } from '@webview-ui/components/special-tool/SearchComponent';
 
 
 const componentRoutes: Record<string, RouteNode> = {
@@ -25,6 +26,7 @@ const componentRoutes: Record<string, RouteNode> = {
 	},
 	browser: {
 		download: DownloadComponent,
+		search: SearchComponent,
 	},
 	advance: {
 		parallel: ParallelComponent,

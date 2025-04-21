@@ -15,12 +15,16 @@ import { IInternalContext } from '@core/internal-implementation/type';
 export class BrowserCommandExecutor implements CommandExecutor {
 	async execute(command: BrowserCommand, context: IInternalContext): Promise<string> {
 		const { cline } = context;
+		let messageId: number;
 		switch (command.cmd) {
 			case 'open':
 				await Browser.open(command);
 				return `open ${command.url} success`;
 			case 'search':
+				messageId = cline.getNewMessageId();
+				await cline.sayP({sayType:'tool',text:JSON.stringify(command),messageId});
 				const searchRes = await Browser.search(command);
+				await cline.sayP({sayType:'tool',text:JSON.stringify({ ...command, complete: true }),messageId});
 				return yaml.dump(searchRes.data);
 			case 'state':
 				return yaml.dump(await Browser.state());
@@ -41,7 +45,7 @@ export class BrowserCommandExecutor implements CommandExecutor {
 				return 'auth success';
 			case 'download':
 				let partial = true;
-				const messageId = cline.getNewMessageId();
+				messageId = cline.getNewMessageId();
 
 				if (command.selector || command.tag || command.id || command.text) {
 					// 使用浏览器下载
