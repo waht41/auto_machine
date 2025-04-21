@@ -1,7 +1,10 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import styled from 'styled-components';
 import { Button, Tooltip } from 'antd';
-import { LeftOutlined, RightOutlined } from '@ant-design/icons';
+import SVGComponent from '@webview-ui/components/common/SVGComponent';
+import { ReactComponent as LeftPageIcon } from '@webview-ui/assets/leftPageIcon.svg';
+import { ReactComponent as RightPageIcon } from '@webview-ui/assets/rightPageIcon.svg';
+import { colors } from '@webview-ui/components/common/styles';
 
 const PaginationContainer = styled.div`
   display: flex;
@@ -30,17 +33,28 @@ const ScrollIndicatorContainer = styled.div`
 const ScrollTrack = styled.div`
   width: 100%;
   height: 2px;
-  background-color: #f0f0f0;
+  background-color: ${colors.backgroundPanel};
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
+`;
+
+const CompletedTrack = styled.div<{ $width: number }>`
+  width: ${props => props.$width}%;
+  height: 2px;
+  background-color: ${colors.primary};
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  left: 0;
 `;
 
 const ScrollIndicator = styled.div<{ $position: number }>`
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background-color: #1890ff;
+  border: 2px solid ${colors.primary};
+  background-color: ${colors.backgroundPanel};
   position: absolute;
   top: 50%;
   left: ${props => props.$position}%;
@@ -145,20 +159,22 @@ const Pagination: React.FC<PaginationProps> = ({
 
 	// 计算指示器位置
 	const indicatorPosition = (currentPage - 1) / Math.max(1, totalPages - 1) * 100 || 0;
+	const leftDisabled = currentPage === 1;
+	const rightDisabled = currentPage === totalPages;
 
 	return (
 		<PaginationContainer>
 			<PageButton 
-				type="primary" 
+				type="text"
 				shape="circle" 
-				icon={<LeftOutlined />} 
+				icon={<SVGComponent component={LeftPageIcon} stroke={leftDisabled ? colors.textPlaceholder : undefined}/>}
 				onClick={handlePrevPage}
-				disabled={currentPage === 1}
+				disabled={leftDisabled}
 			/>
 			<PageButton 
-				type="primary" 
+				type="text"
 				shape="circle" 
-				icon={<RightOutlined />} 
+				icon={<SVGComponent component={RightPageIcon} stroke={rightDisabled ? colors.textPlaceholder : undefined}/>}
 				onClick={handleNextPage}
 				disabled={currentPage === totalPages}
 			/>
@@ -167,6 +183,7 @@ const Pagination: React.FC<PaginationProps> = ({
 				className="scroll-indicator-container"
 			>
 				<ScrollTrack />
+				<CompletedTrack $width={indicatorPosition} />
 				<Tooltip 
 					title={`${currentPage} / ${totalPages}`} 
 					placement="top"
