@@ -20,9 +20,10 @@ const HeaderContainer = styled.div`
   justify-content: space-between;
   align-items: center;
   padding: 10px 13px;
-  background-color: ${colors.backgroundMuted};
+  background-color: ${colors.backgroundPanel};
   color: ${colors.textPrimary};
   border-radius: 3px;
+	border-bottom: 1px solid ${colors.borderDivider};
 `;
 
 const LeftSection = styled.div`
@@ -33,10 +34,11 @@ const LeftSection = styled.div`
 
 const StyledTaskText = styled(Typography.Text)`
   font-family: Roboto;
-  font-weight: 500;
+  font-weight: 600;
   font-size: 20px;
   line-height: 30px;
   max-width: 300px;
+	color: ${colors.textPrimary};
 `;
 
 const InfoItem = styled.div`
@@ -47,7 +49,8 @@ const InfoItem = styled.div`
   font-weight: 400;
   font-size: 13px;
   line-height: 20px;
-  letter-spacing: 0%;
+  letter-spacing: 0;
+	color: ${colors.textPlaceholder};
 `;
 
 const Label = styled.span`
