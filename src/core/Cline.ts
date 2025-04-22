@@ -42,6 +42,8 @@ import { ToolManager } from '@core/manager/ToolManager';
 import { ICreateSubCline } from '@core/webview/type';
 import { InterClineMessage } from '@core/services/type';
 import { EventEmitter } from 'events';
+import { AllowedToolTree } from '@core/tool-adapter/AllowedToolTree';
+import { isAutoApproval as isAutoApprovalX } from '@core/internal-implementation/middleware';
 
 const cwd = process.cwd();
 
@@ -60,6 +62,7 @@ interface IProp {
 	mcpHub?: McpHub
 	taskParentDir: string,
 	memoryDir: string,
+	allowedToolTree: AllowedToolTree
 }
 
 export class Cline {
@@ -89,6 +92,7 @@ export class Cline {
 	public di = new DIContainer();
 	private postService!: PostService;
 	private uiMessageService!: UIMessageService;
+	private allowedToolTree: AllowedToolTree;
 	clineBus = new EventEmitter();
 	messageBox: string[] = [];
 	remainingChildNum = 0;
@@ -114,6 +118,7 @@ export class Cline {
 		this.taskDir = path.join(taskParentDir, this.taskId);
 		this.streamChatManager = new StreamChatManager(this.di,this.api, this.taskId);
 		this.toolManager = new ToolManager(this.di, middleWares);
+		this.allowedToolTree = prop.allowedToolTree;
 
 		this.registerServices(prop);
 
@@ -332,6 +337,10 @@ export class Cline {
 		this.urlContentFetcher.closeBrowser();
 	}
 
+	private isAutoApproval(command: Command): boolean {
+		return isAutoApprovalX(command, this.allowedToolTree);
+	}
+
 	async handleAssistantMessage() {
 		// eslint-disable-next-line no-constant-condition
 		while (true) {
@@ -377,7 +386,10 @@ export class Cline {
 						break;
 					}
 					logger.debug('handleAssistantMessage: tool_use', block);
-					await this.sayP({ sayType: 'text', text: `apply tool \n ${yaml.dump(block.params)}`, partial: false, messageId: currentMessageId });
+					if (this.isAutoApproval(this.block2Command(block))) {
+						await this.sayP({ sayType: 'text', text: `apply tool \n ${yaml.dump(block.params)}`, partial: false, messageId: currentMessageId });
+					}
+
 
 					const handleError = async (action: string, error: Error) => {
 						await this.streamChatManager.changeLastApiReqStatus('error',`Error when executing tool ${block.name}`);
@@ -435,6 +447,10 @@ export class Cline {
 		const textStrings = texts.map((block) => block.text);
 		logger.debug('handleAssistantMessage pushToolResult',textStrings);
 		await this.streamChatManager.addAgentStream(textStrings.join('\n'));
+	}
+
+	private block2Command(block:ToolUse): Command{
+		return {...block.params, type: block.name};
 	}
 
 	async applyToolUse(block: ToolUse, context?: IInternalContext): Promise<string | unknown> {

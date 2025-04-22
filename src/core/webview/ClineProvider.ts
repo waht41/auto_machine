@@ -191,7 +191,8 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 				middleWares: [safeExecuteMiddleware, ApprovalMiddleWrapper(this.allowedToolTree)],
 				mcpHub: this.mcpHub,
 				taskParentDir: taskDirRoot,
-				memoryDir: path.join(getUserDataPath(),'memory')
+				memoryDir: path.join(getUserDataPath(),'memory'),
+				allowedToolTree: this.allowedToolTree
 			}
 		);
 		await cline.init();
