@@ -275,8 +275,6 @@ export const useChatViewStore = create<IChatViewStore>((set, get) => ({
 		}
     
 		addCurrentGroup();
-
-		console.log('[waht]','shoedmessages',showedMessages);
     
 		return showedMessages;
 	},
@@ -352,7 +350,7 @@ export const useChatViewStore = create<IChatViewStore>((set, get) => ({
 				}
 		}
 	},
-  
+
 	// 初始化方法
 	init: () => {
 		// 消息处理函数

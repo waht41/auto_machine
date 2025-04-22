@@ -23,7 +23,7 @@ export type ChatRowContentProps = Omit<ChatRowProps, 'onHeightChange'>
 
 const ChatRow = memo(
 	(props: ChatRowProps) => {
-		const { isLast, onHeightChange, message } = props;
+		const { isLast, onHeightChange } = props;
 		// Store the previous height to compare with the current height
 		// This allows us to detect changes without causing re-renders
 		const prevHeightRef = useRef(0);
@@ -49,13 +49,21 @@ const ChatRow = memo(
 				}
 				prevHeightRef.current = height;
 			}
-		}, [height, isLast, onHeightChange, message]);
+		}, [height, isLast, onHeightChange]);
 
 		// we cannot return null as virtuoso does not support it, so we use a separate visibleMessages array to filter out messages that should not be rendered
 		return chatrow;
 	},
-	// memo does shallow comparison of props, so we need to do deep comparison of arrays/objects whose properties might change
-	deepEqual,
+	// 使用自定义比较函数，只比较必要的属性
+	(prevProps, nextProps) => {
+		// 只有这些属性变化时才重新渲染
+		return (
+			prevProps.isExpanded === nextProps.isExpanded &&
+			prevProps.isLast === nextProps.isLast &&
+			prevProps.isStreaming === nextProps.isStreaming &&
+			deepEqual(prevProps.message, nextProps.message)
+		);
+	}
 );
 
 export default ChatRow;

@@ -370,21 +370,31 @@ const ChatView = () => {
 		const wheelEvent = event as WheelEvent;
 		if (wheelEvent.deltaY && wheelEvent.deltaY < 0) {
 			if (scrollContainerRef.current?.contains(wheelEvent.target as Node)) {
-				// user scrolled up
-				disableAutoScrollRef.current = true;
-				setDisableAutoScroll(true);
+				// 用户向上滚动，只有当状态需要变化时才更新
+				if (!disableAutoScrollRef.current) {
+					disableAutoScrollRef.current = true;
+					setDisableAutoScroll(true);
+				}
 			}
 		}
 	}, [setDisableAutoScroll]);
-	
+
+	// 使用节流函数包装滚动处理函数，减少事件处理频率
+	const throttledHandleWheel = useMemo(() => {
+		// 使用 debounce 库的节流功能，每 100ms 最多执行一次
+		return debounce(handleWheel, 100, { immediate: true });
+	}, [handleWheel]);
+
 	// 使用原生事件监听，而不是 useEvent
 	useEffect(() => {
-		window.addEventListener('wheel', handleWheel, { passive: true });
+		window.addEventListener('wheel', throttledHandleWheel, { passive: true });
 		
 		return () => {
-			window.removeEventListener('wheel', handleWheel);
+			window.removeEventListener('wheel', throttledHandleWheel);
+			// 清理节流函数
+			throttledHandleWheel.clear();
 		};
-	}, [handleWheel]);
+	}, [throttledHandleWheel]);
 
 	const placeholderText = useMemo(() => {
 		return getPlaceholderText(task, shouldDisableImages);
@@ -407,7 +417,6 @@ const ChatView = () => {
 		},
 		[
 			expandedRows,
-			visibleMessages.length,
 			handleRowHeightChange,
 			isStreaming,
 			handleToggleRowExpansion,
@@ -470,15 +479,25 @@ const ChatView = () => {
 							data={visibleMessages} // messages is the raw format returned by extension, modifiedMessages is the manipulated structure that combines certain messages of related type, and visibleMessages is the filtered structure that removes messages that should not be rendered
 							itemContent={itemContent}
 							atBottomStateChange={(atBottom) => {
-								setIsAtBottom(atBottom);
-								if (atBottom) {
-									disableAutoScrollRef.current = false;
-									setDisableAutoScroll(false);
+								// 避免频繁更新状态，只在状态变化时更新
+								if (isAtBottom !== atBottom) {
+									setIsAtBottom(atBottom);
+									if (atBottom) {
+										disableAutoScrollRef.current = false;
+										setDisableAutoScroll(false);
+									}
+									setShowScrollToBottom(disableAutoScrollRef.current && !atBottom);
 								}
-								setShowScrollToBottom(disableAutoScrollRef.current && !atBottom);
 							}}
 							atBottomThreshold={10} // anything lower causes issues with followOutput
 							initialTopMostItemIndex={visibleMessages.length - 1}
+							// 添加优化选项，减少不必要的渲染
+							overscan={{ main: 5, reverse: 5 }}
+							// 添加缓存优化
+							computeItemKey={(index) => {
+								const message = visibleMessages[index];
+								return Array.isArray(message) ? `group-${message[0].ts}` : `message-${message.ts}`;
+							}}
 						/>
 						{showScrollToBottom ? (
 							<ScrollToBottomContainer>

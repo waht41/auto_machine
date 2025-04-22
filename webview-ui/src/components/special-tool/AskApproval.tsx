@@ -5,6 +5,7 @@ import { vscode } from '@webview-ui/utils/vscode';
 import { Button, Space, Typography } from 'antd';
 import { useState } from 'react';
 import styled from 'styled-components';
+import { colors } from '@webview-ui/components/common/styles';
 
 // 样式组件
 const ApprovalCard = styled.div`
@@ -69,7 +70,7 @@ export const AskApprovalComponent: ComponentRenderer = (tool: ApprovalTool) => {
 			{showButtons ? (
 				<ButtonContainer>
 					<Button type="default" onClick={handleDeny}>No</Button>
-					<Button type="primary" onClick={handleApproval}>OK</Button>
+					<Button type="primary" onClick={handleApproval} style={{ background: colors.primary}}>OK</Button>
 				</ButtonContainer>
 			) : (
 				responseMessage && <WarningText>{responseMessage}</WarningText>

@@ -58,4 +58,7 @@ export const Markdown = memo(({ markdown, partial }: { markdown?: string; partia
 			)}
 		</div>
 	);
+}, (prevProps, nextProps) => {
+	// 只有当 markdown 内容或 partial 状态变化时才重新渲染
+	return prevProps.markdown === nextProps.markdown && prevProps.partial === nextProps.partial;
 });
