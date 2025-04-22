@@ -9,6 +9,9 @@ import { ShowedMessage } from '@webview-ui/components/chat/type';
 import { Timeline } from 'antd';
 import { AssistantTitle } from '@webview-ui/components/chat/ChatRow/Header';
 import { colors } from '../../common/styles';
+import { ReactComponent as GerySuccessIcon } from '@webview-ui/assets/greySuccessIcon.svg';
+import { ReactComponent as ErrorIcon } from '@webview-ui/assets/errorIcon.svg';
+import SVGComponent from '@webview-ui/components/common/SVGComponent';
 
 interface ChatRowProps {
 	message: ShowedMessage;
@@ -95,11 +98,11 @@ const renderMessageArray = (messages: ClineMessage[], props: ChatRowContentProps
 					break;
 				case 'error':
 					color = colors.error;
-					dot = <span className="codicon codicon-error" style={{ fontSize: '16px', color: colors.error }} />;
+					dot = <SVGComponent component={ErrorIcon} height={16} width={16}/>;
 					break;
 				case 'completed':
 					color = colors.success;
-					dot = <span className="codicon codicon-check" style={{ fontSize: '16px', color: colors.success }} />;
+					dot = <SVGComponent component={GerySuccessIcon} height={16} width={16}/>;
 					break;
 				case 'cancelled':
 					color = colors.textSecondary;

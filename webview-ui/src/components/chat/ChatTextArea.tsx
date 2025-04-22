@@ -163,7 +163,7 @@ const SendButton = styled(Button)`
   transition: all 0.3s ease;
   
   &:hover, &:focus {
-    background: ${colors.primaryHover};
+    background: ${colors.primaryHover} !important;
     border: none;
   }
 `;
