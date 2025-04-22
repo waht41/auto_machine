@@ -9,11 +9,13 @@ import { FollowupComponent } from '@webview-ui/components/special-tool/FollowupC
 import { DownloadComponent } from '@webview-ui/components/special-tool/DownloadComponent';
 import { ParallelComponent } from '@webview-ui/components/special-tool/ParallelComponent';
 import { SearchComponent } from '@webview-ui/components/special-tool/SearchComponent';
+import { ShowInFolderComponent } from '@webview-ui/components/special-tool/ShowInFolder';
 
 
 const componentRoutes: Record<string, RouteNode> = {
 	base: {
 		log: LogComponent,
+		showInFolder: ShowInFolderComponent,
 	},
 	ask: {
 		choice: ChoiceComponent,

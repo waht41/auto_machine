@@ -2,6 +2,7 @@ import { BrowserWindow, dialog, shell, clipboard, nativeTheme } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
+import { exec } from 'child_process';
 
 /**
  * Electron 服务类 - 集中管理所有 Electron 相关功能
@@ -37,6 +38,8 @@ export class ElectronService {
 				return this.handleThemeInfo();
 			case 'openFile':
 				return this.handleOpenFile(message);
+			case 'openFolder':
+				return this.handleOpenFolder(message);
 			default:
 				return { success: false, error: `Unknown message type: ${message.type}` };
 		}
@@ -255,6 +258,61 @@ export class ElectronService {
 			return {
 				success: false,
 				error: error.message || 'Failed to open file'
+			};
+		}
+	}
+
+	/**
+   * 打开文件夹
+   * 如果路径是文件，则打开所在的文件夹并聚焦该文件
+   * 如果路径是文件夹，则直接打开文件夹
+   */
+	private async handleOpenFolder(message: any): Promise<any> {
+		try {
+			if (!message.path) {
+				return {success: false, error: 'Path is required'};
+			}
+
+			const filePath = message.path;
+			
+			// 检查路径是否存在
+			if (!fs.existsSync(filePath)) {
+				return {success: false, error: 'Path does not exist'};
+			}
+
+			// 判断是文件还是文件夹
+			const stats = fs.statSync(filePath);
+			
+			if (stats.isFile()) {
+				// 如果是文件，打开所在文件夹并聚焦该文件
+				
+				// 在 Windows 上使用 explorer.exe 命令作为备选方案
+				if (process.platform === 'win32') {
+					try {
+						// 使用 /select 参数可以打开文件所在的文件夹并选中该文件
+						exec(`explorer.exe /select,"${filePath}"`);
+					} catch (explorerError) {
+						console.error('Explorer command failed:', explorerError);
+						// 如果 explorer 命令失败，尝试使用 shell.showItemInFolder 作为备选
+						shell.showItemInFolder(filePath);
+					}
+				} else {
+					// 在非 Windows 平台上使用 Electron 的 shell API
+					shell.showItemInFolder(filePath);
+				}
+			} else if (stats.isDirectory()) {
+				// 如果是文件夹，直接打开文件夹
+				await shell.openPath(filePath);
+			} else {
+				return {success: false, error: 'Path is neither a file nor a directory'};
+			}
+			
+			return {success: true};
+		} catch (error) {
+			console.error('Open folder error:', error);
+			return {
+				success: false,
+				error: error.message || 'Failed to open folder'
 			};
 		}
 	}

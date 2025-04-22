@@ -3,6 +3,14 @@ import { McpHub } from '@operation/MCP';
 import { DIContainer } from '@core/services/di';
 import { ClineStatus } from '@/shared/type';
 import { Memory, SearchOption } from '@core/services/type';
+import {
+	CreateOptions,
+	DownloadOptions,
+	EditOptions,
+	ListOptions,
+	ReadOptions,
+	SearchOptions
+} from '@operation/File/type';
 
 export interface IInternalContext{
     cline: Cline;
@@ -110,3 +118,23 @@ export type CoderCommand = { type: 'coder' } & (
     content: string;
   }
 );
+export type FileCommand = { type: 'file' } & (
+  {
+    cmd: 'read';
+  } & ReadOptions |
+  {
+    cmd: 'create';
+  } & CreateOptions |
+  {
+    cmd: 'list';
+  } & ListOptions |
+  {
+    cmd: 'search';
+  } & SearchOptions |
+  {
+    cmd: 'edit';
+  } & EditOptions |
+  {
+    cmd: 'download';
+  } & DownloadOptions
+  );

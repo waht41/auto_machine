@@ -48,4 +48,8 @@ export interface SearchTool extends BaseTool {
     complete?: boolean;
 }
 
-export type Tool = LogTool | ChoiceTool | ApprovalTool | FollowupTool | SearchTool;
+export interface ShowTool extends BaseTool {
+    path: string;
+}
+
+export type Tool = LogTool | ChoiceTool | ApprovalTool | FollowupTool | SearchTool | ShowTool;
