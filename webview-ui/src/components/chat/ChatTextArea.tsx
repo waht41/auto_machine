@@ -17,7 +17,7 @@ import { WebviewMessage } from '@/shared/WebviewMessage';
 import styled from 'styled-components';
 import { ApprovalButton } from './AutoApproveMenu';
 import { ReactComponent as EnhanceIcon } from '@webview-ui/assets/enhanceIcon.svg';
-import ArrowUp from '@webview-ui/assets/ArrowUp.png';
+import { ReactComponent as ArrowUp } from '@webview-ui/assets/ArrowUp.svg';
 import { Button } from 'antd';
 import { colors } from '../common/styles';
 import SVGComponent from '@webview-ui/components/common/SVGComponent';
@@ -168,10 +168,6 @@ const SendButton = styled(Button)`
   }
 `;
 
-const SendIcon = styled.img`
-  width: 12px;
-  height: 16px;
-`;
 const CancelIcon = styled.div`
   background: ${colors.backgroundPanel};
 	height: 13px;
@@ -815,7 +811,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 
 							}}
 						>
-							{!textAreaDisabled && <SendIcon src={ArrowUp} alt="send button" />}
+							{!textAreaDisabled && <SVGComponent component={ArrowUp} width={12} height={16}/>}
 							{textAreaDisabled && <CancelIcon/>}
 						</SendButton>
 					</ButtonGroup>
