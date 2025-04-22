@@ -42,4 +42,9 @@ export interface DownloadOptions {
     overwrite?: boolean;   // 是否覆盖现有文件，默认为false
 }
 
+export interface RenameOptions {
+    path: string;       // 原文件或目录的路径
+    name: string;       // 新的文件或目录名称
+}
+
 export type Position = [number, number];  // [row, col]

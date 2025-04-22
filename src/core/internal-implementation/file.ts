@@ -30,6 +30,11 @@ export class FileCommandExecutor implements CommandExecutor {
 					await cline?.sayP({ sayType:'tool',text: JSON.stringify({...command,...progress}), partial, messageId });
 				}
 				return 'Download completed';
+			case 'rename':
+				const newPath = await File.rename(command);
+				await showInFolder(newPath, cline);
+				return `Rename from ${command.path} to ${command.name} successfully.`;
+
 
 			default:
 				throw new Error(`Unknown action: ${command}`);

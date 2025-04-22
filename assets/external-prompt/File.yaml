@@ -50,6 +50,17 @@ edit:
       start: [-1,-1]
       content: "Hello, World! Task is <var historyId=1/>"
 
+rename:
+  description: 修改对应的文件名
+  cmd: rename
+  params:
+    path: 文件路径
+    name: 新文件名
+  example:
+    - tool: file
+      cmd: rename
+      path: E:\path\to
+      name: newTo # to文件（夹）名称会被改为newTo
 
 search:
   description: 在指定路径下搜索包含关键词的文件

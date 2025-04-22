@@ -9,6 +9,7 @@ import {
 	EditOptions,
 	ListOptions,
 	ReadOptions,
+	RenameOptions,
 	SearchOptions
 } from '@operation/File/type';
 
@@ -136,5 +137,7 @@ export type FileCommand = { type: 'file' } & (
   } & EditOptions |
   {
     cmd: 'download';
-  } & DownloadOptions
-  );
+  } & DownloadOptions |
+  {
+    cmd: 'rename'
+  } & RenameOptions);

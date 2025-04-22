@@ -6,5 +6,6 @@ import * as edit from './edit';
 import * as create from './create';
 import * as search from './search';
 import * as download from './download';
+import * as rename from './rename';
 
-export default { ...list, ...type, ...read, ...edit, ...create, ...search, ...download };
+export default { ...list, ...type, ...read, ...edit, ...create, ...search, ...download, ...rename };
