@@ -42,7 +42,7 @@ interface IChatViewStore {
   toggleAgentStream: () => void;
   
   // 操作方法
-  handleSendMessage: (text: string, images: string[]) => void;
+  handleSendMessage: (text?: string, images?: string[]) => void;
   clearTask: () => void;
   handlePrimaryButtonClick: () => void;
   handleSecondaryButtonClick: () => void;
@@ -99,33 +99,33 @@ export const useChatViewStore = create<IChatViewStore>((set, get) => ({
   
 	// 操作方法
 	handleSendMessage: (text, images) => {
-		text = text.trim();
-		if (text || images.length > 0) {
-			const getChatMessages = useClineMessageStore.getState().getChatMessages;
-			const messages = getChatMessages();
-			const clineAsk = get().clineAsk;
-      
-			if (messages.length === 0) {
-				vscode.postMessage({ type: 'newTask', text, images });
-			} else if (messages.length > 0) {
-				vscode.postMessage({ type: 'resumeTask', text, images });
-			} else if (clineAsk) {
-				switch (clineAsk) {
-					case 'text':
-					case 'tool':
-						vscode.postMessage({
-							type: 'askResponse',
-							askResponse: 'messageResponse',
-							text,
-							images,
-						});
-						break;
-				}
-			}
-      
-			// 重置消息相关状态
-			get().resetMessageState();
+		if (!text && !images?.length){
+			return;
 		}
+		text = text?.trim();
+		const getChatMessages = useClineMessageStore.getState().getChatMessages;
+		const messages = getChatMessages();
+		const clineAsk = get().clineAsk;
+      
+		if (messages.length === 0) {
+			vscode.postMessage({ type: 'newTask', text, images });
+		} else if (messages.length > 0) {
+			vscode.postMessage({ type: 'resumeTask', text, images });
+		} else if (clineAsk) {
+			switch (clineAsk) {
+				case 'text':
+				case 'tool':
+					vscode.postMessage({
+						type: 'askResponse',
+						askResponse: 'messageResponse',
+						text,
+						images,
+					});
+					break;
+			}
+		}
+		// 重置消息相关状态
+		get().resetMessageState();
 	},
   
 	clearTask: () => {

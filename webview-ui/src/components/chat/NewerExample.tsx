@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { Typography } from 'antd';
 import { FileTextOutlined, RobotOutlined, CodeOutlined, BulbOutlined, ToolOutlined, BookOutlined } from '@ant-design/icons';
 import { colors } from '../common/styles';
+import { useChatViewStore } from '@webview-ui/store/chatViewStore';
 
 const { Text } = Typography;
 
@@ -59,7 +60,7 @@ const TextWrapper = styled(Text)`
 
 // 示例数据（写死在组件内）
 const exampleItems: ExampleItem[] = [
-	{ icon: <FileTextOutlined />, text: 'Please gather information on a few different topics at the same time' },
+	{ icon: <FileTextOutlined />, text: 'Hi' },
 	{ icon: <RobotOutlined />, text: 'please search latest news about AI Agent' },
 	{ icon: <CodeOutlined />, text: 'Please gather information on a few different topics at the same time' },
 	{ icon: <BulbOutlined />, text: 'please search latest news about AI Agent please search latest news about AI Agentplease search latest news about AI Agent' },
@@ -68,10 +69,14 @@ const exampleItems: ExampleItem[] = [
 ];
 
 const NewerExample: React.FC = () => {
+	const handleSend = useChatViewStore(state => state.handleSendMessage);
 	return (
 		<ExampleContainer>
 			{exampleItems.map((item, index) => (
-				<ExampleItemWrapper key={index}>
+				<ExampleItemWrapper key={index} onClick={(e) =>{
+					e.stopPropagation();
+					handleSend(item.text);
+				}}>
 					<IconWrapper>{item.icon}</IconWrapper>
 					<TextWrapper>{item.text}</TextWrapper>
 				</ExampleItemWrapper>
