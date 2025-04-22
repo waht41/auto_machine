@@ -790,7 +790,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 							{isEnhancingPrompt ? (
 								<LoadingIcon className="codicon codicon-loading codicon-modifier-spin" />
 							) : (
-								<StyledEnhanceButton onClick={() => !textAreaDisabled && handleEnhancePrompt()} $disabled={textAreaDisabled}>
+								<StyledEnhanceButton type={'text'} onClick={() => !textAreaDisabled && handleEnhancePrompt()} $disabled={textAreaDisabled}>
 									<SVGComponent component={EnhanceIcon} width={20} height={20}/>
 								</StyledEnhanceButton>
 							)}

@@ -55,6 +55,21 @@ const PopoverDescription = styled.p`
 
 // 自定义Tree样式，修改checkbox背景色为primary
 const StyledTree = styled(Tree)`
+  .ant-tree-checkbox-checked .ant-tree-checkbox-inner {
+    background-color: ${colors.primary};
+    border-color: ${colors.primary};
+  }
+  
+  .ant-tree-checkbox-indeterminate .ant-tree-checkbox-inner::after {
+    background-color: ${colors.primary} !important;
+  }
+  
+  .ant-tree-checkbox-wrapper:hover .ant-tree-checkbox-inner,
+  .ant-tree-checkbox:hover .ant-tree-checkbox-inner,
+  .ant-tree-checkbox-input:focus + .ant-tree-checkbox-inner {
+    border-color: ${colors.primary} !important;
+	background-color: ${colors.primaryPress} !important;
+  }
 `;
 
 const tools: IToolCategory[] = [
@@ -167,7 +182,7 @@ export const AutoApprovePopover = ({ allowedTools, treeData, setAllowedTools }: 
 			onOpenChange={setOpen}
 			trigger="click"
 			content={
-				<div style={{ maxHeight: 400, overflow: 'auto', width: 400 }}>
+				<div style={{ maxHeight: '50vh', overflow: 'auto', width: 400, overflowY: 'auto', overflowX: 'hidden' }}>
 					<PopoverTitle>Tool Permissions</PopoverTitle>
 					<PopoverDescription>Roo will use selected tools without asking each time</PopoverDescription>
 					<StyledTree

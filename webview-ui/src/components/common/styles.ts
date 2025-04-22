@@ -4,6 +4,7 @@ export const colors = {
 	primary: '#7C4DFF',
 	primaryHover: '#9575CD',
 	primaryLight: '#EDE7F6',
+	primaryPress: '#9575CD',
 	secondary: '#00C896',
 	accent: '#FFD700',
 	success: '#4CAF50',
