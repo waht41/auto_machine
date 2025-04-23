@@ -190,9 +190,9 @@ const ChatView = () => {
 		// if user finished a task, then start a new task with a new conversation history since in this moment that the extension is waiting for user response, the user could close the extension and the conversation history would be lost.
 		// basically as long as a task is active, the conversation history will be persisted
 		if (lastMessage) {
+			const isPartial = lastMessage.partial === true;
 			switch (lastMessage.type) {
 				case 'ask':
-					const isPartial = lastMessage.partial === true;
 					switch (lastMessage.ask) {
 						case 'text':
 							setTextAreaDisabled(isPartial);
@@ -206,6 +206,7 @@ const ChatView = () => {
 					}
 					break;
 				case 'say':
+					setTextAreaDisabled(isPartial || isStreaming);
 					break;
 			}
 		}
