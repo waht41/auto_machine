@@ -11,7 +11,7 @@ import NavButton from './common/NavButton';
 
 const SideBarContainer = styled.div`
 	width: 210px;
-	background-color: ${colors.backgroundPanel};
+	background-color: ${colors.backgroundMuted};
 	border-right: 1px solid ${colors.borderDivider};
 	padding: 16px;
 	display: flex;

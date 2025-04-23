@@ -44,11 +44,11 @@ const ChatTextAreaContainer = styled.div`
   position: relative;
   display: flex;
   flex-direction: column;
+	width: 90%;
   gap: 8px;
   background-color: ${colors.backgroundPanel};
-  margin: 10px 15px;
+  margin: 0 auto;
   padding: 32px 24px 24px 24px;
-  border: 1px solid ${colors.borderDivider};
   border-radius: 24px;
   box-shadow: 0 2px 20px 0 rgba(0, 0, 0, 0.08);
 `;

@@ -619,11 +619,7 @@ export class Cline {
 				if (!status) {
 					await this.streamChatManager.changeLastApiReqStatus('completed', 'Message completed');
 				}
-				await this.askP({
-					askType: 'text',
-					text: this.streamChatManager.endHint,
-					partial: false,
-				});
+
 				return true;
 			}
 

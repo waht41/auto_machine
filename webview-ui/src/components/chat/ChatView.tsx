@@ -12,6 +12,7 @@ import { useClineMessageStore } from '@webview-ui/store/clineMessageStore';
 import { useChatViewStore } from '@webview-ui/store/chatViewStore';
 import NewerExample from '@webview-ui/components/chat/NewerExample';
 import { ShowedMessage } from '@webview-ui/components/chat/type';
+import { colors } from '@webview-ui/components/common/styles';
 
 export const MAX_IMAGES_PER_MESSAGE = 20; // Anthropic limits to 20 images
 
@@ -21,10 +22,13 @@ const ChatViewContainer = styled.div`
 	display: flex;
 	flex-direction: column;
 	overflow: hidden;
+	background: ${colors.backgroundMain};
 `;
 
 const ScrollContainer = styled.div`
 	flex: 1 1 auto;
+	width: 95%;
+	margin: 0 auto;
 	display: flex;
 	min-height: 0;
 	position: relative; /* 添加相对定位，作为绝对定位按钮的参考点 */

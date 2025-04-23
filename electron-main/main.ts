@@ -8,6 +8,7 @@ import { IpcHandler } from './ipc-handler';
 // 全局变量，用于存储应用程序状态
 let mainWindow: BrowserWindow | null = null;
 let workerManager: WorkerManager | null = null;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 let electronService: ElectronService | null = null;
 let ipcHandler: IpcHandler | null = null;
 
@@ -23,7 +24,13 @@ const createWindow = async () => {
 		webPreferences: {
 			preload: isDev ? path.join(__dirname, 'preload.js'): path.join(app.getAppPath(), 'build','electron', 'preload.js'),
 			contextIsolation: true,
-		}
+		},
+		show: false // 先不显示，避免闪烁
+	});
+
+	mainWindow.once('ready-to-show', () => {
+		mainWindow?.maximize();
+		mainWindow?.show();
 	});
 
 	// 初始化 Electron 服务
@@ -35,7 +42,7 @@ const createWindow = async () => {
 
 	// 创建 IPC 处理器，用于处理进程间通信
 	ipcHandler = new IpcHandler(mainWindow, worker);
-    
+
 	// 设置 WorkerManager 的 IpcHandler
 	workerManager.setIpcHandler(ipcHandler);
 
@@ -85,6 +92,6 @@ process.on('uncaughtException', (error) => {
 });
 
 // 处理未处理的 Promise 拒绝
-process.on('unhandledRejection', (reason, promise) => {
+process.on('unhandledRejection', (reason) => {
 	console.error('Main process unhandled rejection:', reason);
 });

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Typography } from 'antd';
+import { Button, Tooltip } from 'antd';
 import styled from 'styled-components';
 import { ClineMessage } from '@/shared/ExtensionMessage';
 import { formatLargeNumber } from '../../utils/format';
@@ -32,20 +32,21 @@ const LeftSection = styled.div`
   gap: 16px;
 `;
 
-const StyledTaskText = styled(Typography.Text)`
-  font-family: Roboto;
+const StyledTaskText = styled.div`
   font-weight: 600;
   font-size: 20px;
   line-height: 30px;
-  max-width: 300px;
+  max-width: 30%;
 	color: ${colors.textPrimary};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
 
 const InfoItem = styled.div`
   display: flex;
   align-items: center;
   gap: 4px;
-  font-family: Roboto;
   font-weight: 400;
   font-size: 13px;
   line-height: 20px;
@@ -77,13 +78,11 @@ const TaskHeaderNew: React.FC<TaskHeaderNewProps> = ({ task, apiMetrics }) => {
 	return (
 		<HeaderContainer>
 			<LeftSection>
-				<StyledTaskText
-					ellipsis={{ 
-						tooltip: task.text || ''
-					}}
-				>
-					{task.text || ''}
-				</StyledTaskText>
+				<Tooltip title={task.text || ''} placement="bottomLeft">
+					<StyledTaskText>
+						{task.text || ''}
+					</StyledTaskText>
+				</Tooltip>
         
 				<InfoItem>
 					<Label>Tokens:</Label>

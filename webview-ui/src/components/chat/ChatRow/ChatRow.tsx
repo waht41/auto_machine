@@ -1,5 +1,5 @@
 import deepEqual from 'fast-deep-equal';
-import React, { memo, useEffect, useMemo, useRef } from 'react';
+import React, { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useSize } from 'react-use';
 import { ClineMessage, ClineSayTool } from '@/shared/ExtensionMessage';
 import { ToolComponent } from '../../special-tool';
@@ -12,14 +12,22 @@ import { colors } from '../../common/styles';
 import { ReactComponent as GerySuccessIcon } from '@webview-ui/assets/greySuccessIcon.svg';
 import { ReactComponent as ErrorIcon } from '@webview-ui/assets/errorIcon.svg';
 import SVGComponent from '@webview-ui/components/common/SVGComponent';
+import styled from 'styled-components';
+
+// 自定义Timeline组件，将连接线改为0.5pt粗的虚线
+const StyledTimeline = styled(Timeline)`
+  .ant-timeline-item-tail {
+    border-left: 0.5pt dashed ${colors.borderDivider};
+  }
+`;
 
 interface ChatRowProps {
-	message: ShowedMessage;
-	isExpanded: boolean
-	onToggleExpand: () => void
-	isLast: boolean
-	onHeightChange: (isTaller: boolean) => void
-	isStreaming: boolean
+  message: ShowedMessage;
+  isExpanded: boolean
+  onToggleExpand: () => void
+  isLast: boolean
+  onHeightChange: (isTaller: boolean) => void
+  isStreaming: boolean
 }
 
 export type ChatRowContentProps = Omit<ChatRowProps, 'onHeightChange'>
@@ -62,34 +70,54 @@ const ChatRow = memo(
 		// 只有这些属性变化时才重新渲染
 		return (
 			prevProps.isExpanded === nextProps.isExpanded &&
-			prevProps.isLast === nextProps.isLast &&
-			prevProps.isStreaming === nextProps.isStreaming &&
-			deepEqual(prevProps.message, nextProps.message)
+      prevProps.isLast === nextProps.isLast &&
+      prevProps.isStreaming === nextProps.isStreaming &&
+      deepEqual(prevProps.message, nextProps.message)
 		);
 	}
 );
 
 export default ChatRow;
 
+// 创建一个智能容器，根据子元素的 margin-left 自动调整自身的 margin-left
+const MessageContainer = styled.div<{ $childMargin?: number, $childMarginTop?: number }>`
+  margin-top: ${props => Math.max(0, 20 - (props.$childMarginTop || 0))}px;
+  margin-left: ${props => Math.max(0, 0 - (props.$childMargin || 0))}px;
+`;
+
+// 获取组件的计算样式中的 margin-left 值
+const getComputedMarginLeft = (element: HTMLElement | null): number => {
+	if (!element) return 0;
+	const computedStyle = window.getComputedStyle(element);
+	return parseInt(computedStyle.marginLeft || '0', 10);
+};
+
+// 获取组件的计算样式中的 margin-top 值
+const getComputedMarginTop = (element: HTMLElement | null): number => {
+	if (!element) return 0;
+	const computedStyle = window.getComputedStyle(element);
+	return parseInt(computedStyle.marginTop || '0', 10);
+};
+
 // 渲染消息数组的函数
 const renderMessageArray = (messages: ClineMessage[], props: ChatRowContentProps) => {
 	// 筛选出 api_req_started 类型的消息作为 Timeline 的项
 	const apiReqStartedMessages = messages.filter(msg => msg.say === 'api_req_started');
-	
+  
 	// 如果没有 api_req_started 消息，则使用普通方式渲染所有消息
 	if (apiReqStartedMessages.length === 0) {
 		const items = messages.map((msg) => ({
 			children: <ChatRowContent {...props} message={msg} />
 		}));
-		return <Timeline items={items} />;
+		return <StyledTimeline items={items} />;
 	}
-	
+  
 	// 根据 api_req_started 消息构建 Timeline 项
 	const items = apiReqStartedMessages.map((apiMsg, index) => {
 		// 根据 status 确定颜色和图标
 		let color = colors.primary; // 默认颜色
 		let dot = null; // 默认不设置自定义dot
-		
+    
 		if (apiMsg.status) {
 			switch (apiMsg.status) {
 				case 'running':
@@ -119,10 +147,10 @@ const renderMessageArray = (messages: ClineMessage[], props: ChatRowContentProps
 		const nextApiIndex = index < apiReqStartedMessages.length - 1 
 			? messages.indexOf(apiReqStartedMessages[index + 1]) 
 			: messages.length;
-		
+    
 		// 获取当前 api_req_started 消息后的所有相关消息（不包括下一个 api_req_started）
 		const relatedMessages = messages.slice(currentIndex + 1, nextApiIndex);
-		
+    
 		return {
 			color: color, // 设置颜色
 			dot: dot, // 设置自定义dot
@@ -130,19 +158,37 @@ const renderMessageArray = (messages: ClineMessage[], props: ChatRowContentProps
 				<div>
 					{/* @ts-ignore todo 记得调整ts类型*/}
 					<ChatRowContent {...props} message={apiMsg} isInArray={true}/>
-					{relatedMessages.map((msg, i) => (
-						<div key={i} style={{ marginLeft: '20px', marginTop: '8px' }}>
-							<ChatRowContent {...props} message={msg} />
-						</div>
-					))}
+					{relatedMessages.map((msg, i) => {
+						// 使用 ref 和 useEffect 来获取实际的 margin-left
+						const contentRef = useRef<HTMLDivElement>(null);
+						const [childMargin, setChildMargin] = useState(0);
+						const [childMarginTop, setChildMarginTop] = useState(0);
+            
+						useEffect(() => {
+							if (contentRef.current) {
+								// 获取第一个子元素的 margin-left
+								const firstChild = contentRef.current.firstElementChild as HTMLElement;
+								setChildMargin(getComputedMarginLeft(firstChild));
+								setChildMarginTop(getComputedMarginTop(firstChild));
+							}
+						}, []);
+            
+						return (
+							<MessageContainer key={i} $childMargin={childMargin} $childMarginTop={childMarginTop}>
+								<div ref={contentRef}>
+									<ChatRowContent {...props} message={msg} />
+								</div>
+							</MessageContainer>
+						);
+					})}
 				</div>
 			)
 		};
 	});
-	
+  
 	return <>
 		<AssistantTitle/>
-		<Timeline items={items} />
+		<StyledTimeline items={items} />
 	</>;
 };
 
