@@ -271,6 +271,7 @@ export class Cline {
 		await this.streamChatManager.postClineMessage();
 
 		await this.sayP({sayType: 'task', text: task, images});
+		await this.sayP({sayType: 'user_feedback', text: task, images});
 
 		const imageBlocks: Anthropic.ImageBlockParam[] = formatResponse.imageBlocks(images);
 		await this.initiateTaskLoop([

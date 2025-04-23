@@ -100,7 +100,7 @@ const getComputedMarginTop = (element: HTMLElement | null): number => {
 };
 
 // 渲染消息数组的函数
-const renderMessageArray = (messages: ClineMessage[], props: ChatRowContentProps) => {
+const MessageArray = ({ messages, props }: { messages: ClineMessage[], props: ChatRowContentProps }) => {
 	// 筛选出 api_req_started 类型的消息作为 Timeline 的项
 	const apiReqStartedMessages = messages.filter(msg => msg.say === 'api_req_started');
   
@@ -158,29 +158,9 @@ const renderMessageArray = (messages: ClineMessage[], props: ChatRowContentProps
 				<div>
 					{/* @ts-ignore todo 记得调整ts类型*/}
 					<ChatRowContent {...props} message={apiMsg} isInArray={true}/>
-					{relatedMessages.map((msg, i) => {
-						// 使用 ref 和 useEffect 来获取实际的 margin-left
-						const contentRef = useRef<HTMLDivElement>(null);
-						const [childMargin, setChildMargin] = useState(0);
-						const [childMarginTop, setChildMarginTop] = useState(0);
-            
-						useEffect(() => {
-							if (contentRef.current) {
-								// 获取第一个子元素的 margin-left
-								const firstChild = contentRef.current.firstElementChild as HTMLElement;
-								setChildMargin(getComputedMarginLeft(firstChild));
-								setChildMarginTop(getComputedMarginTop(firstChild));
-							}
-						}, []);
-            
-						return (
-							<MessageContainer key={i} $childMargin={childMargin} $childMarginTop={childMarginTop}>
-								<div ref={contentRef}>
-									<ChatRowContent {...props} message={msg} />
-								</div>
-							</MessageContainer>
-						);
-					})}
+					{relatedMessages.map((msg, i) => (
+						<RelatedMessageItem key={i} message={msg} props={props} />
+					))}
 				</div>
 			)
 		};
@@ -192,12 +172,36 @@ const renderMessageArray = (messages: ClineMessage[], props: ChatRowContentProps
 	</>;
 };
 
+// 调整内部组件的上、左间距
+const RelatedMessageItem = ({ message, props }: { message: ClineMessage, props: ChatRowContentProps }) => {
+	const contentRef = useRef<HTMLDivElement>(null);
+	const [childMargin, setChildMargin] = useState(0);
+	const [childMarginTop, setChildMarginTop] = useState(0);
+	
+	useEffect(() => {
+		if (contentRef.current) {
+			// 获取第一个子元素的 margin-left
+			const firstChild = contentRef.current.firstElementChild as HTMLElement;
+			setChildMargin(getComputedMarginLeft(firstChild));
+			setChildMarginTop(getComputedMarginTop(firstChild));
+		}
+	}, []);
+	
+	return (
+		<MessageContainer $childMargin={childMargin} $childMarginTop={childMarginTop}>
+			<div ref={contentRef}>
+				<ChatRowContent {...props} message={message} />
+			</div>
+		</MessageContainer>
+	);
+};
+
 export const ChatRowContent = (prop: ChatRowContentProps) => {
 	const {message} = prop;
 
-	// 如果消息是数组，使用 renderMessageArray 函数处理
+	// 如果消息是数组，使用 MessageArray 组件处理
 	if (Array.isArray(message)) {
-		return renderMessageArray(message, prop);
+		return <MessageArray messages={message} props={prop} />;
 	}
 
 	const tool = useMemo(() => {

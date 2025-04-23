@@ -56,7 +56,7 @@ const AgentStreamContainer = styled.div`
 const MainBoard = () => {
 	const clineMessages = useClineMessageStore(state => state.clineMessages);
 	const task = useClineMessageStore(state => state.getTask)();
-	const { showAgentStream } = useChatViewStore();
+	const showAgentStream = useChatViewStore(state => state.showAgentStream);
 	const isShowAgentStream = !!task && showAgentStream;
 
 	

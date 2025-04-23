@@ -8,6 +8,9 @@ import messageBus from '@webview-ui/store/messageBus';
 import { AGENT_STREAM_JUMP, APP_MESSAGE } from '@webview-ui/store/const';
 import { AgentStreamJumpState, AppMessageHandler } from '@webview-ui/store/type';
 import Pagination from './Pagination';
+import { useChatViewStore } from '@webview-ui/store/chatViewStore';
+import { CloseOutlined } from '@ant-design/icons';
+import { colors } from '@webview-ui/components/common/styles';
 
 const { Title, Text } = Typography;
 
@@ -19,12 +22,11 @@ const StreamContainer = styled.div`
   background-color: #f5f7fa;
 `;
 
-const StreamHeader = styled.div`
-  margin-bottom: 24px;
+const HeaderRow = styled.div`
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 0 8px;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
 `;
 
 const TaskTitle = styled(Title)`
@@ -94,6 +96,21 @@ const MessageText = styled(MarkdownBlock)`
   padding: 0 4px;
 `;
 
+const CloseButton = styled.div<{ $marginLeft?: string }>`
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: ${colors.textSecondary};
+  transition: color 0.3s;
+  margin-left: auto;
+	margin-right: 10px;
+  
+  &:hover {
+    color: ${colors.textPrimary};
+  }
+`;
+
 // 格式化时间戳为时:分:秒格式
 const formatTimestamp = (ts: number) => {
 	const date = new Date(ts);
@@ -101,8 +118,9 @@ const formatTimestamp = (ts: number) => {
 };
 
 const AgentStream = () => {
-	const task = useClineMessageStore().getTask();
-	const agentStreamMessages = useClineMessageStore().getAgentStreamMessages();
+	const task = useClineMessageStore(state => state.getTask)();
+	const agentStreamMessages = useClineMessageStore(state => state.getAgentStreamMessages)();
+	const setShowAgentStream = useChatViewStore(state => state.setShowAgentStream);
 	const [highlightedIndex, setHighlightedIndex] = useState<number | null>(null);
 	
 	// 分页相关状态
@@ -163,10 +181,13 @@ const AgentStream = () => {
 
 	return (
 		<StreamContainer>
-			<StreamHeader>
+			<HeaderRow>
 				<TaskTitle level={4}>Agent Stream</TaskTitle>
-				<TaskDescription type="secondary">{task}</TaskDescription>
-			</StreamHeader>
+				<CloseButton onClick={() => setShowAgentStream(false)}>
+					<CloseOutlined style={{ fontSize: '16px' }} />
+				</CloseButton>
+			</HeaderRow>
+			<TaskDescription type="secondary">{task}</TaskDescription>
 
 			<StreamBody>
 				<MessagesContainer>

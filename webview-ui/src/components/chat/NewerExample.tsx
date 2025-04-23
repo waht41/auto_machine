@@ -23,7 +23,7 @@ const ExampleContainer = styled.div`
   padding: 16px;
   width: 100%;
   margin: 0 auto;
-  background-color: ${colors.backgroundPanel};
+  background-color: ${colors.backgroundMain};
 `;
 
 // 单个示例项目样式
