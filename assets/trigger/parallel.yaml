@@ -1,4 +1,4 @@
-# 只有在身为一个子节点时才会看见此命令。  记住任务结束时必须使用此命令通知父节点。
+# 只有在身为一个子节点时才会看见此命令。此外身为一个子节点，你被禁止使用parallel功能。同时记住任务结束时必须使用complete_parallel_node通知父节点。
 complete_parallel_node:
   description: 通知父节点，当前节点的任务已经完成。
   params:

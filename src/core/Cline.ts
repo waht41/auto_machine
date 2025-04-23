@@ -311,7 +311,16 @@ export class Cline {
 
 	async receiveApproval({tool}: { tool: Command }) {
 		const result = await this.toolManager.applyCommand(tool, this.getInternalContext());
-		const text = result ?? '';
+		let text = result ?? '';
+		const boxMessage = await this.popoverMessageBox();
+		if (boxMessage) {
+			text = text + boxMessage;
+			await this.sayP({sayType: 'text', text: boxMessage});
+		}
+		if (!text){
+			console.error('no result after receiveApproval');
+			return;
+		}
 		await this.streamChatManager.resumeHistory();
 		await this.streamChatManager.addAgentStream(text);
 		const userContent: UserContent = toUserContent(text, undefined);
@@ -609,7 +618,7 @@ export class Cline {
 				content: [{type: 'text', text: assistantMessage}],
 			});
 
-			await this.clearMessageBox();
+			await this.receiveMessageBox();
 
 			console.log(`[cline] user content message, task id ${this.taskId}`,this.userMessageContent);
 
@@ -653,12 +662,21 @@ export class Cline {
 		await this.streamChatManager.postClineMessage();
 	}
 
-	private async clearMessageBox(){
+	private async popoverMessageBox(): Promise<string | null> {
 		await pWaitFor(()=> this.remainingChildNum === 0);
-		if (this.messageBox.length>0){
-			await this.sayP({sayType: 'text', text: this.messageBox.join('\n')});
-			this.userMessageContent.push({ type: 'text', text: this.messageBox.join('\n') });
-			this.messageBox.splice(0, this.messageBox.length);
+		if (!this.messageBox.length){
+			return null;
+		}
+		const result = this.messageBox.join('\n');
+		this.messageBox.splice(0, this.messageBox.length);
+		return result;
+	}
+
+	private async receiveMessageBox(){
+		const boxMessage = await this.popoverMessageBox();
+		if (boxMessage) {
+			await this.sayP({sayType: 'text', text: boxMessage});
+			this.userMessageContent.push({ type: 'text', text:boxMessage });
 		}
 	}
 
