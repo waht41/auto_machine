@@ -5,6 +5,7 @@ import styled from 'styled-components';
 import { Virtuoso } from 'react-virtuoso';
 import { HistoryItem } from '@/shared/HistoryItem';
 import { colors } from '../common/styles';
+import { ClusterOutlined } from '@ant-design/icons';
 
 // 样式组件
 const HistoryContainer = styled.div`
@@ -89,9 +90,11 @@ const StyledVirtuoso = styled(Virtuoso)`
 `;
 
 const ParentIcon = styled.span`
-  margin-left: 6px;
-  font-size: 12px;
+  margin-right: 6px;
+  font-size: 14px;
   color: ${colors.textSecondary};
+  display: inline-flex;
+  align-items: center;
 `;
 
 const TaskContent = styled.div`
@@ -164,7 +167,7 @@ const HistoryPreviewNew: React.FC<HistoryPreviewNewProps> = () => {
 
 	// 处理选择历史记录的事件
 	const handleHistorySelect = (id: string) => {
-		vscode.postMessage({ type: 'showTaskWithId', text: id });
+		vscode.postMessage({ type: 'setTaskId', taskId: id });
 	};
 
 	// 获取分组标题
@@ -185,7 +188,9 @@ const HistoryPreviewNew: React.FC<HistoryPreviewNewProps> = () => {
 
 	// 查找指定父项的所有子项
 	const findChildren = (parentId: string): HistoryItem[] => {
-		return taskHistory.filter(item => item.parent === parentId);
+		return taskHistory
+			.filter(item => item.parent === parentId)
+			.sort((a, b) => a.id.localeCompare(b.id)); // 按照id排序，确保顺序稳定
 	};
 
 	// 切换项目展开/折叠状态
@@ -277,11 +282,12 @@ const HistoryPreviewNew: React.FC<HistoryPreviewNewProps> = () => {
 				>
 					<TaskContent>
 						<TaskText>
-							{item.item.task}
-							{/* 将parentIcon移到末尾 */}
 							{hasChildren && (
-								<ParentIcon>▼</ParentIcon>
+								<ParentIcon>
+									<ClusterOutlined />
+								</ParentIcon>
 							)}
+							{item.item.task}
 						</TaskText>
 					</TaskContent>
 				</HistoryItemContainer>

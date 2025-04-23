@@ -226,6 +226,9 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		await this.postMessageToWebview({type: 'openTab', taskId: cline.taskId, task: await cline.getTask()});
 	}
 
+	isActivate(clineId: string): boolean {
+		return this.clineTree.has(clineId);
+	}
 	public async switchCline(clineId: string) {
 		console.log(`switchCline in provider: ${clineId}`);
 		if (this.clineTree.has(clineId)){

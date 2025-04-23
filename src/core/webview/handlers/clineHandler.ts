@@ -11,5 +11,9 @@ export async function handleSetTaskId(instance: ClineProvider, message: WebviewM
 		logger.error('handleSetTaskId error wrong type', message);
 		return;
 	}
-	await instance.switchCline(message.taskId);
+	if (instance.isActivate(message.taskId)){
+		await instance.switchCline(message.taskId);
+	} else {
+		await instance.showTaskWithId(message.taskId);
+	}
 }
