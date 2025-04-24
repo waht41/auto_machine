@@ -17,13 +17,19 @@ export interface FilterOptions {
     to: string;
 }
 
+export interface ReduceOptions {
+    from: string;
+    pairs: [string, string][];
+}
+
 export type GatherOptions =
   { action: 'raw' } & RawOptions |
   { action: 'transform' } & TransformOptions |
-  { action: 'filter' } & FilterOptions;
+  { action: 'filter' } & FilterOptions |
+  { action: 'reduce' } & ReduceOptions;
 
 // 通用的分析操作结果接口
-export interface AnalyzeResult<T = any> {
+export interface AnalyzeResult<T = unknown> {
     success: boolean;
     data?: T;
     message?: string;

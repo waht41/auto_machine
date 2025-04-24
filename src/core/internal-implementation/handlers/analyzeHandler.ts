@@ -1,5 +1,6 @@
 import { GatherCommand } from '@core/internal-implementation/type';
-import { handleFilter, handleRawData, handleTransform } from '@operation/Analyze';
+import { handleFilter, handleRawData, handleReduce, handleTransform } from '@operation/Analyze';
+import yaml from 'js-yaml';
 
 
 /**
@@ -19,6 +20,12 @@ export async function gatherHandler(options: GatherCommand): Promise<string> {
 		case 'filter':
 			result = (await handleFilter(options)).message;
 			return result ?? `error, no result returned when filter ${options.from}`;
+		case 'reduce':
+			const reduceRes = (await handleReduce(options));
+			console.log('[waht]','reduce result:',reduceRes);
+			result = result + '\n' + yaml.dump(reduceRes.data??'');
+
+			return result ?? `error, no result returned when reduce ${options.from}`;
 		default:
 			return 'error, unknown action type when gathering';
 	}

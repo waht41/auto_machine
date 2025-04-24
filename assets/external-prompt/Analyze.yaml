@@ -12,8 +12,9 @@ gather:
         content: |
           name,value
           "John, Jr.",100      # 名称含逗号时需用双引号包裹
-          "Data \"123\"",45.6  # 名称含双引号时需转义
+          "Data \"123\"",55.6  # 名称含双引号时需转义
           Era,-              # 空值可用符号占位（如 `-` 或留空）
+          Tom,12
         path: C:/Users/UserName/Desktop/data.csv
 
   transform:
@@ -28,7 +29,7 @@ gather:
          action: transform
          from: C:/Users/UserName/Desktop/data.csv
          to: "C:/Users/UserName/Desktop/transform data.csv"
-         rule: "function (item){return {...item, value: item.value*10}}"
+         rule: "function (item){return {...item, isOld: item.value>30}}"
 
   filter:
     desc: 代码过滤所需的数据，要求使用js代码
@@ -43,3 +44,25 @@ gather:
         from: "C:/Users/UserName/Desktop/transform data.csv"
         to: "C:/Users/UserName/Desktop/filter data.csv"
         rule: "function (item){return item.value > 10}"
+
+  reduce:
+    desc: 根据已有的表格，获取统计信息
+    params:
+      from: 数据源路径
+      pairs:
+        - - "键名" #二维数组
+          - " (item,acc=x)=>{return ...}"
+    example:
+      - tool: analyze
+        cmd: gather
+        action: reduce
+        from: "C:/Users/UserName/Desktop/data.csv" #数据来源
+        pairs:
+          - - 'old man number'
+            - '(item,acc=0)=>{return item.value>30? acc+1: acc}'  #记得要为acc赋予默认值
+          - - 'child'
+            - '(item,acc=0)=>{return item.value<15?acc+1:acc}'
+          - - 'total age'
+            - (item, acc=0) => { return acc + (parseFloat(item.value) || 0) }  # 处理数据记得加些兜底
+
+# 记住，在分析数据前，确保已经用File或者其他方式获知了文件内容

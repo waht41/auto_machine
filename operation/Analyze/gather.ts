@@ -1,4 +1,4 @@
-import { GatherOptions, AnalyzeResult, RawOptions, TransformOptions, FilterOptions } from './type';
+import { GatherOptions, AnalyzeResult, RawOptions, TransformOptions, FilterOptions, ReduceOptions } from './type';
 import { readCsvFile, writeCsvFile, evaluateFunction, parseCsv } from './common';
 import fs from 'fs/promises';
 
@@ -109,6 +109,66 @@ export async function handleFilter(options: FilterOptions): Promise<AnalyzeResul
 }
 
 /**
+ * 处理数据归约/统计
+ * @param options 数据归约选项
+ * @returns 操作结果
+ */
+export async function handleReduce(options: ReduceOptions): Promise<AnalyzeResult> {
+	try {
+		const { from, pairs } = options;
+        
+		// 读取源文件数据
+		const data = await readCsvFile(from);
+        
+		// 对每个键值对执行归约操作
+		const result: Record<string, any> = {};
+        
+		for (const [key, reduceFnStr] of pairs) {
+			// 评估归约函数
+			const reduceFn = evaluateFunction(reduceFnStr);
+            
+			// 执行归约操作
+			let accumulator: unknown;
+			// 从函数字符串中提取默认值
+			const defaultValueMatch = reduceFnStr.match(/\(item,\s*acc\s*=\s*([^)]+)\)/);
+			if (defaultValueMatch && defaultValueMatch[1]) {
+				try {
+					accumulator = JSON.parse(defaultValueMatch[1]);
+				} catch (e) {
+					// 如果不是有效的 JSON，则尝试作为 JavaScript 表达式求值
+					accumulator = eval(defaultValueMatch[1]);
+				}
+			} else {
+				return {
+					success: false,
+					message: `default acc not found in ${reduceFnStr}`
+				};
+			}
+            
+			// 应用归约函数到每个数据项
+			for (const item of data) {
+				accumulator = reduceFn(item, accumulator);
+			}
+            
+			// 保存结果
+			result[key] = accumulator;
+		}
+        
+		return {
+			success: true,
+			message: `数据归约/统计完成，共处理 ${data.length} 条记录`,
+			data: result
+		};
+	} catch (error) {
+		console.error(`数据归约/统计失败: ${error}`);
+		return {
+			success: false,
+			message: `数据归约/统计失败: ${error}`
+		};
+	}
+}
+
+/**
  * 数据收集与处理主函数
  * @param options 数据处理选项
  * @returns 操作结果
@@ -122,6 +182,8 @@ export async function gather(options: GatherOptions): Promise<AnalyzeResult> {
 				return await handleTransform(options);
 			case 'filter':
 				return await handleFilter(options);
+			case 'reduce':
+				return await handleReduce(options);
 			default:
 				return {
 					success: false,
