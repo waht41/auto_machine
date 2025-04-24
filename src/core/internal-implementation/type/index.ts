@@ -5,3 +5,4 @@ export * from './coder';
 export * from './file';
 export * from './browser';
 export * from './mcp';
+export * from './analyze';

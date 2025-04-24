@@ -1,0 +1,45 @@
+# 用于转化、展示数据
+gather:
+  description: 用于将原始数据转化为方便展示的数据。
+  raw:
+    desc: AI直接生成可能需要的数据，最好是csv格式
+    params:
+      content: 转化后的数据
+    example:
+      - tool: analyze
+        cmd: gather
+        action: raw
+        content: |
+          name,value
+          "John, Jr.",100      # 名称含逗号时需用双引号包裹
+          "Data \"123\"",45.6  # 名称含双引号时需转义
+          Era,-              # 空值可用符号占位（如 `-` 或留空）
+        path: C:/Users/UserName/Desktop/data.csv
+
+  transform:
+     desc: 代码转化所需的数据，要求使用js代码
+     params:
+       from: 数据源路径
+       rule: js代码，数据转化方式，要求是一个函数,只有一个参数，表示一个输入的数据项
+       to: 数据存储地址
+     example:
+       - tool: analyze
+         cmd: gather
+         action: transform
+         from: C:/Users/UserName/Desktop/data.csv
+         to: "C:/Users/UserName/Desktop/transform data.csv"
+         rule: "function (item){return {...item, value: item.value*10}}"
+
+  filter:
+    desc: 代码过滤所需的数据，要求使用js代码
+    params:
+      from: 数据源路径
+      rule: js代码，数据转化方式，要求是一个函数,只有一个参数，表示一个输入的数据项
+      to: 数据存储地址
+    example:
+      - tool: analyze
+        cmd: gather
+        action: filter
+        from: "C:/Users/UserName/Desktop/transform data.csv"
+        to: "C:/Users/UserName/Desktop/filter data.csv"
+        rule: "function (item){return item.value > 10}"

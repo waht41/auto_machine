@@ -8,6 +8,7 @@ import { BrowserCommandExecutor } from '@core/internal-implementation/browser';
 import { ExternalCommandExecutor } from '@core/internal-implementation/external';
 import { AdvanceExecutor } from '@core/internal-implementation/advance';
 import { CoderCommandExecutor } from '@core/internal-implementation/coder';
+import { AnalyzeCommandExecutor } from '@core/internal-implementation/analyze';
 
 export const registerInternalImplementation = (codeRunner: CommandRunner) => {
 	codeRunner.registerExecutor('base', new BaseCommandExecutor());
@@ -19,4 +20,5 @@ export const registerInternalImplementation = (codeRunner: CommandRunner) => {
 	codeRunner.registerExecutor('MCP', new MCPCommandExecutor());
 	codeRunner.registerExecutor('advance', new AdvanceExecutor());
 	codeRunner.registerExecutor('coder', new CoderCommandExecutor());
+	codeRunner.registerExecutor('analyze', new AnalyzeCommandExecutor());
 };

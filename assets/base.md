@@ -52,6 +52,7 @@ request: File,MCP
 - Browser: 浏览器控制，包括打开网页，点击按钮，模拟键盘输入等
 - MCP: 模型上下文协议，可以使用用户自定义的服务
 - Coder: 可以用命令行、node js等编程工具
+- Analyze: 用于存储、转化、过滤csv数据，并根据数据创建图表等
 
 # Remember
 1. 你可以使用yaml格式回复，这些特殊格式将触发特殊效果，详情见tool部分
