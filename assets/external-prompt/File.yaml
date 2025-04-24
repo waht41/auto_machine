@@ -19,6 +19,7 @@ create:
   params:
     path: 路径
     content: [optional] # 文件内容，记得用双引号包裹内容
+    isFolder: [optional] # 创建的是文件夹还是文件，默认为false。  注意isFolder为true时，便不能输入content
   example:
     - tool: file
       cmd: create
@@ -60,7 +61,7 @@ rename:
     - tool: file
       cmd: rename
       path: E:\path\to
-      name: newTo # to文件（夹）名称会被改为newTo
+      name: new # to文件（夹）名称会被改名为new
 
 search:
   description: 在指定路径下搜索包含关键词的文件
@@ -83,3 +84,6 @@ download:
           cmd: download
           url: https://www.baidu.com/favicon.ico
           path: ./download/favicon.ico  # 保存到当前目录下的download文件夹中
+
+
+# file没有实现其他常见的功能，例如复制、移动等，但你可以通过external code中的命令行来实现对应的操作。

@@ -28,6 +28,7 @@ export interface EditOptions {
 export interface CreateOptions {
     path: string;
     content?: string;  // Optional file content
+    isFolder?: boolean;
 }
 
 export interface SearchOptions {

@@ -8,8 +8,12 @@ import { CreateOptions } from './type';
  * @param options.content Optional content to write to the file
  */
 export async function create(options: CreateOptions): Promise<string> {
-	const { path: filePath, content = '' } = options;
+	const { path: filePath, content = '', isFolder } = options;
 
+	if (isFolder) {
+		fs.mkdirSync(filePath, { recursive: true });
+		return `folder ${filePath} created`;
+	}
 	// Ensure parent directory exists
 	const parentDir = path.dirname(filePath);
 	if (!fs.existsSync(parentDir)) {
@@ -24,5 +28,5 @@ export async function create(options: CreateOptions): Promise<string> {
 	// Create file with optional content
 	fs.writeFileSync(filePath, content, 'utf-8');
 
-	return 'success';
+	return `file ${filePath} created`;
 }

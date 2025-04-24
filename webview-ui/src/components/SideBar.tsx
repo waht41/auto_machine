@@ -81,7 +81,9 @@ const SideBar: React.FC = () => {
 					size="large" 
 					style={{ 
 						borderRadius: '8px',
-						backgroundColor: colors.primary,
+						backgroundColor: colors.backgroundMuted,
+						color: colors.primary,
+						borderColor: colors.primary,
 						display: 'flex',
 						justifyContent: 'center'
 					}}
