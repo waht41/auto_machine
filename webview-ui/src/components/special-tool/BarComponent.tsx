@@ -38,14 +38,14 @@ const TooltipValue = styled.p`
 `;
 
 const CustomTooltip = (prop: any) => {
-	const { active, payload } = prop;
+	const { active, payload, xKey, yKey, labelKey } = prop;
 	if (active && payload && payload.length) {
 		const data = payload[0].payload;
 		return (
 			<StyledTooltip>
-				<TooltipLabel>label: {data.label}</TooltipLabel>
-				<TooltipValue>x: {data.x}</TooltipValue>
-				<TooltipValue>y: {data.y}</TooltipValue>
+				<TooltipLabel>{labelKey}: {data[labelKey]}</TooltipLabel>
+				<TooltipValue>{xKey}: {data[xKey]}</TooltipValue>
+				<TooltipValue>{yKey}: {data[yKey]}</TooltipValue>
 			</StyledTooltip>
 		);
 	}
@@ -54,6 +54,7 @@ const CustomTooltip = (prop: any) => {
 
 export const BarComponent: ComponentRenderer = (tool: BarTool) => {
 	const data = Array.isArray(tool.bars) ? tool.bars : [tool.bars].filter(Boolean);
+	const [xKey, yKey, labelKey] = tool.keys || ['x', 'y', 'label'];
 
 	if (!data || data.length === 0) {
 		return <div>无数据可显示</div>;
@@ -75,7 +76,7 @@ export const BarComponent: ComponentRenderer = (tool: BarTool) => {
 					>
 						<CartesianGrid strokeDasharray="3 3" stroke={colors.borderDivider} />
 						<XAxis
-							dataKey="x"
+							dataKey={xKey}
 							tick={{ fill: colors.textSecondary }}
 							axisLine={{ stroke: colors.borderDivider }}
 						/>
@@ -83,14 +84,14 @@ export const BarComponent: ComponentRenderer = (tool: BarTool) => {
 							tick={{ fill: colors.textSecondary }}
 							axisLine={{ stroke: colors.borderDivider }}
 						/>
-						<Tooltip content={<CustomTooltip />} />
+						<Tooltip content={<CustomTooltip xKey={xKey} yKey={yKey} labelKey={labelKey} />} />
 						<Bar 
-							dataKey="y" 
+							dataKey={yKey} 
 							radius={[4, 4, 0, 0]} 
 							fill={colors.primaryLight}
 						>
 							<LabelList 
-								dataKey="label" 
+								dataKey={labelKey} 
 								position="top" 
 								fill={colors.textPrimary} 
 								fontSize={12} 

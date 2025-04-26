@@ -52,13 +52,13 @@ const COLORS = [
 ];
 
 const CustomTooltip = (prop: any) => {
-	const { active, payload } = prop;
+	const { active, payload, nameKey, valueKey } = prop;
 	if (active && payload && payload.length) {
 		const data = payload[0].payload;
 		return (
 			<StyledTooltip>
-				<TooltipLabel>名称: {data.name}</TooltipLabel>
-				<TooltipValue>值: {data.value}</TooltipValue>
+				<TooltipLabel>名称: {data[nameKey]}</TooltipLabel>
+				<TooltipValue>值: {data[valueKey]}</TooltipValue>
 			</StyledTooltip>
 		);
 	}
@@ -66,7 +66,8 @@ const CustomTooltip = (prop: any) => {
 };
 
 const CustomLabel = (props: any) => {
-	const { cx, cy, midAngle, innerRadius, outerRadius, percent, name } = props;
+	const { cx, cy, midAngle, innerRadius, outerRadius, percent, nameKey } = props;
+	const name = props[nameKey];
 	const radius = innerRadius + (outerRadius - innerRadius) * 1.2;
 	const x = cx + radius * Math.cos(-midAngle * Math.PI / 180);
 	const y = cy + radius * Math.sin(-midAngle * Math.PI / 180);
@@ -87,6 +88,7 @@ const CustomLabel = (props: any) => {
 
 export const PieComponent: ComponentRenderer = (tool: PieTool) => {
 	const data = Array.isArray(tool.pies) ? tool.pies : [tool.pies].filter(Boolean);
+	const [nameKey, valueKey] = tool.keys || ['name', 'value'];
 
 	if (!data || data.length === 0) {
 		return <div>无数据可显示</div>;
@@ -102,17 +104,17 @@ export const PieComponent: ComponentRenderer = (tool: PieTool) => {
 							cx="50%"
 							cy="50%"
 							labelLine={true}
-							label={<CustomLabel />}
+							label={(props) => <CustomLabel {...props} nameKey={nameKey} />}
 							outerRadius={120}
 							fill={colors.primary}
-							dataKey="value"
-							nameKey="name"
+							dataKey={valueKey}
+							nameKey={nameKey}
 						>
 							{data.map((entry, index) => (
 								<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
 							))}
 						</Pie>
-						<Tooltip content={<CustomTooltip />} />
+						<Tooltip content={<CustomTooltip nameKey={nameKey} valueKey={valueKey} />} />
 						<Legend />
 					</PieChart>
 				</ResponsiveContainer>

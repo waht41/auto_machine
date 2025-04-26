@@ -54,14 +54,17 @@ export interface ShowTool extends BaseTool {
 }
 
 export interface BarTool extends BaseTool {
+    keys?: [string, string, string]; // x轴，y轴，label的key，默认是x,y,label
     bars: {x: number, y: number, label?: string}[];
 }
 
 export interface LineTool extends BaseTool {
+    keys?: [string, string, string]; // x轴，y轴，label的key，默认是x,y,label
     lines: {x: number, y: number, label?: string}[];
 }
 
 export interface PieTool extends BaseTool {
+    keys?: [string, string]; // pie的名称和值，默认name,value
     pies: {name: string, value: number}[];
 }
 

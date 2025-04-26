@@ -38,14 +38,14 @@ const TooltipValue = styled.p`
 `;
 
 const CustomTooltip = (prop: any) => {
-	const { active, payload } = prop;
+	const { active, payload, xKey, yKey, labelKey } = prop;
 	if (active && payload && payload.length) {
 		const data = payload[0].payload;
 		return (
 			<StyledTooltip>
-				<TooltipLabel>label: {data.label}</TooltipLabel>
-				<TooltipValue>x: {data.x}</TooltipValue>
-				<TooltipValue>y: {data.y}</TooltipValue>
+				<TooltipLabel>{labelKey}: {data[labelKey]}</TooltipLabel>
+				<TooltipValue>{xKey}: {data[xKey]}</TooltipValue>
+				<TooltipValue>{yKey}: {data[yKey]}</TooltipValue>
 			</StyledTooltip>
 		);
 	}
@@ -54,6 +54,7 @@ const CustomTooltip = (prop: any) => {
 
 export const LineComponent: ComponentRenderer = (tool: LineTool) => {
 	const data = Array.isArray(tool.lines) ? tool.lines : [tool.lines].filter(Boolean);
+	const [xKey, yKey, labelKey] = tool.keys || ['x', 'y', 'label'];
 
 	if (!data || data.length === 0) {
 		return <div>无数据可显示</div>;
@@ -74,7 +75,7 @@ export const LineComponent: ComponentRenderer = (tool: LineTool) => {
 					>
 						<CartesianGrid strokeDasharray="3 3" stroke={colors.borderDivider} />
 						<XAxis
-							dataKey="x"
+							dataKey={xKey}
 							tick={{ fill: colors.textSecondary }}
 							axisLine={{ stroke: colors.borderDivider }}
 						/>
@@ -82,15 +83,15 @@ export const LineComponent: ComponentRenderer = (tool: LineTool) => {
 							tick={{ fill: colors.textSecondary }}
 							axisLine={{ stroke: colors.borderDivider }}
 						/>
-						<Tooltip content={<CustomTooltip />} />
+						<Tooltip content={<CustomTooltip xKey={xKey} yKey={yKey} labelKey={labelKey} />} />
 						<Line 
 							type="monotone"
-							dataKey="y" 
+							dataKey={yKey} 
 							stroke={colors.primary}
 							activeDot={{ r: 8 }}
 						>
 							<LabelList 
-								dataKey="label" 
+								dataKey={labelKey} 
 								position="top" 
 								fill={colors.textPrimary} 
 								fontSize={12} 
