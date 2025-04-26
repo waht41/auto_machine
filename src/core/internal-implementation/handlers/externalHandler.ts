@@ -22,7 +22,9 @@ export function getAdditionalPrompt(fileNames: string[]) {
 
 
 function getCoderAdditional() {
-	return `current platform ${os.platform()}, current shell ${detectShell()}`;
+	const shellInfo = detectShell();
+	return `current platform ${os.platform()}, os version ${os.version()}, current user name: ${os.userInfo().username}，  
+	current shell ${shellInfo.name}, version ${shellInfo.version}`;
 }
 
 function getBasicInfo() {
