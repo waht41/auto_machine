@@ -57,4 +57,12 @@ export interface BarTool extends BaseTool {
     bars: {x: number, y: number, label?: string}[];
 }
 
-export type Tool = LogTool | ChoiceTool | ApprovalTool | FollowupTool | SearchTool | ShowTool | BarTool;
+export interface LineTool extends BaseTool {
+    lines: {x: number, y: number, label?: string}[];
+}
+
+export interface PieTool extends BaseTool {
+    pies: {name: string, value: number}[];
+}
+
+export type Tool = LogTool | ChoiceTool | ApprovalTool | FollowupTool | SearchTool | ShowTool | BarTool | LineTool | PieTool;

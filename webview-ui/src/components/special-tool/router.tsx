@@ -11,7 +11,8 @@ import { ParallelComponent } from '@webview-ui/components/special-tool/ParallelC
 import { SearchComponent } from '@webview-ui/components/special-tool/SearchComponent';
 import { ShowInFolderComponent } from '@webview-ui/components/special-tool/ShowInFolder';
 import { BarComponent } from '@webview-ui/components/special-tool/BarComponent';
-
+import { LineComponent } from '@webview-ui/components/special-tool/LineComponent';
+import { PieComponent } from '@webview-ui/components/special-tool/PieComponent';
 
 const componentRoutes: Record<string, RouteNode> = {
 	base: {
@@ -36,6 +37,8 @@ const componentRoutes: Record<string, RouteNode> = {
 	},
 	graph: {
 		bar: BarComponent,
+		line: LineComponent,
+		pie: PieComponent,
 	}
 };
 
