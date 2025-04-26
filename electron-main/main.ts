@@ -1,9 +1,10 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, screen } from 'electron';
 import * as path from 'path';
 import { createMenu } from './menu';
 import { WorkerManager } from './worker-manager';
 import { ElectronService } from './electron-service';
 import { IpcHandler } from './ipc-handler';
+import { WindowStateManager } from './window-state';
 
 // 全局变量，用于存储应用程序状态
 let mainWindow: BrowserWindow | null = null;
@@ -11,6 +12,7 @@ let workerManager: WorkerManager | null = null;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 let electronService: ElectronService | null = null;
 let ipcHandler: IpcHandler | null = null;
+let windowStateManager: WindowStateManager | null = null;
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -18,19 +20,50 @@ const isDev = process.env.NODE_ENV === 'development';
  * 创建主窗口
  */
 const createWindow = async () => {
-	mainWindow = new BrowserWindow({
-		width: 1600,
-		height: 600,
+	// 初始化窗口状态管理器
+	windowStateManager = new WindowStateManager();
+	const windowState = windowStateManager.getState();
+	
+	// 获取窗口位置
+	const position = windowStateManager.getWindowPosition();
+	
+	// 使用保存的窗口大小和位置，如果没有则使用默认值
+	const windowOptions: Electron.BrowserWindowConstructorOptions = {
+		width: windowState.bounds?.width || 2400,
+		height: windowState.bounds?.height || 1000,
+		x: position.x,
+		y: position.y,
 		webPreferences: {
 			preload: isDev ? path.join(__dirname, 'preload.js'): path.join(app.getAppPath(), 'build','electron', 'preload.js'),
 			contextIsolation: true,
 		},
 		show: false // 先不显示，避免闪烁
-	});
+	};
+	
+	mainWindow = new BrowserWindow(windowOptions);
 
 	mainWindow.once('ready-to-show', () => {
-		mainWindow?.maximize();
+		if (windowState.isMaximized) {
+			mainWindow?.maximize();
+		}
 		mainWindow?.show();
+	});
+
+	// 监听窗口大小和位置变化，保存状态
+	mainWindow.on('close', () => {
+		if (mainWindow && windowStateManager) {
+			const isMaximized = mainWindow.isMaximized();
+			const bounds = isMaximized ? undefined : mainWindow.getBounds();
+			
+			// 获取当前窗口所在的显示器
+			let displayId;
+			if (!isMaximized && bounds) {
+				const display = screen.getDisplayMatching(bounds);
+				displayId = display.id.toString();
+			}
+			
+			windowStateManager.saveState(isMaximized, bounds, displayId);
+		}
 	});
 
 	// 初始化 Electron 服务
@@ -64,6 +97,7 @@ const createWindow = async () => {
 		workerManager = null;
 		electronService = null;
 		ipcHandler = null;
+		windowStateManager = null;
 	});
 };
 
