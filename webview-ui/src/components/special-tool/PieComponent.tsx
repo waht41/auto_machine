@@ -6,7 +6,6 @@ import { colors } from '../common/styles';
 
 const Container = styled.div`
   width: 100%;
-  height: 300px;
   margin: 20px 0;
 `;
 
