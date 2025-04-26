@@ -72,6 +72,15 @@ const StyledTree = styled(Tree)`
   }
 `;
 
+// 创建圆形按钮组件
+const CircleButton = styled(Button)`
+  padding: 4px;
+  &:hover {
+    background-color: ${colors.primaryLight};
+    border-radius: 50%;
+  }
+`;
+
 const tools: IToolCategory[] = [
 	{
 		id: 'file',
@@ -199,9 +208,9 @@ export const AutoApprovePopover = ({ allowedTools, treeData, setAllowedTools }: 
 				</div>
 			}
 		>
-			<Button type="text" style={{ padding: '4px' }}>
-				<SVGComponent component={ApprovalIcon} stroke={open? colors.primary : undefined} width={28} height={28}/>
-			</Button>
+			<CircleButton type="text">
+				<SVGComponent component={ApprovalIcon} stroke={open? colors.primary : colors.textSecondary} width={20} height={20}/>
+			</CircleButton>
 		</Popover>
 	);
 };

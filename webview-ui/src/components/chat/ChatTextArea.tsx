@@ -147,6 +147,7 @@ const StyledEnhanceButton = styled(Button)<StyledEnhanceButtonProps>`
   
   &:hover, &:focus {
     background: transparent;
+    border-radius: 50%;
     border: none;
   }
 `;
@@ -787,7 +788,7 @@ const ChatTextArea = forwardRef<HTMLTextAreaElement, ChatTextAreaProps>(
 								<LoadingIcon className="codicon codicon-loading codicon-modifier-spin" />
 							) : (
 								<StyledEnhanceButton type={'text'} onClick={() => !textAreaDisabled && handleEnhancePrompt()} $disabled={textAreaDisabled}>
-									<SVGComponent component={EnhanceIcon} width={20} height={20}/>
+									<SVGComponent component={EnhanceIcon} width={20} height={20} stroke={colors.textSecondary}/>
 								</StyledEnhanceButton>
 							)}
 						</ButtonWrapper>

@@ -100,6 +100,10 @@ const WelcomeText = styled.div`
 	margin: 0 auto;
 `;
 
+const ChatTextAreaWrapper = styled.div`
+	margin-bottom: 48px;
+`;
+
 const ChatView = () => {
 	const {
 		apiConfiguration,
@@ -537,20 +541,24 @@ const ChatView = () => {
 							)}
 						</ButtonsContainer>
 					)}
-					<ChatTextArea
-						ref={textAreaRef}
-						{...chatTextAreaProps}
-					/>
+					<ChatTextAreaWrapper>
+						<ChatTextArea
+							ref={textAreaRef}
+							{...chatTextAreaProps}
+						/>
+					</ChatTextAreaWrapper>
 				</>
 			)}
 
 			{!task && <EmptyStateContainer>
 				<WelcomeText>what can I do for you?</WelcomeText>
 
-				<ChatTextArea
-					ref={textAreaRef}
-					{...chatTextAreaProps}
-				/>
+				<ChatTextAreaWrapper>
+					<ChatTextArea
+						ref={textAreaRef}
+						{...chatTextAreaProps}
+					/>
+				</ChatTextAreaWrapper>
 				<NewerExample/>
 			</EmptyStateContainer>}
 		</ChatViewContainer>
