@@ -13,8 +13,9 @@ export type RouteNode = ComponentRenderer | RouteNodeMap;
 export interface BaseTool {
     type: string;
     uuid: string;
-
-    [key: string]: unknown;
+    cmd?: string;
+    askType?: string;
+    action?: string;
 }
 
 export interface LogTool extends BaseTool {
@@ -52,4 +53,8 @@ export interface ShowTool extends BaseTool {
     path: string;
 }
 
-export type Tool = LogTool | ChoiceTool | ApprovalTool | FollowupTool | SearchTool | ShowTool;
+export interface BarTool extends BaseTool {
+    bars: {x: number, y: number, label?: string}[];
+}
+
+export type Tool = LogTool | ChoiceTool | ApprovalTool | FollowupTool | SearchTool | ShowTool | BarTool;

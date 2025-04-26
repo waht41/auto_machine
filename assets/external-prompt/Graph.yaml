@@ -1,0 +1,12 @@
+# 用于绘制各种各样的图形，方便展示信息
+bar:
+  description: 画出条形图
+  params:
+    bars: 元祖，包含x,y,label三个属性
+  example:
+    - tool: graph
+      cmd: bar
+      bars:
+        - { x: "2021年", y: 5, label: "第一年" }
+        - { x: "2022年", y: 6, label: "第二年" }
+        - { x: "2023年", y: 6, label: "第三年" }

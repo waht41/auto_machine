@@ -10,6 +10,7 @@ import { DownloadComponent } from '@webview-ui/components/special-tool/DownloadC
 import { ParallelComponent } from '@webview-ui/components/special-tool/ParallelComponent';
 import { SearchComponent } from '@webview-ui/components/special-tool/SearchComponent';
 import { ShowInFolderComponent } from '@webview-ui/components/special-tool/ShowInFolder';
+import { BarComponent } from '@webview-ui/components/special-tool/BarComponent';
 
 
 const componentRoutes: Record<string, RouteNode> = {
@@ -32,6 +33,9 @@ const componentRoutes: Record<string, RouteNode> = {
 	},
 	advance: {
 		parallel: ParallelComponent,
+	},
+	graph: {
+		bar: BarComponent,
 	}
 };
 
