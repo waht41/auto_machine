@@ -12,7 +12,7 @@ import { useChatViewStore } from '@webview-ui/store/chatViewStore';
 import { CloseOutlined } from '@ant-design/icons';
 import { colors } from '@webview-ui/components/common/styles';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 const StreamContainer = styled.div`
   padding: 20px;
@@ -29,14 +29,10 @@ const HeaderRow = styled.div`
   width: 100%;
 `;
 
-const TaskTitle = styled(Title)`
-  margin-bottom: 0 !important;
+const TaskTitle = styled.div`
+  margin-bottom: 10px;
   color: #1a1a1a;
-`;
-
-const TaskDescription = styled(Text)`
-  font-size: 14px;
-  color: #666;
+	font-size: 22px;
 `;
 
 const StreamBody = styled.div`
@@ -122,6 +118,9 @@ const AgentStream = () => {
 	const agentStreamMessages = useClineMessageStore(state => state.getAgentStreamMessages)();
 	const setShowAgentStream = useChatViewStore(state => state.setShowAgentStream);
 	const [highlightedIndex, setHighlightedIndex] = useState<number | null>(null);
+
+	const showAgentStream = useChatViewStore(state => state.showAgentStream);
+	const isShowAgentStream = !!task && showAgentStream;
 	
 	// 分页相关状态
 	const [currentPage, setCurrentPage] = useState(1);
@@ -179,15 +178,18 @@ const AgentStream = () => {
 		}
 	}, [totalMessages]);
 
+	if (!isShowAgentStream) {
+		return null;
+	}
+
 	return (
 		<StreamContainer>
 			<HeaderRow>
-				<TaskTitle level={4}>Agent Stream</TaskTitle>
+				<TaskTitle>Agent Stream</TaskTitle>
 				<CloseButton onClick={() => setShowAgentStream(false)}>
 					<CloseOutlined style={{ fontSize: '16px' }} />
 				</CloseButton>
 			</HeaderRow>
-			<TaskDescription type="secondary">{task}</TaskDescription>
 
 			<StreamBody>
 				<MessagesContainer>

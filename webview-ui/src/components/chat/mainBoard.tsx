@@ -45,7 +45,8 @@ const slideInAnimation = keyframes`
   }
 `;
 
-const AgentStreamContainer = styled.div`
+const AgentStreamContainer = styled.div<{ $isShow: boolean }>`
+	display: ${props => props.$isShow ? undefined : 'none'};
 	flex: 4;
 	height: 100%;
 	background-color: #fafafa;
@@ -90,11 +91,9 @@ const MainBoard = () => {
 				<ChatViewContainer $hasTask={isShowAgentStream}>
 					<ChatView />
 				</ChatViewContainer>
-				{isShowAgentStream && (
-					<AgentStreamContainer>
-						<AgentStream />
-					</AgentStreamContainer>
-				)}
+				<AgentStreamContainer $isShow={isShowAgentStream}>
+					<AgentStream />
+				</AgentStreamContainer>
 			</ContentContainer>
 		</MainContainer>
 	);
