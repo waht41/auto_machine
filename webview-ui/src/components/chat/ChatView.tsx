@@ -7,7 +7,6 @@ import { useExtensionState } from '../../context/ExtensionStateContext';
 import ChatRow from './ChatRow/ChatRow';
 import ChatTextArea from './ChatTextArea';
 import { normalizeApiConfiguration } from '@webview-ui/components/settings/ApiOptions/utils';
-import { VSCodeButton } from '@vscode/webview-ui-toolkit/react';
 import { useClineMessageStore } from '@webview-ui/store/clineMessageStore';
 import { useChatViewStore } from '@webview-ui/store/chatViewStore';
 import NewerExample from '@webview-ui/components/chat/NewerExample';
@@ -72,18 +71,6 @@ const ScrollToBottomButton = styled.div`
 	}
 `;
 
-const ButtonsContainer = styled.div<{ opacity: number }>`
-	opacity: ${props => props.opacity};
-	display: flex;
-	padding: ${props => props.opacity > 0 ? '10px 15px 0px 15px' : '0px 15px 0px 15px'};
-`;
-
-const SecondaryButton = styled(VSCodeButton)<{ isStreaming: boolean }>`
-	flex: ${props => props.isStreaming ? 2 : 1};
-	margin-left: ${props => props.isStreaming ? 0 : '6px'};
-	display: none; //todo 记得删
-`;
-
 const EmptyStateContainer = styled.div`
 	display: flex;
 	align-items: stretch;
@@ -125,8 +112,6 @@ const ChatView = () => {
 		setClineAsk,
 		enableButtons,
 		setEnableButtons,
-		secondaryButtonText,
-		didClickCancel,
 		expandedRows,
 		setExpandedRows,
 		showScrollToBottom,
@@ -138,7 +123,7 @@ const ChatView = () => {
 		handleSecondaryButtonClick,
 		toggleRowExpansion,
 		selectImages,
-		isStreaming: getIsStreaming,
+		getIsStreaming,
 		getPlaceholderText,
 		resetAllState,
 		handleMessage,
@@ -521,26 +506,6 @@ const ChatView = () => {
 							</ScrollToBottomContainer>
 						) : null}
 					</ScrollContainer>
-					{!showScrollToBottom && (
-						<ButtonsContainer
-							opacity={
-								secondaryButtonText || isStreaming
-									? enableButtons || (isStreaming && !didClickCancel)
-										? 1
-										: 0.5
-									: 0
-							}>
-							{(secondaryButtonText || isStreaming) && (
-								<SecondaryButton
-									appearance="secondary"
-									disabled={!enableButtons && !(isStreaming && !didClickCancel)}
-									isStreaming={isStreaming}
-									onClick={handleSecondaryButtonClick}>
-									{isStreaming ? 'Cancel' : secondaryButtonText}
-								</SecondaryButton>
-							)}
-						</ButtonsContainer>
-					)}
 					<ChatTextAreaWrapper>
 						<ChatTextArea
 							ref={textAreaRef}

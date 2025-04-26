@@ -50,7 +50,7 @@ interface IChatViewStore {
   selectImages: () => void;
   
   // 计算属性
-  isStreaming: () => boolean;
+  getIsStreaming: () => boolean;
   getPlaceholderText: (task: ClineMessage | undefined, shouldDisableImages: boolean) => string;
   getShowedMessage: (clineMessages: ClineMessage[]) => (ClineMessage | ClineMessage[])[];
   
@@ -147,7 +147,7 @@ export const useChatViewStore = create<IChatViewStore>((set, get) => ({
 	},
   
 	handleSecondaryButtonClick: () => {
-		const isStreaming = get().isStreaming();
+		const isStreaming = get().getIsStreaming();
 		const clineAsk = get().clineAsk;
     
 		if (isStreaming) {
@@ -195,7 +195,7 @@ export const useChatViewStore = create<IChatViewStore>((set, get) => ({
 	},
   
 	// 计算属性
-	isStreaming: () => {
+	getIsStreaming: () => {
 		const getChatMessages = useClineMessageStore.getState().getChatMessages;
 		const messages = getChatMessages();
 		const modifiedMessages = messages.slice(1);
