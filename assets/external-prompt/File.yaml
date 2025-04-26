@@ -86,4 +86,4 @@ download:
           path: ./download/favicon.ico  # 保存到当前目录下的download文件夹中
 
 
-# file没有实现其他常见的功能，例如复制、移动等，但你可以通过external code中的命令行来实现对应的操作。
+# file没有实现其他常见的功能，例如copy, move等，但你可以通过```yaml \n tool: external \n request: Coder \n```,请求直接用命令行来实现此操作。
