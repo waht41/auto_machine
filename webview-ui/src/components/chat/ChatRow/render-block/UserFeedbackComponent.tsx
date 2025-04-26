@@ -1,7 +1,6 @@
 import React from 'react';
 import { VSCodeButton } from '@vscode/webview-ui-toolkit/react';
 import { DefaultComponentProps } from './types';
-import { highlightMentions } from '../../TaskHeader';
 import Thumbnails from '@webview-ui/components/common/Thumbnails';
 import { vscode } from '@webview-ui/utils/vscode';
 import styled from 'styled-components';
@@ -29,7 +28,6 @@ const TextContent = styled.span`
   background: linear-gradient(0deg, rgba(146, 51, 255, 0.1), rgba(146, 51, 255, 0.1));
   white-space: pre-line;
   word-wrap: break-word;
-  color: var(--vscode-badge-foreground);
   text-align: right;
 `;
 
@@ -55,7 +53,7 @@ export const UserFeedbackComponent = ({ message, isStreaming }: DefaultComponent
 		<FeedbackContainer>
 			<ContentWrapper>
 				<TextContent>
-					{highlightMentions(message.text)}
+					{message.text}
 				</TextContent>
 				<DeleteButton
 					appearance="icon"
