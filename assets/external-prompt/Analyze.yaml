@@ -65,4 +65,14 @@ gather:
           - - 'total age'
             - (item, acc=0) => { return acc + (parseFloat(item.value) || 0) }  # 处理数据记得加些兜底
 
+preview:
+  description: 预览csv文件内容
+  params:
+    path: 文件路径
+    lines: 预览的开始和结尾
+  example:
+    - tool: analyze
+      cmd: preview
+      path: "/tmp/data1.csv"
+      lines: {start: 0, end: -1} # -1表示最后一行，-2表示倒数第二行，依次类推。
 # 记住，在分析数据前，确保已经用File或者其他方式获知了文件内容

@@ -22,6 +22,14 @@ export interface ReduceOptions {
     pairs: [string, string][];
 }
 
+export interface PreviewOptions {
+    path: string;
+    lines: {
+        start: number;
+        end: number;
+    };
+}
+
 export type GatherOptions =
   { action: 'raw' } & RawOptions |
   { action: 'transform' } & TransformOptions |

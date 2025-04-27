@@ -52,7 +52,7 @@ request: File,MCP
 - Browser: 浏览器控制，包括打开网页，点击按钮，模拟键盘输入等
 - MCP: 模型上下文协议，可以使用用户自定义的服务
 - Coder: 可以用命令行、node js等编程工具
-- Analyze: 用于存储、转化、过滤csv数据
+- Analyze: 用于存储、转化、过滤csv数据，优先用Analyze，而不是File处理csv文件
 - Graph: 根据数据绘制各种图形
 
 # Remember
