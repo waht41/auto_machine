@@ -2,6 +2,7 @@ import React from 'react';
 import { cancelledColor, errorColor, normalColor, successColor } from '@webview-ui/components/common/styles';
 import { ProgressIndicator } from '@webview-ui/components/chat/ChatRow/ProgressIndicator';
 import { ApiStatus } from '@/shared/type';
+import styled from 'styled-components';
 
 const STATUS_CONFIG: Record<ApiStatus, {
 	icon?: string;
@@ -51,13 +52,20 @@ export const StatusIcon = ({ status }: { status: ApiStatus }) => {
 	);
 };
 
+const HeaderLeft = styled.span`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-grow: 1;
+	font-size: 17px;
+	font-weight: 600;
+	//font-family: Roboto;
+`;
+
 export const StatusText = ({ status, title }: { status: ApiStatus, title?: string }) => (
-	<span style={{
-		color: STATUS_CONFIG[status].textColor,
-		fontWeight: 'bold'
-	}}>
+	<HeaderLeft>
 		{title || STATUS_CONFIG[status].text}
-	</span>
+	</HeaderLeft>
 );
 
 export const AssistantTitle = ()=>{

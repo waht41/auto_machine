@@ -54,7 +54,7 @@ const InfoItem = styled.div`
   font-size: 13px;
   line-height: 20px;
   letter-spacing: 0;
-	color: ${colors.textPlaceholder};
+	color: ${colors.textDisabled};
 `;
 
 const Label = styled.span`

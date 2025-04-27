@@ -13,6 +13,7 @@ export const colors = {
 	textPrimary: '#1A1A1A',
 	textSecondary: '#555555',
 	textPlaceholder: '#888888',
+	textDisabled: '#BBBBBB',
 	backgroundMain: '#F9FAFB',
 	backgroundPanel: '#FFFFFF',
 	backgroundMuted: '#F1F3F5',

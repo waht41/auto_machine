@@ -23,6 +23,13 @@ const StyledTimeline = styled(Timeline)`
   .ant-timeline-item-head {
     background: transparent;
   }
+
+  /* 覆盖 Ant Design 的默认字体设置，使用继承的字体 */
+  &.ant-timeline,
+  .ant-timeline-item-content,
+  .ant-timeline * {
+    font-family: inherit;
+  }
 `;
 
 interface ChatRowProps {

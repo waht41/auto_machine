@@ -58,6 +58,23 @@ const HistorySection = styled.div`
 	padding-top: 16px;
 `;
 
+// 使用 styled(Button) 创建 NewTaskButton 组件
+const NewTaskButton = styled(Button)`
+	border-radius: 12px;
+	background-color: ${colors.backgroundMuted};
+	color: ${colors.primary};
+	font-size: 17px;
+	font-weight: 500;
+	border-color: ${colors.primary};
+	display: flex;
+	margin-bottom: 16px;
+	
+	/* 覆盖父元素中的 .ant-btn 规则 */
+	&&.ant-btn {
+		justify-content: center;
+	}
+`;
+
 const SideBar: React.FC = () => {
 	const navigate = useNavigate();
 	const clearTask = useClineMessageStore(state => state.clearClineMessages);
@@ -75,19 +92,10 @@ const SideBar: React.FC = () => {
 					<LogoText>Roo</LogoText>
 				</Logo>
 
-				<Button 
+				<NewTaskButton 
 					type="primary" 
 					icon={<PlusOutlined />} 
 					size="large" 
-					style={{ 
-						borderRadius: '8px',
-						backgroundColor: colors.backgroundMuted,
-						color: colors.primary,
-						borderColor: colors.primary,
-						display: 'flex',
-						justifyContent: 'center',
-						marginBottom:'16px'
-					}}
 					block
 					onClick={() => {
 						navigate('/');
@@ -95,7 +103,7 @@ const SideBar: React.FC = () => {
 					}}
 				>
 					New task
-				</Button>
+				</NewTaskButton>
 
 				<NavButton 
 					icon={<GlobalOutlined />}

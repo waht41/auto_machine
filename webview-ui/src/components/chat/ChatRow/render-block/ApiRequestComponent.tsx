@@ -12,7 +12,6 @@ import { useChatViewStore } from '@webview-ui/store/chatViewStore';
 const HeaderContainer = styled.div<HeaderContainerProps>`
   display: flex;
   align-items: center;
-  font-weight: bold;
   margin-bottom: ${props => (props.$hasError ? '10px' : '0')};
   justify-content: space-between;
   cursor: pointer;
@@ -20,13 +19,6 @@ const HeaderContainer = styled.div<HeaderContainerProps>`
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
-`;
-
-const HeaderLeft = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-grow: 1;
 `;
 
 const HeaderRight = styled.div`
@@ -119,9 +111,7 @@ export const ApiRequestComponent = ({ message, isInArray }: DefaultComponentProp
 	return (
 		<>
 			<HeaderContainer $hasError={hasError}>
-				<HeaderLeft>
-					{title}
-				</HeaderLeft>
+				{title}
 				{message.relateStreamId && <HeaderRight>
 					<JumpButton
 						onClick={handleJumpToAgentStream}

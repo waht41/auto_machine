@@ -196,3 +196,32 @@ vscode-dropdown::part(listbox) {
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/* 全局覆盖 Ant Design 的默认字体 */
+:where(.css-dev-only-do-not-override-1a3rktk),
+:where(.css-dev-only-do-not-override-1a3rktk) *,
+.ant-btn,
+.ant-btn *,
+.ant-select,
+.ant-select *,
+.ant-input,
+.ant-input *,
+.ant-modal,
+.ant-modal *,
+.ant-dropdown,
+.ant-dropdown *,
+.ant-menu,
+.ant-menu *,
+.ant-form,
+.ant-form *,
+.ant-table,
+.ant-table *,
+.ant-typography,
+.ant-typography *,
+.ant-timeline,
+.ant-timeline *,
+.ant-timeline-item-content,
+.ant-tabs,
+.ant-tabs * {
+  font-family: inherit;
+}

@@ -44,8 +44,8 @@ const CustomScroller = styled.div`
 
 const TimeHeader = styled.div`
   color: ${colors.textSecondary};
-  font-weight: 500;
-  font-size: 0.75em;
+  font-weight: 700;
+	font-size: 15px;
   text-transform: uppercase;
   margin: 16px 0 8px 0;
   padding-bottom: 4px;
