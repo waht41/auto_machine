@@ -85,7 +85,8 @@ const SideBar: React.FC = () => {
 						color: colors.primary,
 						borderColor: colors.primary,
 						display: 'flex',
-						justifyContent: 'center'
+						justifyContent: 'center',
+						marginBottom:'16px'
 					}}
 					block
 					onClick={() => {

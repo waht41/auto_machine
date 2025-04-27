@@ -19,6 +19,10 @@ const StyledTimeline = styled(Timeline)`
   .ant-timeline-item-tail {
     border-left: 0.5pt dashed ${colors.borderDivider};
   }
+  
+  .ant-timeline-item-head {
+    background: transparent;
+  }
 `;
 
 interface ChatRowProps {

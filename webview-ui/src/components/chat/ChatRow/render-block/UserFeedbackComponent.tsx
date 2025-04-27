@@ -12,22 +12,24 @@ const FeedbackContainer = styled.div`
 	display: flex;
 	flex-direction: column;
 	align-items: flex-end;
+	width: 100%;
 `;
 
 const ContentWrapper = styled.div`
 	display: flex;
-	justify-content: space-between;
+	width: 100%;
+	justify-content: flex-end;
 	align-items: flex-start;
-	gap: 10px;
 `;
 
-const TextContent = styled.span`
-  display: inline-block;
+const TextContent = styled.div`
+  max-width: 60%;
   padding: 16px 24px;
   border-radius: 22px 4px 22px 22px;
   background: linear-gradient(0deg, rgba(146, 51, 255, 0.1), rgba(146, 51, 255, 0.1));
   white-space: pre-line;
   word-wrap: break-word;
+  word-break: break-word;
   text-align: right;
 `;
 
@@ -36,7 +38,7 @@ const DeleteButton = styled(VSCodeButton)`
 	flex-shrink: 0;
 	height: 24px;
 	margin-top: 13px;
-	margin-right: -6px;
+	margin-left: 8px;
 	display: none;
 `;
 

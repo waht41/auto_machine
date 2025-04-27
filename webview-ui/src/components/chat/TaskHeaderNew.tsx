@@ -30,6 +30,8 @@ const LeftSection = styled.div`
   display: flex;
   align-items: center;
   gap: 16px;
+  flex: 1;
+  overflow: hidden;
 `;
 
 const StyledTaskText = styled.div`
@@ -41,6 +43,7 @@ const StyledTaskText = styled.div`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex-shrink: 0;
 `;
 
 const InfoItem = styled.div`

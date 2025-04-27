@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { Typography } from 'antd';
-import { FileTextOutlined, RobotOutlined, CodeOutlined, BulbOutlined, ToolOutlined, BookOutlined } from '@ant-design/icons';
+import { FileTextOutlined, RobotOutlined, CodeOutlined, BookOutlined } from '@ant-design/icons';
 import { colors } from '../common/styles';
 import { useChatViewStore } from '@webview-ui/store/chatViewStore';
 
@@ -63,9 +63,7 @@ const exampleItems: ExampleItem[] = [
 	{ icon: <FileTextOutlined />, text: 'Hi' },
 	{ icon: <RobotOutlined />, text: 'please search latest news about AI Agent' },
 	{ icon: <CodeOutlined />, text: 'Please gather information on a few different topics at the same time' },
-	{ icon: <BulbOutlined />, text: 'please search latest news about AI Agent please search latest news about AI Agentplease search latest news about AI Agent' },
-	{ icon: <ToolOutlined />, text: 'Please gather information on a few different topics at the same time' },
-	{ icon: <BookOutlined />, text: 'please search latest news about AI Agent' },
+	{ icon: <BookOutlined />, text: 'please take a look at the files on my desktop and draw a diagram to illustrate them' },
 ];
 
 const NewerExample: React.FC = () => {

@@ -88,7 +88,8 @@ const WelcomeText = styled.div`
 `;
 
 const ChatTextAreaWrapper = styled.div`
-	margin-bottom: 48px;
+	margin-top: 24px;
+	margin-bottom: 24px;
 `;
 
 const ChatView = () => {
