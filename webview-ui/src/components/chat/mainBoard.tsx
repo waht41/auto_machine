@@ -2,7 +2,7 @@ import React, { useEffect, useMemo } from 'react';
 import styled, { keyframes } from 'styled-components';
 import ChatView from '@webview-ui/components/chat/ChatView';
 import AgentStream from '@webview-ui/components/chat/AgentStream/AgentStream';
-import TaskHeaderNew from '@webview-ui/components/chat/TaskHeaderNew';
+import TaskHeader from '@webview-ui/components/chat/TaskHeader';
 import { useClineMessageStore } from '@webview-ui/store/clineMessageStore';
 import { useChatViewTabStore } from '@webview-ui/store/chatViewTabStore';
 import { useChatViewStore } from '@webview-ui/store/chatViewStore';
@@ -76,7 +76,7 @@ const MainBoard = () => {
 		<MainContainer>
 			{!!task && (
 				<HeaderContainer>
-					<TaskHeaderNew
+					<TaskHeader
 						task={{
 							type: 'ask',
 							text: task,

@@ -70,7 +70,7 @@ const RightSection = styled.div`
   align-items: center;
 `;
 
-const TaskHeaderNew: React.FC<TaskHeaderNewProps> = ({ task, apiMetrics }) => {
+const TaskHeader: React.FC<TaskHeaderNewProps> = ({ task, apiMetrics }) => {
 	const { totalCost, totalTokensIn: tokensIn, totalTokensOut: tokensOut, contextTokens } = apiMetrics;
 	const { showAgentStream, toggleAgentStream } = useChatViewStore();
 
@@ -120,4 +120,4 @@ const TaskHeaderNew: React.FC<TaskHeaderNewProps> = ({ task, apiMetrics }) => {
 	);
 };
 
-export default TaskHeaderNew;
+export default TaskHeader;

@@ -69,5 +69,5 @@ export const StatusText = ({ status, title }: { status: ApiStatus, title?: strin
 );
 
 export const AssistantTitle = ()=>{
-	return <div style={{fontSize:'20px', padding:'10px 0', fontWeight: 'bold'}}>Roo</div>;
+	return <div style={{fontSize:'20px', fontWeight: 600, marginBottom:'10px'}}>Roo</div>;
 };

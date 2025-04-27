@@ -81,7 +81,8 @@ const StyledTextArea = styled(DynamicTextArea)<StyledTextAreaProps>`
   background-color: transparent;
   color: ${colors.textPrimary};
   border-radius: 2px;
-	font-size: 16px;
+	font-size: 17px;
+	font-family: Roboto;  // todo 之后需要找到哪里被覆盖了
   resize: none;
   overflow-x: hidden;
   overflow-y: auto;

@@ -27,6 +27,7 @@ const TextContent = styled.div`
   padding: 16px 24px;
   border-radius: 22px 4px 22px 22px;
   background: linear-gradient(0deg, rgba(146, 51, 255, 0.1), rgba(146, 51, 255, 0.1));
+	font-size: 17px;
   white-space: pre-line;
   word-wrap: break-word;
   word-break: break-word;
