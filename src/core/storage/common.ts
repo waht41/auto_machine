@@ -8,7 +8,7 @@ const envPath = envPaths('auto_machine',{suffix:''});
 export const configPath = envPath.config;
 
 export function getPromptPath(): string{
-	return path.join(getAssetPath(),'prompt','zh');
+	return path.join(getAssetPath(),'prompt','en');
 }
 
 export function getAssetPath(): string{

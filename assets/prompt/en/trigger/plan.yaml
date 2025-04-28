@@ -1,0 +1,23 @@
+adjust:
+  description: Adjust plan steps based on existing information
+  params:
+    reason: Reason for adjustment
+    content: Adjusted plan content
+    currentStep: Adjusted step, starting from 1
+  example:
+    - tool: base
+      cmd: plan
+      action: adjust
+      reason: "Cannot find the corresponding book on github.com, I might need to check zLibrary"
+      content: ["1.Open browser","2.Go to zLibrary to search for books","3.Download book","4.Analyze book content"]
+      currentStep: 2
+
+complete_step:
+    description: Mark the current step of the plan as completed, enter the next step. When all steps are completed, no more plan-related operations can be performed
+    params:
+      nextStep: number # Can enter a number less than 0, indicating the task has ended
+    example:
+      - tool: base
+        cmd: plan
+        action: complete_step
+        nextStep: -1

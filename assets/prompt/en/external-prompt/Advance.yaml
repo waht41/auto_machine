@@ -1,0 +1,49 @@
+# Advanced operations that agents may use
+memory:
+  description: Remember useful information
+  add:
+    params:
+      title: Title
+      keywords: Keywords, array
+      content: Main content
+      category: Category, will be used as the path for file storage, currently only supports tool types
+      action: Specific memory operation
+    example:
+      - tool: advance
+        cmd: memory
+        action: add
+        title: Do not download content from CSDN
+        keywords: [browser,download,csdn]
+        content: In CSDN, most resources require paid unlocking, users are unwilling to pay on CSDN, so resources cannot be downloaded from CSDN.
+        category: browser/download
+
+  search:
+    params:
+      keywords: [optional] #Keywords
+      category: Type, currently only supports tool types
+    example:
+      - tool: advance
+        cmd: memory
+        action: search
+        category: browser
+        keywords: [download,csdn]
+
+compress:
+  description: Compress useless information, recommended when known information exceeds 10k
+  params:
+    history_id: Array, historyId to be compressed
+    summary: Content after compression
+  example:
+    - tool: advance
+      cmd: compress
+      history_id: [3,4,5]
+      summary: This information is the result of browser searches for the JavaScript Red Book. Each corresponding URL has been tried and the book has been successfully downloaded, so it is no longer necessary to keep it in the conversation.
+
+parallel:
+  description: Synchronously open multiple agents, can be used to complete tasks in parallel. New agents do not have previous conversation history, so remember to include necessary information. Note that child nodes should not open parallel
+  params:
+    sub_tasks: [task1,task2,task3...]
+  example:
+    - tool: advance
+      cmd: parallel
+      sub_tasks: ["<var historyId = [2,3,4,5]> Summarize browser search results","Collect cursor-related news","Collect windsurf-related news","Collect devin-related news"]

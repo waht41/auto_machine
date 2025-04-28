@@ -1,0 +1,132 @@
+# Used for controlling the browser to perform various operations
+open:
+  description: Open specified URL
+  params:
+    url: URL
+  example:
+    - tool: browser
+      url: "https://www.example.com"
+      cmd: open
+
+search:
+    description: Search for specified content
+    params:
+        keyword: Search keyword
+        engine: [optional] # Supports bing baidu, default is bing. Due to Google's anti-crawler mechanism, it is not supported yet
+    example:
+      - tool: browser
+        keyword: "hello world"
+        cmd: search
+        engine: "bing"
+
+state:
+  description: Get all page states
+  example:
+    - tool: browser
+      cmd: state
+
+analyze:
+  description: Analyze webpage content
+  params:
+    url: [optional] # URL and title need at least one
+    title: [optional]  # Title
+    action: [interactive,static] # Return interactive information, static content, etc., by default only returns interactive information (such as buttons, input boxes, links), can select multiple
+    with_selector: [true|false] # Whether to return element selectors, default is false. Since the returned data volume is large, it is recommended to turn off
+  example:
+    - tool: browser
+      url: "https://www.bilibili.com"
+      action: [interactive,static]
+      cmd: analyze
+
+
+navigation:  # Page navigation
+  common_params:
+    url: [ optional ] # URL and title need at least one
+    title: [ optional ]  # Title
+    timeout: 3  # Timeout in seconds
+  back:
+    desc: Go back to previous page
+    params:
+    # common_params
+    example:
+      - tool: browser
+        url: "https://www.bilibili.com"
+        cmd: navigation
+        action: back
+        timeout: 8  # Timeout in seconds (default 5)
+
+  forward:
+    desc: Go forward to next page
+    params:
+    # common_params
+    example:
+      - tool: browser
+        url: "https://www.bilibili.com"
+        cmd: navigation
+        action: forward
+
+  refresh:
+    desc: Refresh page
+    params:
+      # common_params
+      wait_until: [load|domcontentloaded|networkidle]
+    example:
+      - tool: browser
+        url: "https://www.bilibili.com"
+        cmd: navigation
+        action: refresh
+        wait_until: "networkidle"
+
+interact:  # Page interaction
+  common_params:
+    selector: optional # Element selector
+    id: optional # Element ID
+    text: optional # Element text
+    tag: optional # Element tag  # At least one of these four parameters is required
+
+    url: [ optional ] # URL and title need at least one
+    title: [ optional ]  # Title
+    timeout: 3  # Timeout in seconds
+  click:
+    desc: Click element
+    params:
+      # common_params
+      count: 1   # Number of clicks
+    example:
+      - tool: browser
+        cmd: interact
+        url: "https://www.bing.com"
+        action: click
+        id: "search-icon"
+        count: 2
+
+  input:
+    desc: Text input
+    params:
+      # common_params
+      text: "Input content"
+      clear: true  # Automatically clear input box
+      enter: [true|false]  # Automatically press Enter after input, default is true
+    example:
+      - tool: browser
+        cmd: interact
+        action: input
+        url: "https://www.gmail.com"
+        selector: "input.email"
+        text: "user@example.com"
+
+download:
+  description: Download specified file
+  params:
+    url: File download address
+    path: [optional]  # Default is ./download/${downloadEvent.suggestedFilename()}. Unless explicitly required, place in the ./download folder
+    selector: optional # Element selector
+    id: optional # Element ID
+    text: optional # Element text
+    tag: optional # Element tag  # These four parameters are used to specify the download button, if none are provided, it will be downloaded directly as a static resource
+  example:
+    - tool: browser
+      cmd: download
+      url: "https://github.com/aioxo/JavaScript-note/blob/master/Chapter6.md"
+      selector: '[data-testid="download-raw-button"]'
+      path: "./Chapter6.md"

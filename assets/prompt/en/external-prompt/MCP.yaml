@@ -1,0 +1,30 @@
+# model content protocol, Model Context Protocol, can use user-defined features
+list:
+    description: List currently available servers
+    example:
+      - tool: MCP
+        cmd: list
+
+list_tool:
+    description: List tools for the specified server
+    params:
+      server: Server name
+    example:
+      - tool: MCP
+        cmd: list_tool
+        server: "weather-server"
+
+call_tool:
+    description: Call tools for the specified server
+    params:
+      server: Server name
+      mcp_tool: Tool name corresponding to the server
+      arguments: Tool parameters, different parameters for different mcp_tools
+    example:
+      - tool: MCP
+        cmd: call_tool
+        server: "weather-server"
+        mcp_tool: "weather"
+        arguments:
+          city: "Beijing"
+          date: "2021-08-01"

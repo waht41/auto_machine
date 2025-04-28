@@ -1,0 +1,41 @@
+# Used for drawing various graphs to facilitate information display
+bar:
+  description: Draw bar chart
+  params:
+    keys: x-axis, y-axis, label key, default is x,y,label
+    bars: Contains x,y,label three attributes
+  example:
+    - tool: graph
+      cmd: bar
+      bars:
+        - { x: "2021", y: 5, label: "First Year" }
+        - { x: "2022", y: 6, label: "Second Year" }
+        - { x: "2023", y: 6, label: "Third Year" }
+
+line:
+  description: Draw line chart
+  params:
+    keys: x-axis, y-axis, label key, default is x,y,label
+    lines: Contains x,y,label three attributes
+  example:
+    - tool: graph
+      cmd: line
+      keys: ["year","count","label"]
+      lines:
+        - { year: "2021", count: 5, label: "First Year" }
+        - { year: "2022", count: 6, label: "Second Year" }
+        - { year: "2023", count: 6, label: "Third Year" }
+
+
+pie:
+  description: Draw pie chart
+  params:
+    keys: pie name and value, default name,value
+    pies: Contains name,value attributes
+  example:
+    - tool: graph
+      cmd: pie
+      pies:
+        - { name: "2021", value: 5}
+        - { name: "2022", value: 7}
+        - { name: "2023", value: 8}

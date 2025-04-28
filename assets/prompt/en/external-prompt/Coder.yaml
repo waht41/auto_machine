@@ -1,0 +1,18 @@
+# Used for command line, or node js and other programs
+cmd:
+  description: Use command line
+  params:
+    content: Specific commands in the command line tool
+  example:
+    - tool: coder
+      cmd: cmd
+      content: dir
+
+node:
+  description: Use node to execute js code
+  params:
+    content: js code
+  example:
+    - tool: coder
+      cmd: node
+      content: "console.log('hello world')"

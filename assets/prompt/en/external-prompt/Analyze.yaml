@@ -1,0 +1,78 @@
+# Used for transforming and displaying data
+gather:
+  description: Used to transform raw data into data that is convenient for display.
+  raw:
+    desc: AI directly generates potentially needed data, preferably in CSV format
+    params:
+      content: Transformed data
+    example:
+      - tool: analyze
+        cmd: gather
+        action: raw
+        content: |
+          name,value
+          "John, Jr.",100      # Names containing commas need to be wrapped in double quotes
+          "Data \"123\"",55.6  # Names containing double quotes need to be escaped
+          Era,-              # Empty values can use symbols as placeholders (such as `-` or left blank)
+          Tom,12
+        path: C:/Users/UserName/Desktop/data.csv
+
+  transform:
+     desc: Code transformation of required data, requires using js code
+     params:
+       from: Data source path
+       rule: js code, data transformation method, requires a function with only one parameter representing an input data item
+       to: Data storage address
+     example:
+       - tool: analyze
+         cmd: gather
+         action: transform
+         from: C:/Users/UserName/Desktop/data.csv
+         to: "C:/Users/UserName/Desktop/transform data.csv"
+         rule: "function (item){return {...item, isOld: item.value>30}}"
+
+  filter:
+    desc: Code filtering of required data, requires using js code
+    params:
+      from: Data source path
+      rule: js code, data transformation method, requires a function with only one parameter representing an input data item
+      to: Data storage address
+    example:
+      - tool: analyze
+        cmd: gather
+        action: filter
+        from: "C:/Users/UserName/Desktop/transform data.csv"
+        to: "C:/Users/UserName/Desktop/filter data.csv"
+        rule: "function (item){return item.value > 10}"
+
+  reduce:
+    desc: Get statistical information based on existing tables
+    params:
+      from: Data source path
+      pairs:
+        - - "Key name" #Two-dimensional array
+          - " (item,acc=x)=>{return ...}"
+    example:
+      - tool: analyze
+        cmd: gather
+        action: reduce
+        from: "C:/Users/UserName/Desktop/data.csv" #Data source
+        pairs:
+          - - 'old man number'
+            - '(item,acc=0)=>{return item.value>30? acc+1: acc}'  #Remember to assign a default value to acc
+          - - 'child'
+            - '(item,acc=0)=>{return item.value<15?acc+1:acc}'
+          - - 'total age'
+            - (item, acc=0) => { return acc + (parseFloat(item.value) || 0) }  # Remember to add fallbacks when processing data
+
+preview:
+  description: Preview CSV file content
+  params:
+    path: File path
+    lines: Start and end of preview
+  example:
+    - tool: analyze
+      cmd: preview
+      path: "/tmp/data1.csv"
+      lines: {start: 0, end: -1} # -1 means the last line, -2 means the second-to-last line, and so on.
+# Remember, before analyzing data, make sure you already know the file content through File or other methods
