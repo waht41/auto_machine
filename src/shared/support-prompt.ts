@@ -35,9 +35,8 @@ const supportPromptConfigs: Record<string, SupportPromptConfig> = {
 		label: 'Enhance Prompt',
 		description:
 			'Use prompt enhancement to get tailored suggestions or improvements for your inputs. This ensures Roo understands your intent and provides the best possible responses. Available via the ✨ icon in chat.',
-		template: `Generate an enhanced version of this prompt (reply with only the enhanced prompt - no conversation, explanations, lead-in, bullet points, placeholders, or surrounding quotes):
-
-\${userInput}`,
+		template: `enhance the prompt for better question the others (reply as your are user, with only the enhanced prompt - no conversation, explanations, lead-in, bullet points, placeholders, or surrounding quotes):
+here is prompt: \${userInput}`,
 	},
 	EXPLAIN: {
 		label: 'Explain Code',

@@ -7,7 +7,6 @@
 configuration:
   tools:
     base:
-      log: 用于记录日志
       plan: 用于拆解复杂任务
     ask:
       description: 用于请求用户回复。 askType包括[ask_followup_question, ask_multiple_choice, ask_choice,attempt_completion]
@@ -24,10 +23,6 @@ examples:
     askType: multiple_choice
     question: 请选择所需的水果？
     choices: [苹果, 香蕉, 橙子]
-  - tool: base
-    cmd: log
-    title: 用户反馈 # 会自动添加时间
-    content: 用户对方案表示满意
   - tool: base
     cmd: plan
     action: start

@@ -7,7 +7,6 @@ Here are several resident tools that need to be triggered in YAML format for cor
 configuration:
   tools:
     base:
-      log: Used to record logs
       plan: Used to break down complex tasks
     ask:
       description: Used to request user replies. askType includes [ask_followup_question, ask_multiple_choice, ask_choice, attempt_completion]
@@ -24,10 +23,6 @@ examples:
     askType: multiple_choice
     question: Please select the fruits you need?
     choices: [Apple, Banana, Orange]
-  - tool: base
-    cmd: log
-    title: User Feedback # Time will be automatically added
-    content: User is satisfied with the plan
   - tool: base
     cmd: plan
     action: start

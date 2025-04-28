@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { Typography } from 'antd';
-import { FileTextOutlined, RobotOutlined, CodeOutlined, BookOutlined } from '@ant-design/icons';
+import { RobotOutlined, CodeOutlined, BookOutlined } from '@ant-design/icons';
 import { colors } from '../common/styles';
 import { useChatViewStore } from '@webview-ui/store/chatViewStore';
 
@@ -60,10 +60,9 @@ const TextWrapper = styled(Text)`
 
 // 示例数据（写死在组件内）
 const exampleItems: ExampleItem[] = [
-	{ icon: <FileTextOutlined />, text: 'Hi' },
-	{ icon: <RobotOutlined />, text: 'please search latest news about AI Agent' },
-	{ icon: <CodeOutlined />, text: 'Please gather information on a few different topics at the same time' },
-	{ icon: <BookOutlined />, text: 'please take a look at the files on my desktop and draw a diagram to illustrate them' },
+	{ icon: <BookOutlined />, text: 'please take a look at the files on my desktop ' },
+	{ icon: <RobotOutlined />, text: 'please help me analyze data  and draw a diagram to illustrate them' },
+	{ icon: <CodeOutlined />, text: 'Please search latest news about cursor, windsurf, manus at the same time, and explain it to me comprehensively' },
 ];
 
 const NewerExample: React.FC = () => {

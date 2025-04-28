@@ -6,6 +6,7 @@ import { Virtuoso } from 'react-virtuoso';
 import { HistoryItem } from '@/shared/HistoryItem';
 import { colors } from '../common/styles';
 import { ClusterOutlined } from '@ant-design/icons';
+import { Button } from 'antd';
 
 // 样式组件
 const HistoryContainer = styled.div`
@@ -89,12 +90,28 @@ const StyledVirtuoso = styled(Virtuoso)`
   width: 100%;
 `;
 
-const ParentIcon = styled.span`
+const ParentIconButton = styled(Button)`
   margin-right: 6px;
   font-size: 14px;
   color: ${colors.textSecondary};
   display: inline-flex;
   align-items: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  height: auto;
+  line-height: 1;
+  
+  &&.ant-btn:hover, &&.ant-btn:hover {
+    color: ${colors.primary};
+    background: ${colors.backgroundMain};
+    border: none;
+  }
+  
+  .anticon {
+    font-size: 14px;
+  }
 `;
 
 const TaskContent = styled.div`
@@ -244,8 +261,8 @@ const HistoryPreviewNew: React.FC<HistoryPreviewNewProps> = () => {
 				groupedHistory[group].forEach(item => {
 					if (item.parent && !addedItems.has(item.id)) {
 						const parentItem = taskHistory.find(p => p.id === item.parent);
-						// 如果找不到父项或父项未展开，则作为独立项显示
-						if (!parentItem || !expandedItems[parentItem.id]) {
+						// 只有当找不到父项时才作为独立项显示，如果父项存在但未展开，则不显示
+						if (!parentItem) {
 							items.push({ type: 'item', item });
 							addedItems.add(item.id);
 						}
@@ -271,11 +288,6 @@ const HistoryPreviewNew: React.FC<HistoryPreviewNewProps> = () => {
 						if (item.item) {
 							// 无论是什么类型的项目，都发送消息显示任务详情
 							handleHistorySelect(item.item.id);
-              
-							// 如果是父项且有子项，则同时切换展开/折叠状态
-							if (item.type === 'item' && hasChildren) {
-								toggleItemExpanded(item.item.id);
-							}
 						}
 					}}
 					$isChild={item.type === 'childItem'}
@@ -283,9 +295,17 @@ const HistoryPreviewNew: React.FC<HistoryPreviewNewProps> = () => {
 					<TaskContent>
 						<TaskText>
 							{hasChildren && (
-								<ParentIcon>
-									<ClusterOutlined />
-								</ParentIcon>
+								<ParentIconButton
+									type="text"
+									size="small"
+									icon={<ClusterOutlined />}
+									onClick={(e) => {
+										e.stopPropagation();
+										if (item.type === 'item' && item.item && hasChildren) {
+											toggleItemExpanded(item.item.id);
+										}
+									}}
+								/>
 							)}
 							{item.item.task}
 						</TaskText>
