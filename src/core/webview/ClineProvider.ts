@@ -13,7 +13,7 @@ import { PromptComponent } from '@/shared/modes';
 import { fileExistsAtPath } from '@/utils/fs';
 import { Cline } from '../Cline';
 import { setSoundEnabled } from '@/utils/sound';
-import { configPath, createIfNotExists, getAssetPath, getUserDataPath } from '@core/storage/common';
+import { configPath, createIfNotExists, getPromptPath, getUserDataPath } from '@core/storage/common';
 import { ApprovalMiddleWrapper } from '@core/internal-implementation/middleware';
 import { getToolCategory } from '@core/tool-adapter/getToolCategory';
 import { AllowedToolTree } from '@core/tool-adapter/AllowedToolTree';
@@ -43,7 +43,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 	workspaceTracker?: WorkspaceTracker;
 	mcpHub?: McpHub;
 	latestAnnouncementId = 'jan-21-2025-custom-modes'; // update to some unique identifier when we add a new announcement
-	toolCategories = getToolCategory(path.join(getAssetPath(),'external-prompt'));
+	toolCategories = getToolCategory(path.join(getPromptPath(),'external-prompt'));
 	allowedToolTree = new AllowedToolTree([],this.toolCategories);
 	apiManager : ApiProviderManager;
 	readonly messageService : MessageService;
