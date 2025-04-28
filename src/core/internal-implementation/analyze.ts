@@ -1,8 +1,6 @@
 import { CommandExecutor } from '@executors/types';
 import { AnalyzeCommand } from '@core/internal-implementation/type';
-import { gatherHandler } from '@core/internal-implementation/handlers/analyzeHandler';
-import { preview } from '@operation/Analyze';
-import yaml from 'js-yaml';
+import { gatherHandler, previewHandler } from '@core/internal-implementation/handlers/analyzeHandler';
 
 /**
  * Analyze命令执行器
@@ -14,13 +12,7 @@ export class AnalyzeCommandExecutor implements CommandExecutor {
 			case 'gather':
 				return await gatherHandler(command);
 			case 'preview':
-				const res = await preview(command);
-				if (res.success){
-					// 使用安全的方式序列化数据
-					return res.message + '\n' + yaml.dump(res.data);
-				} else {
-					return res.message ?? 'Error: no message returned';
-				}
+				return await previewHandler(command);
 			default:
 				throw new Error(`未知的Analyze命令: ${command}`);
 		}

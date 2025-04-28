@@ -6,7 +6,16 @@ import { PreviewOptions, AnalyzeResult } from './type';
  * @param options 预览选项，包含文件路径和预览行范围
  * @returns 操作结果，包含预览数据
  */
-export async function preview(options: PreviewOptions): Promise<AnalyzeResult> {
+export type PreviewResult = AnalyzeResult<{
+	lines: string[];
+	range: {
+		start: number;
+		end: number;
+		total: number;
+	};
+}>;
+
+export async function preview(options: PreviewOptions): Promise<PreviewResult> {
 	try {
 		const { path: filePath, lines } = options;
 		
@@ -43,12 +52,12 @@ export async function preview(options: PreviewOptions): Promise<AnalyzeResult> {
 			success: true,
 			message: `Successfully previewed file ${filePath} from line ${validStart} to ${validEnd}`,
 			data: {
-				lines: resultLines,
 				range: {
 					start: validStart,
 					end: validEnd,
 					total: allLines.length
-				}
+				},
+				lines: resultLines,
 			}
 		};
 	} catch (error) {
