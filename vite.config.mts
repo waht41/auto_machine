@@ -71,6 +71,7 @@ export default defineConfig(({ mode }) => ({
 			include: '**/*.svg',
 		}),
 	],
+	publicDir: 'public',
 	build: {
 		outDir: 'build',
 		assetsDir: 'assets',

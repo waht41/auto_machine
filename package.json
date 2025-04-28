@@ -2,6 +2,7 @@
   "name": "auto_machine",
   "private": true,
   "version": "0.0.4",
+  "productName": "Auto Machine",
   "main": "build/electron/main.js",
   "build": {
     "directories": {
@@ -15,6 +16,10 @@
       {
         "from": "assets/",
         "to": "assets/"
+      },
+      {
+        "from": "public/",
+        "to": "public/"
       }
     ],
     "win": {
@@ -25,12 +30,22 @@
             "x64"
           ]
         }
-      ]
+      ],
+      "icon": "public/Roo256.ico"
+    },
+    "mac": {
+      "icon": "public/Roo.icns"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "perMachine": false
+      "perMachine": false,
+      "installerIcon": "public/Roo256.ico",
+      "uninstallerIcon": "public/Roo256.ico",
+      "installerHeaderIcon": "public/Roo64.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Auto Machine"
     }
   },
   "scripts": {

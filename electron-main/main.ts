@@ -5,6 +5,10 @@ import { WorkerManager } from './worker-manager';
 import { ElectronService } from './electron-service';
 import { IpcHandler } from './ipc-handler';
 import { WindowStateManager } from './window-state';
+import { getIcon } from './utils';
+
+// 设置应用程序名称
+app.name = 'Auto Machine';
 
 // 全局变量，用于存储应用程序状态
 let mainWindow: BrowserWindow | null = null;
@@ -37,6 +41,8 @@ const createWindow = async () => {
 			preload: isDev ? path.join(__dirname, 'preload.js'): path.join(app.getAppPath(), 'build','electron', 'preload.js'),
 			contextIsolation: true,
 		},
+		icon: getIcon(),
+		title: 'Auto Machine',
 		show: false // 先不显示，避免闪烁
 	};
 	
