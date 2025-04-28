@@ -8,6 +8,8 @@ import HistoryPreviewNew from './history/HistoryPreviewNew';
 import { useExtensionState } from '../context/ExtensionStateContext';
 import { colors } from './common/styles';
 import NavButton from './common/NavButton';
+import SVGComponent from '@webview-ui/components/common/SVGComponent';
+import { ReactComponent as RooIcon } from '@webview-ui/assets/Roo.svg';
 
 const SideBarContainer = styled.div`
 	width: 210px;
@@ -29,20 +31,8 @@ const Logo = styled.div`
 	margin-bottom: 16px;
 `;
 
-const LogoImage = styled.div`
-	width: 32px;
-	height: 32px;
-	border-radius: 50%;
-	background-color: ${colors.primary};
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	color: ${colors.backgroundPanel};
-	font-weight: bold;
-`;
-
 const LogoText = styled.div`
-	font-size: 18px;
+	font-size: 24px;
 	font-weight: bold;
 	color: ${colors.textPrimary};
 `;
@@ -73,6 +63,10 @@ const NewTaskButton = styled(Button)`
 	&&.ant-btn {
 		justify-content: center;
 	}
+
+  &&.ant-btn:hover {
+    background-color: ${colors.primaryHover};
+  }
 `;
 
 const SideBar: React.FC = () => {
@@ -88,7 +82,7 @@ const SideBar: React.FC = () => {
 		<SideBarContainer>
 			<NavigationSection>
 				<Logo>
-					<LogoImage>R</LogoImage>
+					<SVGComponent component={RooIcon} width={32} height={32}/>
 					<LogoText>Roo</LogoText>
 				</Logo>
 

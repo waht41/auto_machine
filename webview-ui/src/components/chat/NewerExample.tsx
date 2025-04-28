@@ -21,7 +21,7 @@ const ExampleContainer = styled.div`
   align-items: center;
   gap: 12px;
   padding: 16px;
-  width: 100%;
+  width: 90%;
   margin: 0 auto;
   background-color: ${colors.backgroundMain};
 `;
