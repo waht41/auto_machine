@@ -12,8 +12,8 @@ type ServiceDependency = {
 };
 
 interface ServiceClass<T> {
-	serviceId: string; // 静态属性
-	new (...args: any[]): T; // 构造函数
+	serviceId: string;
+	new (...args: any[]): T;
 }
 
 // Type for dependency definition

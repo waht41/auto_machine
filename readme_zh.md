@@ -2,8 +2,7 @@
 
 [English Version](./readme.md)
 
-demo如下
-![demo4](https://github.com/user-attachments/assets/4353960a-a98b-4f83-b161-cb1a71a14fdd)
+![Main Page](https://github.com/user-attachments/assets/5b10d697-481f-4064-9150-db2feb6fefa8)
 
 **让AI助手真正触手可及**
  一款基于Electron构建的AI Agent，支持OpenAI/Gemini/deepSeek/Anthropic等大模型接入。一键安装，无需配置开发环境，让AI解放生产力。
@@ -32,17 +31,28 @@ demo如下
 
 ## 技术架构
 
-mermaid
-
-复制
-
 ```mermaid
 graph TD
-    A[Electron桌面应用] --> B[React前端]
+    A[Electron桌面应用] --> B(React前端)
     A --> C[Background Worker]
     C --> D[核心中转站]
-    D --> E[大模型API]
-    D --> F[工具执行器]
+
+    D -->|API调用| E[大模型API]
+    D -. 中间件处理 .-> M1[错误处理]
+
+    subgraph B [React前端]
+        direction LR
+        B1[路由控制器] --> B2[工具组件A]
+        B1 --> B3[工具组件B]
+        B1 --> B4[...]
+    end
+
+    subgraph Middleware [中间件处理流程]
+        direction TB
+        M1 --> M2[权限管理]
+    end
+
+    M2 --> F[工具执行器]
 ```
 
 ------
@@ -53,10 +63,6 @@ graph TD
     AI通过精简的初始prompt理解工具库（文件操作/浏览器控制等）
 2. **智能决策**
     生成标准化的YAML执行指令：
-
-yaml
-
-复制
 
 ```yaml
 tool: file

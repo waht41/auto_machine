@@ -32,17 +32,27 @@ An AI Agent built on Electron, supporting integration with OpenAI/Gemini/deepSee
 
 ## Technical Architecture
 
-mermaid
-
-Copy
-
 ```mermaid
 graph TD
-    A[Electron Desktop Application] --> B[React Frontend]
+    A[Electron Desktop App] --> B(React Frontend)
     A --> C[Background Worker]
     C --> D[Core Hub]
-    D --> E[LLM API]
-    D --> F[Tool Executor]
+    D -->|API Call| E[Large Model API]
+    D -.Middleware Processing.-> M1[Error Handler]
+    
+    subgraph B [React Frontend]
+        direction LR
+        B1[Route Controller] --> B2[Tool Component A]
+        B1 --> B3[Tool Component B]
+        B1 --> B4[...]
+    end
+    
+    subgraph Middleware [Middleware Processing]
+        direction TB
+        M1 --> M2[Permission Management]
+    end
+    
+    M2 --> F[Tool Executor]
 ```
 
 ------
@@ -53,10 +63,6 @@ graph TD
     AI understands the tool library (file operations/browser control, etc.) through a streamlined initial prompt
 2. **Intelligent Decision Making**
     Generates standardized YAML execution instructions:
-
-yaml
-
-Copy
 
 ```yaml
 tool: file
