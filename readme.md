@@ -1,59 +1,62 @@
-# Auto Machine - 桌面AI智能助手
-demo如下
+# Auto Machine - Desktop AI Intelligent Assistant
+
+[中文版本](./readme_zh.md)
+
+Demo as follows
 ![demo4](https://github.com/user-attachments/assets/4353960a-a98b-4f83-b161-cb1a71a14fdd)
 
-**让AI助手真正触手可及**
- 一款基于Electron构建的AI Agent，支持OpenAI/Gemini/deepSeek/Anthropic等大模型接入。一键安装，无需配置开发环境，让AI解放生产力。
+**Making AI Assistant Truly Accessible**
+An AI Agent built on Electron, supporting integration with OpenAI/Gemini/deepSeek/Anthropic and other large language models. One-click installation, no development environment configuration needed, letting AI liberate productivity.
 
 ------
 
-## 核心优势
+## Core Advantages
 
-### 一键安装体验
+### One-Click Installation Experience
 
-- **独立桌面应用**：基于Electron构建，提供跨平台支持
-- **零配置启动**：无需环境依赖与开发工具链
+- **Standalone Desktop Application**: Built on Electron, providing cross-platform support
+- **Zero Configuration Startup**: No environment dependencies or development toolchain required
 
-### 智能交互革新
+### Intelligent Interaction Innovation
 
-- **YAML驱动的工具箱**：通过标准化格式定义工具执行逻辑，支持实时调试与审计
-- **渐进式上下文管理**：动态加载prompt片段，按需获取关键信息
+- **YAML-Driven Toolbox**: Define tool execution logic through standardized format, supporting real-time debugging and auditing
+- **Progressive Context Management**: Dynamically load prompt fragments, obtaining key information as needed
 
-### 开箱即用能力
+### Ready-to-Use Capabilities
 
-- **文件系统智能操作**：支持本地文件的增删改查及自动化处理
-- **浏览器自动化控制**：网页内容抓取、表单填写、流程自动化
-- **多步骤任务规划**：基于LLM的自主任务分解与路径优化
+- **Intelligent File System Operations**: Support for local file creation, deletion, modification, querying, and automated processing
+- **Browser Automation Control**: Web content scraping, form filling, process automation
+- **Multi-Step Task Planning**: LLM-based autonomous task decomposition and path optimization
 
 ------
 
-## 技术架构
+## Technical Architecture
 
 mermaid
 
-复制
+Copy
 
 ```mermaid
 graph TD
-    A[Electron桌面应用] --> B[React前端]
+    A[Electron Desktop Application] --> B[React Frontend]
     A --> C[Background Worker]
-    C --> D[核心中转站]
-    D --> E[大模型API]
-    D --> F[工具执行器]
+    C --> D[Core Hub]
+    D --> E[LLM API]
+    D --> F[Tool Executor]
 ```
 
 ------
 
-## 工作原理
+## Working Principle
 
-1. **任务解析**
-    AI通过精简的初始prompt理解工具库（文件操作/浏览器控制等）
-2. **智能决策**
-    生成标准化的YAML执行指令：
+1. **Task Parsing**
+    AI understands the tool library (file operations/browser control, etc.) through a streamlined initial prompt
+2. **Intelligent Decision Making**
+    Generates standardized YAML execution instructions:
 
 yaml
 
-复制
+Copy
 
 ```yaml
 tool: file
@@ -62,42 +65,40 @@ url: https://www.baidu.com/favicon.ico
 path: ./download/favicon.ico
 ```
 
-1. **动态执行**
-    后台解析指令并执行，执行结果通过结构化格式反馈
-2. **持续优化**
-    根据执行日志自动调整策略，支持最多5次迭代优化
+3. **Dynamic Execution**
+    Backend parses and executes instructions, execution results are fed back in structured format
+4. **Continuous Optimization**
+    Automatically adjusts strategy based on execution logs, supporting up to 5 iterations of optimization
 
 ------
 
-## 方案对比
+## Solution Comparison
 
-| 特性       | Auto Machine | 传统方案    |
-| ---------- | ------------ | ----------- |
-| 安装复杂度 | ⭐            | ⭐⭐⭐⭐        |
-| Token效率  | ⭐⭐⭐⭐⭐        | ⭐⭐          |
-| 交互友好度 | ⭐⭐⭐⭐⭐        | ⭐⭐          |
-| 环境依赖性 | 无           | Python/Node |
-| 学习曲线   | 15分钟       | 2小时+      |
+| Feature           | Auto Machine | Traditional Solutions |
+| ----------------- | ------------ | --------------------- |
+| Installation Complexity | ⭐            | ⭐⭐⭐⭐                |
+| Token Efficiency  | ⭐⭐⭐⭐⭐        | ⭐⭐                    |
+| Interaction Friendliness | ⭐⭐⭐⭐⭐        | ⭐⭐                    |
+| Environment Dependencies | None         | Python/Node          |
+| Learning Curve    | 15 minutes   | 2+ hours              |
 
 ---
 
+# Recent Iterations
 
-
-# 近期迭代
-
-- [x] 核心架构重构
-- [x] 智能规划系统
-- [ ] 自定义任务模板
-- [ ] multi-agent支持
+- [x] Core Architecture Refactoring
+- [x] Intelligent Planning System
+- [ ] Custom Task Templates
+- [ ] Multi-agent Support
 
 ------
 
-## 🤝 助力Auto Machine成长
+## 🤝 Help Auto Machine Grow
 
 [![GitHub Stars](https://img.shields.io/github/stars/waht41/auto_machine?style=for-the-badge)](https://github.com/waht41/auto_machine/stargazers)
 
 [![Download Counter](https://img.shields.io/github/downloads/waht41/auto_machine/total?style=for-the-badge)](https://github.com/waht41/auto_machine/releases)
 
-👉 [立即获取最新版本](https://github.com/waht41/auto_machine/releases)  
+👉 [Get the Latest Version Now](https://github.com/waht41/auto_machine/releases)  
 
-💡 遇到问题？[提交Issue](https://github.com/waht41/auto_machine/issues) 
+💡 Having issues? [Submit an Issue](https://github.com/waht41/auto_machine/issues) 
