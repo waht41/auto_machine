@@ -62,7 +62,7 @@ const TextWrapper = styled(Text)`
 const exampleItems: ExampleItem[] = [
 	{ icon: <BookOutlined />, text: 'please take a look at the files on my desktop ' },
 	{ icon: <RobotOutlined />, text: 'please help me analyze data  and draw a diagram to illustrate them' },
-	{ icon: <CodeOutlined />, text: 'Please search latest news about cursor, windsurf, manus at the same time, and explain it to me comprehensively' },
+	{ icon: <CodeOutlined />, text: 'Please search latest news about cursor, windsurf, manus at the same time, and explain it to me comprehensively. (Each subject analyze three pieces of news is OK )' },
 ];
 
 const NewerExample: React.FC = () => {

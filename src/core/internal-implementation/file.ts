@@ -15,7 +15,7 @@ export class FileCommandExecutor implements CommandExecutor {
 			case 'create':
 				return await File.create(command);
 			case 'list':
-				return yaml.dump(await File.list(command));
+				return 'here is the file you searched: \n' + yaml.dump(await File.list(command)) + 'don\'t repeat it unless user specified';
 			case 'search':
 				return yaml.dump(await File.search(command));
 			case 'edit':
