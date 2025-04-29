@@ -2,8 +2,8 @@
 
 [中文版本](./readme_zh.md)
 
-Demo as follows
-![demo4](https://github.com/user-attachments/assets/4353960a-a98b-4f83-b161-cb1a71a14fdd)
+![Main Page](https://github.com/user-attachments/assets/5b10d697-481f-4064-9150-db2feb6fefa8)
+
 
 **Making AI Assistant Truly Accessible**
 An AI Agent built on Electron, supporting integration with OpenAI/Gemini/deepSeek/Anthropic and other large language models. One-click installation, no development environment configuration needed, letting AI liberate productivity.
