@@ -51,7 +51,6 @@ jobs:
       - name: Electron Packaging
         run: |
           npm run package -- --x64
-        env:
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
