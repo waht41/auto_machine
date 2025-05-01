@@ -7,12 +7,19 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest]
         include:
           - os: macos-latest
             arch: x64
-            artifact_name: macOS-package
+            artifact_name: macOS-x64-package
             artifact_path: dist/*.dmg
+          - os: macos-latest
+            arch: arm64
+            artifact_name: macOS-arm64-package
+            artifact_path: dist/*.dmg
+          - os: windows-latest
+            arch: x64
+            artifact_name: Windows-x64-package
+            artifact_path: dist/*.exe
 
     steps:
       - uses: actions/checkout@v4
@@ -52,7 +59,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          npm run package -- --x64
+          npm run package -- --${{ matrix.arch }}
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
