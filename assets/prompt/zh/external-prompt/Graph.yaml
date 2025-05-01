@@ -1,0 +1,41 @@
+# 用于绘制各种各样的图形，方便展示信息
+bar:
+  description: 画出条形图
+  params:
+    keys: x轴，y轴，label的key，默认是x,y,label
+    bars: 包含x,y,label三个属性
+  example:
+    - tool: graph
+      cmd: bar
+      bars:
+        - { x: "2021年", y: 5, label: "第一年" }
+        - { x: "2022年", y: 6, label: "第二年" }
+        - { x: "2023年", y: 6, label: "第三年" }
+
+line:
+  description: 画出线形图
+  params:
+    keys: x轴，y轴，label的key，默认是x,y,label
+    lines: 包含x,y,label三个属性
+  example:
+    - tool: graph
+      cmd: line
+      keys: ["year","count","label"]
+      lines:
+        - { year: "2021年", count: 5, label: "第一年" }
+        - { year: "2022年", count: 6, label: "第二年" }
+        - { year: "2023年", count: 6, label: "第三年" }
+
+
+pie:
+  description: 画出饼状图
+  params:
+    keys: pie的名称和值，默认name,value
+    pies: 包含name,value属性
+  example:
+    - tool: graph
+      cmd: pie
+      pies:
+        - { name: "2021年", value: 5}
+        - { name: "2022年", value: 7}
+        - { name: "2023年", value: 8}

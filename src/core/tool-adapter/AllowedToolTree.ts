@@ -51,6 +51,25 @@ export class AllowedToolTree {
 	}
 
 	private addTool(toolId: string) {
+		// 如果是 'all'，则其它工具都不加
+		if (toolId === 'all') {
+			this.commands.clear();
+			this.commands.add(toolId);
+			return;
+		}
+
+		// 检查是否已存在前缀工具
+		for (const existingTool of Array.from(this.commands)) {
+			// 如果现有工具是当前工具的前缀，则不添加当前工具
+			if (toolId.startsWith(existingTool + '.')) {
+				return;
+			}
+			// 如果当前工具是现有工具的前缀，则移除现有工具
+			if (existingTool.startsWith(toolId + '.')) {
+				this.commands.delete(existingTool);
+			}
+		}
+
 		this.removeAncestorParents(toolId);
 		this.removeDescendantChildren(toolId);
 		this.commands.add(toolId);

@@ -1,18 +1,18 @@
-import React, { useEffect, useRef, useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import styled from 'styled-components';
-import { Card, Typography, Tag } from 'antd';
-import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
+import { Card, Tag, Typography } from 'antd';
 import { useClineMessageStore } from '@webview-ui/store/clineMessageStore';
 import MarkdownBlock from '@webview-ui/components/common/MarkdownBlock';
-import {
-	scrollToMessageById,
-	findMessageIndexById
-} from '../utils/scrollSync';
+import { findMessageIndexById } from '../utils/scrollSync';
 import messageBus from '@webview-ui/store/messageBus';
 import { AGENT_STREAM_JUMP, APP_MESSAGE } from '@webview-ui/store/const';
 import { AgentStreamJumpState, AppMessageHandler } from '@webview-ui/store/type';
+import Pagination from './Pagination';
+import { useChatViewStore } from '@webview-ui/store/chatViewStore';
+import { CloseOutlined } from '@ant-design/icons';
+import { colors } from '@webview-ui/components/common/styles';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 const StreamContainer = styled.div`
   padding: 20px;
@@ -22,110 +22,41 @@ const StreamContainer = styled.div`
   background-color: #f5f7fa;
 `;
 
-const ItemCard = styled(Card)`
-  margin-bottom: 32px;
-  border-radius: 12px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-  border: none;
-  background-color: #ffffff;
-  overflow: hidden;
-  
-  &:last-child {
-    margin-bottom: 16px;
-  }
-  
-  /* 添加卡片动画效果 */
-  transition: all 0.3s ease;
-  
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
-  }
-  
-  /* 添加滚动到视图时的高亮效果 */
-  &.highlight {
-    animation: highlight 2s ease-in-out;
-  }
-  
-  @keyframes highlight {
-    0% {
-      background-color: #ffffff;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-    }
-    25% {
-      background-color: rgba(24, 144, 255, 0.15);
-      box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
-    }
-    50% {
-      background-color: rgba(24, 144, 255, 0.3);
-      box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.4);
-    }
-    75% {
-      background-color: rgba(24, 144, 255, 0.15);
-      box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
-    }
-    100% {
-      background-color: #ffffff;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-    }
-  }
-`;
-
-const StreamHeader = styled.div`
-  margin-bottom: 24px;
+const HeaderRow = styled.div`
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 0 8px;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
 `;
 
-const TaskTitle = styled(Title)`
-  margin-bottom: 0 !important;
+const TaskTitle = styled.div`
+  margin-bottom: 10px;
   color: #1a1a1a;
-`;
-
-const TaskDescription = styled(Text)`
-  font-size: 14px;
-  color: #666;
+	font-size: 22px;
 `;
 
 const StreamBody = styled.div`
   flex: 1;
-  overflow: hidden;
-  padding: 0 8px;
+  overflow-y: auto;
+  padding: 0 20px 20px;
   display: flex;
   flex-direction: column;
-  background-color: rgba(255, 255, 255, 0.5);
-  border-radius: 8px;
 `;
 
-const StyledVirtuoso = styled(Virtuoso)`
-  height: 100%;
+const MessagesContainer = styled.div`
   flex: 1;
-  padding: 12px 0;
+  overflow-y: auto;
+`;
+
+const ItemCard = styled(Card)`
+  margin-bottom: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
   
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-  
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  
-  &::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.2);
-    border-radius: 6px;
-  }
-  
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
-  
-  /* 添加滚动过渡效果 */
-  scroll-behavior: smooth;
-  
-  /* 为子元素添加动画效果 */
-  & > div {
-    transition: transform 0.3s ease-out;
+  &.highlight {
+    border: 2px solid #1890ff;
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
   }
 `;
 
@@ -161,6 +92,21 @@ const MessageText = styled(MarkdownBlock)`
   padding: 0 4px;
 `;
 
+const CloseButton = styled.div<{ $marginLeft?: string }>`
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: ${colors.textSecondary};
+  transition: color 0.3s;
+  margin-left: auto;
+	margin-right: 10px;
+  
+  &:hover {
+    color: ${colors.textPrimary};
+  }
+`;
+
 // 格式化时间戳为时:分:秒格式
 const formatTimestamp = (ts: number) => {
 	const date = new Date(ts);
@@ -168,11 +114,33 @@ const formatTimestamp = (ts: number) => {
 };
 
 const AgentStream = () => {
-	const task = useClineMessageStore().getTask();
-	const agentStreamMessages = useClineMessageStore().getAgentStreamMessages();
-	const virtuosoRef = useRef<VirtuosoHandle | null>(null);
+	const task = useClineMessageStore(state => state.getTask)();
+	const agentStreamMessages = useClineMessageStore(state => state.getAgentStreamMessages)();
+	const setShowAgentStream = useChatViewStore(state => state.setShowAgentStream);
 	const [highlightedIndex, setHighlightedIndex] = useState<number | null>(null);
 
+	const showAgentStream = useChatViewStore(state => state.showAgentStream);
+	const isShowAgentStream = !!task && showAgentStream;
+	
+	// 分页相关状态
+	const [currentPage, setCurrentPage] = useState(1);
+	const pageSize = 1; // 每页只显示一个消息
+	const totalMessages = agentStreamMessages.length;
+	const totalPages = Math.ceil(totalMessages / pageSize);
+	
+	// 获取当前页的消息
+	const getCurrentPageMessages = () => {
+		const startIndex = (currentPage - 1) * pageSize;
+		const endIndex = Math.min(startIndex + pageSize, totalMessages);
+		return agentStreamMessages.slice(startIndex, endIndex);
+	};
+	
+	// 页面变化处理函数
+	const handlePageChange = (page: number) => {
+		setCurrentPage(page);
+		setHighlightedIndex(null); // 清除高亮状态
+	};
+	
 	// 处理从ApiRequestComponent跳转过来的事件
 	const handleJumpToAgentStream = useCallback((message: AgentStreamJumpState) => {
 		if (message.type === AGENT_STREAM_JUMP && agentStreamMessages.length > 0) {
@@ -181,19 +149,14 @@ const AgentStream = () => {
 			}
 
 			const messageIndex = findMessageIndexById(agentStreamMessages, message.id);
-
-			scrollToMessageById(virtuosoRef, agentStreamMessages, message.id);
-
-			// 设置高亮索引，启动单次完整的淡入淡出动画
-			if (messageIndex === highlightedIndex) { // 如果高亮索引和最近索引相同，需要置空然后再设置回来
-				setHighlightedIndex(null);
-				// 使用 requestAnimationFrame 确保状态更新后再设置回来
-				requestAnimationFrame(() => {
-					setHighlightedIndex(messageIndex);
-				});
-			} else {
-				setHighlightedIndex(messageIndex);
-			}
+			if (messageIndex === -1) return;
+			
+			// 计算消息所在的页码 - 由于每页只有一个消息，页码就是索引+1
+			const targetPage = messageIndex + 1;
+			setCurrentPage(targetPage);
+			
+			// 设置高亮索引 - 由于每页只有一个消息，高亮索引总是0
+			setHighlightedIndex(0);
 		}
 	}, [agentStreamMessages]) as AppMessageHandler;
 
@@ -207,33 +170,49 @@ const AgentStream = () => {
 			messageBus.off(APP_MESSAGE, handleJumpToAgentStream);
 		};
 	}, [handleJumpToAgentStream]);
+	
+	// 当消息总数变化时，自动跳转到最后一页
+	useEffect(() => {
+		if (totalMessages > 0) {
+			setCurrentPage(totalPages);
+		}
+	}, [totalMessages]);
+
+	if (!isShowAgentStream) {
+		return null;
+	}
 
 	return (
 		<StreamContainer>
-			<StreamHeader>
-				<TaskTitle level={4}>Agent Stream</TaskTitle>
-				<TaskDescription type="secondary">{task}</TaskDescription>
-			</StreamHeader>
+			<HeaderRow>
+				<TaskTitle>Agent Stream</TaskTitle>
+				<CloseButton onClick={() => setShowAgentStream(false)}>
+					<CloseOutlined style={{ fontSize: '16px' }} />
+				</CloseButton>
+			</HeaderRow>
 
 			<StreamBody>
-				<StyledVirtuoso
-					ref={virtuosoRef}
-					totalCount={agentStreamMessages.length}
-					followOutput='smooth'
-					itemContent={(index) => {
-						const item = agentStreamMessages[index];
-						return (
-							<ItemCard className={highlightedIndex === index ? 'highlight' : ''}>
-								<MessageHeader>
-									<StyledTag color="blue">
-										{index + 1}
-									</StyledTag>
-									<TimeText type="secondary">{formatTimestamp(item.ts)}</TimeText>
-								</MessageHeader>
-								<MessageText markdown={item.text || ''} />
-							</ItemCard>
-						);
-					}}
+				<MessagesContainer>
+					{getCurrentPageMessages().map((item, index) => (
+						<ItemCard 
+							key={index} 
+							className={highlightedIndex === index ? 'highlight' : ''}
+						>
+							<MessageHeader>
+								<StyledTag color="blue">
+									{(currentPage - 1) * pageSize + index + 1}
+								</StyledTag>
+								<TimeText type="secondary">{formatTimestamp(item.ts)}</TimeText>
+							</MessageHeader>
+							<MessageText markdown={item.text || ''} />
+						</ItemCard>
+					))}
+				</MessagesContainer>
+				
+				<Pagination 
+					currentPage={currentPage}
+					totalPages={totalPages}
+					onPageChange={handlePageChange}
 				/>
 			</StreamBody>
 		</StreamContainer>

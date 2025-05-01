@@ -4,30 +4,41 @@ import path from 'path';
 import fs from 'fs';
 import process from 'node:process';
 
+// 用于跟踪正在导航的页面
+const navigatingPages = new Set<Page>();
 
 let browserContext: BrowserContext | null = null;
 export let lastActivePage: Page | null = null;
 let userDataDir: string | null = null;
+let browserContextPromise: Promise<BrowserContext> | null = null;
 
 export async function getBrowser(options: BrowserOptions = {}): Promise<BrowserContext> {
-	if (!browserContext) {
-		userDataDir = options.userDataDir || getBrowserUserDataDir();
-		if (!fs.existsSync(userDataDir)) {
-			fs.mkdirSync(userDataDir, {recursive: true});
-		}
-		browserContext = await chromium.launchPersistentContext(userDataDir, {
-			headless: options.headless ?? false,
-			channel: options.channel ?? 'chrome',
-			viewport: null, // 使用默认窗口大小
-			args: [
-				'--disable-blink-features=AutomationControlled'
-			],
-			ignoreDefaultArgs: [
-				'--enable-automation' // 禁用自动化标记，降低被当成机器人的概率
-			],
+	if (browserContext) {
+		return browserContext;
+	}
+	if (!browserContextPromise) {
+		browserContextPromise = (async () => {
+			userDataDir = options.userDataDir || getBrowserUserDataDir();
+			if (!fs.existsSync(userDataDir)) {
+				fs.mkdirSync(userDataDir, { recursive: true });
+			}
+			const context = await chromium.launchPersistentContext(userDataDir, {
+				headless: options.headless ?? false,
+				channel: options.channel ?? 'chrome',
+				viewport: null,
+				args: ['--disable-blink-features=AutomationControlled'],
+				ignoreDefaultArgs: ['--enable-automation'],
+			});
+			browserContext = context;
+			return context;
+		})();
+		// 错误处理：重置Promise以允许后续重试
+		browserContextPromise.catch((error) => {
+			browserContextPromise = null;
+			throw error;
 		});
 	}
-	return browserContext;
+	return browserContextPromise;
 }
 
 /**
@@ -39,15 +50,19 @@ async function getOrCreatePage(context: BrowserContext): Promise<Page> {
 	// 获取所有页面
 	const pages = context.pages();
     
-	// 查找空白页面（about:blank）
-	const blankPage = pages.find(page => page.url() === 'about:blank');
-    
+	// 查找空白页面（about:blank），确保它不在导航中
+	const blankPage = pages.find(page => page.url() === 'about:blank' && !navigatingPages.has(page));
+	console.log('[waht]','blankPage');
 	if (blankPage) {
+		// 标记页面为正在导航
+		navigatingPages.add(blankPage);
 		return blankPage;
 	}
     
-	// 如果没有空白页面，创建新页面
-	return await context.newPage();
+	// 如果没有可用的空白页面，创建新页面
+	const newPage = await context.newPage();
+	navigatingPages.add(newPage);
+	return newPage;
 }
 
 export async function getPage(options: PageOptions = {}): Promise<Page> {
@@ -148,12 +163,22 @@ export async function getPage(options: PageOptions = {}): Promise<Page> {
 	// 如果没有找到匹配的页面，创建新页面
 	if (options.url) {
 		const page = await getOrCreatePage(context);
-		await page.goto(options.url, {
-			waitUntil: options.waitForUrl ? 'networkidle' : 'commit'
-		});
-		pages.push(page);
-		lastActivePage = page;
-		return page;
+		try {
+			await page.goto(options.url, {
+				waitUntil: options.waitForUrl ? 'networkidle' : 'commit'
+			});
+			pages.push(page);
+			lastActivePage = page;
+			return page;
+		} catch (error) {
+			console.error(`导航到 ${options.url} 时出错:`, error);
+			// 导航失败时，从导航集合中移除
+			navigatingPages.delete(page);
+			throw error;
+		} finally {
+			// 无论成功还是失败，都从导航集合中移除
+			navigatingPages.delete(page);
+		}
 	}
 
 	// 创建新页面
@@ -240,7 +265,7 @@ export const getElementSelector = async (element: ElementHandle): Promise<string
             
 			// 计算位置索引
 			let pos = 0;
-			let temp = current;
+			let temp: Element | null = current;
 			while (temp) {
 				if (temp.nodeName === current.nodeName) pos++;
 				temp = temp.previousElementSibling;

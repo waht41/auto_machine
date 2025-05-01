@@ -1,0 +1,78 @@
+# 用于转化、展示数据
+gather:
+  description: 用于将原始数据转化为方便展示的数据。
+  raw:
+    desc: AI直接生成可能需要的数据，最好是csv格式
+    params:
+      content: 转化后的数据
+    example:
+      - tool: analyze
+        cmd: gather
+        action: raw
+        content: |
+          name,value
+          "John, Jr.",100      # 名称含逗号时需用双引号包裹
+          "Data \"123\"",55.6  # 名称含双引号时需转义
+          Era,-              # 空值可用符号占位（如 `-` 或留空）
+          Tom,12
+        path: C:/Users/UserName/Desktop/data.csv
+
+  transform:
+     desc: 代码转化所需的数据，要求使用js代码
+     params:
+       from: 数据源路径
+       rule: js代码，数据转化方式，要求是一个函数,只有一个参数，表示一个输入的数据项
+       to: 数据存储地址
+     example:
+       - tool: analyze
+         cmd: gather
+         action: transform
+         from: C:/Users/UserName/Desktop/data.csv
+         to: "C:/Users/UserName/Desktop/transform data.csv"
+         rule: "function (item){return {...item, isOld: item.value>30}}"
+
+  filter:
+    desc: 代码过滤所需的数据，要求使用js代码
+    params:
+      from: 数据源路径
+      rule: js代码，数据转化方式，要求是一个函数,只有一个参数，表示一个输入的数据项
+      to: 数据存储地址
+    example:
+      - tool: analyze
+        cmd: gather
+        action: filter
+        from: "C:/Users/UserName/Desktop/transform data.csv"
+        to: "C:/Users/UserName/Desktop/filter data.csv"
+        rule: "function (item){return item.value > 10}"
+
+  reduce:
+    desc: 根据已有的表格，获取统计信息
+    params:
+      from: 数据源路径
+      pairs:
+        - - "键名" #二维数组
+          - " (item,acc=x)=>{return ...}"
+    example:
+      - tool: analyze
+        cmd: gather
+        action: reduce
+        from: "C:/Users/UserName/Desktop/data.csv" #数据来源
+        pairs:
+          - - 'old man number'
+            - '(item,acc=0)=>{return item.value>30? acc+1: acc}'  #记得要为acc赋予默认值
+          - - 'child'
+            - '(item,acc=0)=>{return item.value<15?acc+1:acc}'
+          - - 'total age'
+            - (item, acc=0) => { return acc + (parseFloat(item.value) || 0) }  # 处理数据记得加些兜底
+
+preview:
+  description: 预览csv文件内容
+  params:
+    path: 文件路径
+    lines: 预览的开始和结尾
+  example:
+    - tool: analyze
+      cmd: preview
+      path: "/tmp/data1.csv"
+      lines: {start: 0, end: -1} # -1表示最后一行，-2表示倒数第二行，依次类推。
+# 记住，在分析数据前，确保已经用File或者其他方式获知了文件内容

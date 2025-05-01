@@ -2,9 +2,9 @@ import { memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
 import styled from 'styled-components';
-// 导入暗色主题
 import 'highlight.js/styles/atom-one-dark.css';
 import yaml from 'highlight.js/lib/languages/yaml';
+import { colors } from '@webview-ui/components/common/styles';
 
 interface MarkdownBlockProps {
 	markdown?: string;
@@ -12,10 +12,9 @@ interface MarkdownBlockProps {
 }
 
 const Container = styled.div`
-	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, serif;
-	line-height: 1.6;
-	color: ${({ theme }) => theme.textColor || '#333'};
-
+	color: ${colors.textSecondary};
+	font-size: 17px;
+	font-weight: 400;
 	p {
 		margin: 0.8em 0;
 	}

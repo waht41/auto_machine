@@ -8,11 +8,16 @@ import { AskApprovalComponent } from './AskApproval';
 import { FollowupComponent } from '@webview-ui/components/special-tool/FollowupComponent';
 import { DownloadComponent } from '@webview-ui/components/special-tool/DownloadComponent';
 import { ParallelComponent } from '@webview-ui/components/special-tool/ParallelComponent';
-
+import { SearchComponent } from '@webview-ui/components/special-tool/SearchComponent';
+import { ShowInFolderComponent } from '@webview-ui/components/special-tool/ShowInFolder';
+import { BarComponent } from '@webview-ui/components/special-tool/BarComponent';
+import { LineComponent } from '@webview-ui/components/special-tool/LineComponent';
+import { PieComponent } from '@webview-ui/components/special-tool/PieComponent';
 
 const componentRoutes: Record<string, RouteNode> = {
 	base: {
 		log: LogComponent,
+		showInFolder: ShowInFolderComponent,
 	},
 	ask: {
 		choice: ChoiceComponent,
@@ -25,9 +30,15 @@ const componentRoutes: Record<string, RouteNode> = {
 	},
 	browser: {
 		download: DownloadComponent,
+		search: SearchComponent,
 	},
 	advance: {
 		parallel: ParallelComponent,
+	},
+	graph: {
+		bar: BarComponent,
+		line: LineComponent,
+		pie: PieComponent,
 	}
 };
 

@@ -15,6 +15,7 @@ html {
 	height: 100%;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
+	font-family: 'Roboto', sans-serif;
 }
 
 body {
@@ -171,4 +172,56 @@ vscode-dropdown::part(listbox) {
 	background-color: color-mix(in srgb, var(--vscode-badge-foreground) 30%, transparent);
 	border-radius: 3px;
 	box-shadow: 0 0 0 0.5px color-mix(in srgb, var(--vscode-badge-foreground) 30%, transparent);
+}
+
+/* 全局滚动条样式 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--vscode-scrollbarSlider-background);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--vscode-scrollbarSlider-hoverBackground);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background-color: var(--vscode-scrollbarSlider-activeBackground);
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* 全局覆盖 Ant Design 的默认字体 */
+:where(.css-dev-only-do-not-override-1a3rktk),
+:where(.css-dev-only-do-not-override-1a3rktk) *,
+.ant-btn,
+.ant-btn *,
+.ant-select,
+.ant-select *,
+.ant-input,
+.ant-input *,
+.ant-modal,
+.ant-modal *,
+.ant-dropdown,
+.ant-dropdown *,
+.ant-menu,
+.ant-menu *,
+.ant-form,
+.ant-form *,
+.ant-table,
+.ant-table *,
+.ant-typography,
+.ant-typography *,
+.ant-timeline,
+.ant-timeline *,
+.ant-timeline-item-content,
+.ant-tabs,
+.ant-tabs * {
+  font-family: inherit;
 }

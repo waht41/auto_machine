@@ -33,6 +33,13 @@ export class IpcHandler {
 		// 接收来自渲染进程的消息，并转发给 worker
 		ipcMain.on('message', async (event, data) => {
 			try {
+				if (data && data.type === 'electron') {
+					const result = await this.electronService.handleMessage(data.payload);
+					if (!result.success) {
+						console.error(result.error);
+					}
+					return;
+				}
 				if (this.worker && !this.worker.killed && event.sender && !event.sender.isDestroyed()) {
 					this.worker.send(data);
 				}

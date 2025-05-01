@@ -42,6 +42,8 @@ import { ToolManager } from '@core/manager/ToolManager';
 import { ICreateSubCline } from '@core/webview/type';
 import { InterClineMessage } from '@core/services/type';
 import { EventEmitter } from 'events';
+import { AllowedToolTree } from '@core/tool-adapter/AllowedToolTree';
+import { isAutoApproval as isAutoApprovalX } from '@core/internal-implementation/middleware';
 
 const cwd = process.cwd();
 
@@ -60,6 +62,7 @@ interface IProp {
 	mcpHub?: McpHub
 	taskParentDir: string,
 	memoryDir: string,
+	allowedToolTree: AllowedToolTree
 }
 
 export class Cline {
@@ -89,6 +92,7 @@ export class Cline {
 	public di = new DIContainer();
 	private postService!: PostService;
 	private uiMessageService!: UIMessageService;
+	private allowedToolTree: AllowedToolTree;
 	clineBus = new EventEmitter();
 	messageBox: string[] = [];
 	remainingChildNum = 0;
@@ -114,6 +118,7 @@ export class Cline {
 		this.taskDir = path.join(taskParentDir, this.taskId);
 		this.streamChatManager = new StreamChatManager(this.di,this.api, this.taskId);
 		this.toolManager = new ToolManager(this.di, middleWares);
+		this.allowedToolTree = prop.allowedToolTree;
 
 		this.registerServices(prop);
 
@@ -266,6 +271,7 @@ export class Cline {
 		await this.streamChatManager.postClineMessage();
 
 		await this.sayP({sayType: 'task', text: task, images});
+		await this.sayP({sayType: 'user_feedback', text: task, images});
 
 		const imageBlocks: Anthropic.ImageBlockParam[] = formatResponse.imageBlocks(images);
 		await this.initiateTaskLoop([
@@ -305,7 +311,20 @@ export class Cline {
 
 	async receiveApproval({tool}: { tool: Command }) {
 		const result = await this.toolManager.applyCommand(tool, this.getInternalContext());
-		this.resume({text: typeof result === 'string' ? result : undefined, images: []});
+		let text = result ?? '';
+		const boxMessage = await this.popoverMessageBox();
+		if (boxMessage) {
+			text = text + boxMessage;
+			await this.sayP({sayType: 'text', text: boxMessage});
+		}
+		if (!text){
+			console.error('no result after receiveApproval');
+			return;
+		}
+		await this.streamChatManager.resumeHistory();
+		await this.streamChatManager.addAgentStream(text);
+		const userContent: UserContent = toUserContent(text, undefined);
+		this.initiateTaskLoop(userContent);
 	}
 
 	private async initiateTaskLoop(userContent: UserContent): Promise<void> {
@@ -326,6 +345,10 @@ export class Cline {
 		this.abort = true; // will stop any autonomously running promises
 		this.terminalManager.disposeAll();
 		this.urlContentFetcher.closeBrowser();
+	}
+
+	private isAutoApproval(command: Command): boolean {
+		return isAutoApprovalX(command, this.allowedToolTree);
 	}
 
 	async handleAssistantMessage() {
@@ -373,9 +396,13 @@ export class Cline {
 						break;
 					}
 					logger.debug('handleAssistantMessage: tool_use', block);
-					await this.sayP({ sayType: 'text', text: `apply tool \n ${yaml.dump(block.params)}`, partial: false, messageId: currentMessageId });
+					if (this.isAutoApproval(this.block2Command(block))) {
+						await this.sayP({ sayType: 'text', text: `apply tool \n ${yaml.dump(block.params)}`, partial: false, messageId: currentMessageId });
+					}
+
 
 					const handleError = async (action: string, error: Error) => {
+						await this.streamChatManager.changeLastApiReqStatus('error',`Error when executing tool ${block.name}`);
 						const errorString = `Error ${action}:\n${error.message ?? JSON.stringify(serializeError(error), null, 2)}`;
 						await this.sayP({ sayType: 'error', text: errorString });
 						await this.pushToolResult(formatResponse.toolError(errorString));
@@ -389,6 +416,7 @@ export class Cline {
 						const isReplacing = !this.blockProcessHandler.hasNewBlock();
 						const res = await this.applyToolUse(block, this.getInternalContext(isReplacing));
 						if (typeof res === 'string') {
+							await this.streamChatManager.changeLastApiReqStatus('completed', `Tool ${block.name} executed successfully`);
 							await this.pushToolResult(res);
 						}
 					} catch (e) {
@@ -429,6 +457,10 @@ export class Cline {
 		const textStrings = texts.map((block) => block.text);
 		logger.debug('handleAssistantMessage pushToolResult',textStrings);
 		await this.streamChatManager.addAgentStream(textStrings.join('\n'));
+	}
+
+	private block2Command(block:ToolUse): Command{
+		return {...block.params, type: block.name};
 	}
 
 	async applyToolUse(block: ToolUse, context?: IInternalContext): Promise<string | unknown> {
@@ -478,6 +510,7 @@ export class Cline {
 		this.isCurrentStreamEnd = true;
 		this.blockProcessHandler.markPartialBlockAsComplete();
 		this.abortTask(); // if the stream failed, there's various states the task could be in (i.e. could have streamed some tools the user may have executed), so we just resort to replicating a cancel task
+		await this.streamChatManager.changeLastApiReqStatus('error','Error when receiving message');
 		await this.abortStream(streamState);
 	}
 
@@ -550,6 +583,7 @@ export class Cline {
 				if (this.abort) {
 					console.log('aborting stream...');
 					if (!this.abortComplete) {
+						await this.streamChatManager.changeLastApiReqStatus('cancelled', 'Uer canceled message');
 						// only need to gracefully abort if this instance isn't abandoned (sometimes openrouter stream hangs, in which case this would affect future instances of cline)
 						streamState.apiReq.cancelReason = 'user_cancelled';
 						await this.abortStream(streamState);
@@ -570,6 +604,7 @@ export class Cline {
 	async handleAssistantMessageComplete(streamState: ProcessingState) {
 		await this.finalizeProcessing(streamState);
 		const assistantMessage = streamState.assistantMessage;
+		await this.streamChatManager.postClineMessage();
 		// now add to apiconversationhistory
 		// need to save assistant responses to file before proceeding to tool use since user can exit at any moment and we wouldn't be able to save the assistant's response
 		if (this.abort) {
@@ -583,18 +618,18 @@ export class Cline {
 				content: [{type: 'text', text: assistantMessage}],
 			});
 
-			await this.clearMessageBox();
+			await this.receiveMessageBox();
 
 			console.log(`[cline] user content message, task id ${this.taskId}`,this.userMessageContent);
 
 			// if the model did not tool use, then we need to tell it to either use a tool or attempt_completion
 			// const didToolUse = this.assistantMessageContent.some((block) => block.type === "tool_use")
 			if (this.userMessageContent.length === 0) {
-				await this.askP({
-					askType: 'text',
-					text: this.streamChatManager.endHint,
-					partial: false,
-				});
+				const status = this.streamChatManager.getLastApiReqStatus();
+				if (!status) {
+					await this.streamChatManager.changeLastApiReqStatus('completed', 'Message completed');
+				}
+
 				return true;
 			}
 
@@ -627,12 +662,21 @@ export class Cline {
 		await this.streamChatManager.postClineMessage();
 	}
 
-	private async clearMessageBox(){
+	private async popoverMessageBox(): Promise<string | null> {
 		await pWaitFor(()=> this.remainingChildNum === 0);
-		if (this.messageBox.length>0){
-			await this.sayP({sayType: 'text', text: this.messageBox.join('\n')});
-			this.userMessageContent.push({ type: 'text', text: this.messageBox.join('\n') });
-			this.messageBox.splice(0, this.messageBox.length);
+		if (!this.messageBox.length){
+			return null;
+		}
+		const result = this.messageBox.join('\n');
+		this.messageBox.splice(0, this.messageBox.length);
+		return result;
+	}
+
+	private async receiveMessageBox(){
+		const boxMessage = await this.popoverMessageBox();
+		if (boxMessage) {
+			await this.sayP({sayType: 'text', text: boxMessage});
+			this.userMessageContent.push({ type: 'text', text:boxMessage });
 		}
 	}
 

@@ -13,7 +13,7 @@ import { PromptComponent } from '@/shared/modes';
 import { fileExistsAtPath } from '@/utils/fs';
 import { Cline } from '../Cline';
 import { setSoundEnabled } from '@/utils/sound';
-import { configPath, createIfNotExists, getAssetPath, getUserDataPath } from '@core/storage/common';
+import { configPath, createIfNotExists, getPromptPath, getUserDataPath } from '@core/storage/common';
 import { ApprovalMiddleWrapper } from '@core/internal-implementation/middleware';
 import { getToolCategory } from '@core/tool-adapter/getToolCategory';
 import { AllowedToolTree } from '@core/tool-adapter/AllowedToolTree';
@@ -43,7 +43,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 	workspaceTracker?: WorkspaceTracker;
 	mcpHub?: McpHub;
 	latestAnnouncementId = 'jan-21-2025-custom-modes'; // update to some unique identifier when we add a new announcement
-	toolCategories = getToolCategory(path.join(getAssetPath(),'external-prompt'));
+	toolCategories = getToolCategory(path.join(getPromptPath(),'external-prompt'));
 	allowedToolTree = new AllowedToolTree([],this.toolCategories);
 	apiManager : ApiProviderManager;
 	readonly messageService : MessageService;
@@ -191,7 +191,8 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 				middleWares: [safeExecuteMiddleware, ApprovalMiddleWrapper(this.allowedToolTree)],
 				mcpHub: this.mcpHub,
 				taskParentDir: taskDirRoot,
-				memoryDir: path.join(getUserDataPath(),'memory')
+				memoryDir: path.join(getUserDataPath(),'memory'),
+				allowedToolTree: this.allowedToolTree
 			}
 		);
 		await cline.init();
@@ -225,6 +226,9 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		await this.postMessageToWebview({type: 'openTab', taskId: cline.taskId, task: await cline.getTask()});
 	}
 
+	isActivate(clineId: string): boolean {
+		return this.clineTree.has(clineId);
+	}
 	public async switchCline(clineId: string) {
 		console.log(`switchCline in provider: ${clineId}`);
 		if (this.clineTree.has(clineId)){
@@ -425,7 +429,15 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 	}
 
 	async updateTaskHistory(item: HistoryItem) {
-		await this.stateService.addTaskHistory(item);
+		const cline = this.clineTree.get(item.id);
+		let parent = undefined;
+		let children = undefined;
+		if (cline) {
+			parent = cline.parentId;
+			children = cline.children;
+		}
+		await this.stateService.addTaskHistory({ ...item, parent, children });
+		await this.postStateToWebview();
 	}
 
 	// global

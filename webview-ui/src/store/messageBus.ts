@@ -112,15 +112,12 @@ class MessageBus {
    */
 	sendToElectron(message: unknown): void {
 		try {
-			if (window.electronApi) {
-				// 如果是Electron环境
-				window.electronApi.send('message', message);
-			} else {
-				// 如果是VSCode Webview环境
-				// @ts-ignore
-				const vscode = acquireVsCodeApi();
-				vscode.postMessage(message);
+			if (!window.electronApi){
+				console.error('electron api undefined');
+				return;
 			}
+			// 如果是Electron环境
+			window.electronApi.send('message', { type:'electron', payload: message });
 		} catch (error) {
 			console.error('Failed to send message to electron', error);
 		}

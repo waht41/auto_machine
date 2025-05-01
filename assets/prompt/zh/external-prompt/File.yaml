@@ -1,0 +1,89 @@
+# 用于处理文件相关操作的工具
+list:
+  description: 列出指定路径下的文件
+  params:
+    path: 路径
+    recursive: [optional]   # 是否递归列出,默认为 false
+    depth: [optional]       # 递归层数，默认为3，只在recursive为true时生效
+    exclude: [optional]     # 排除的文件夹或文件,支持*作为通配符
+  example:
+    - tool: file
+      cmd: list
+      path: /path/to/files
+      exclude: [".git", ".idea", "*.ts"]
+      recursive: true
+      depth: 3
+
+create:
+  description: 创建文件
+  params:
+    path: 路径
+    content: [optional] # 文件内容，记得用双引号包裹内容
+    isFolder: [optional] # 创建的是文件夹还是文件，默认为false。  注意isFolder为true时，便不能输入content
+  example:
+    - tool: file
+      cmd: create
+      path: /path/to/file.txt
+      content: "这是要存储的内容 <var historyId=5/>"
+
+read:
+  description: 读取指定路径的文件
+  params:
+    path: 路径
+  example:
+    - tool: file
+      cmd: read
+      path: /path/to/file.txt
+
+edit:
+  description: 编辑指定路径的文件
+  cmd: edit
+  params:
+    action: "insert|delete|replace"  # 必选操作类型
+    path: 文件路径                                   # 必选
+    content: 文本内容                                # write/insert/overwrite/replace时必选
+    start: row,col                                  # 操作起始位置，默认为1,1（delete/replace时必选）
+    end: [rol,col]                                    # 操作结束位置（delete/replace时必选） [-1,-1]表示文件末尾
+  example:
+    - tool: file
+      cmd: edit
+      action: insert
+      start: [-1,-1]
+      content: "Hello, World! Task is <var historyId=1/>"
+
+rename:
+  description: 修改对应的文件名
+  cmd: rename
+  params:
+    path: 文件路径
+    name: 新文件名
+  example:
+    - tool: file
+      cmd: rename
+      path: E:\path\to
+      name: new # to文件（夹）名称会被改名为new
+
+search:
+  description: 在指定路径下搜索包含关键词的文件
+  params:
+    path: [optional] # 路径，默认为当前目录下
+    keyword: 关键词  # 可使用正则
+    exclude: [optional]
+  example:
+    - tool: file
+      cmd: search_file
+      keyword: /[1-9]/g
+
+download:
+    description: 下载文件
+    params:
+        url: 下载地址
+        path: 保存路径
+    example:
+        - tool: file
+          cmd: download
+          url: https://www.baidu.com/favicon.ico
+          path: ./download/favicon.ico  # 保存到当前目录下的download文件夹中
+
+
+# file没有实现其他常见的功能，例如copy, move等，但你可以通过```yaml \n tool: external \n request: Coder \n```,请求直接用命令行来实现此操作。

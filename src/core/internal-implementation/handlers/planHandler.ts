@@ -1,6 +1,6 @@
 import { IInternalContext, PlanCommand } from '@core/internal-implementation/type';
 import path from 'path';
-import { getAssetPath } from '@core/storage/common';
+import { getPromptPath } from '@core/storage/common';
 import file from 'fs/promises';
 import { yamlWrap } from '@core/internal-implementation/utils';
 import logger from '@/utils/logger';
@@ -24,7 +24,7 @@ export function handlePlanCommand(command: PlanCommand, context: IInternalContex
 async function startPlan(command: Extract<PlanCommand, { action: 'start' }>, context: IInternalContext) {
 	const planService = await context.di.getByType(PlanService);
 	planService.setPlan(command.content, 0);
-	const triggerPlanPath = path.join(getAssetPath(), 'trigger','plan.yaml');
+	const triggerPlanPath = path.join(getPromptPath(), 'trigger','plan.yaml');
 	const triggerContent = await file.readFile(triggerPlanPath, 'utf8');
 	return yamlWrap(triggerContent) + '\n' + `you should: ${planService.getStep(0)} now`;
 }

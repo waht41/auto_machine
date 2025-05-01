@@ -6,6 +6,7 @@ export type ParallelProp = {
 
 export type ClineIdentifier = {task:string, id:string, status:ClineStatus};
 export type ClineStatus = 'running' | 'error' | 'completed' | 'pending';
+export type ApiStatus = 'running' | 'error' | 'completed' | 'cancelled';
 export type SharedClineMessage = {
 	type: 'clineMessage';
 	id: string;
@@ -14,4 +15,13 @@ export type SharedClineMessage = {
 	type: 'partialMessage';
 	id: string;
 	partialMessage: ClineMessage
+}
+
+export interface ApiMetrics {
+	totalTokensIn: number;
+	totalTokensOut: number;
+	totalCacheWrites?: number;
+	totalCacheReads?: number;
+	totalCost: number;
+	contextTokens: number; // Total tokens in conversation (last message's tokensIn + tokensOut)
 }

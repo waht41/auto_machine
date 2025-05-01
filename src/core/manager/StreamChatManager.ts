@@ -13,6 +13,7 @@ import { ApiConversationHistoryService } from '@core/services/ApiConversationHis
 import { PlanService } from '@core/services/planService';
 import { DIContainer } from '@core/services/di';
 import { PostService } from '@core/services/postService';
+import { ApiStatus } from '@/shared/type';
 
 
 export class StreamChatManager {
@@ -280,14 +281,26 @@ export class StreamChatManager {
 
 	public async addAgentStream(text: string) {
 		const agentStreamId = this.getNewMessageId();
-		await this.chat({ ts: Date.now(), type: 'say', say: 'agent_stream',messageId: agentStreamId, text});
 		const lastApiIndex = this.findLastApiRequestIndex();
 		const apiReq = this.clineMessages[lastApiIndex];
 		apiReq.relateStreamId ??= agentStreamId;
+		await this.chat({ ts: Date.now(), type: 'say', say: 'agent_stream',messageId: agentStreamId, text});
 	}
 
 	private findLastApiRequestIndex() {
 		return findLastIndex(this.clineMessages, (m) => m.say === 'api_req_started');
+	}
+
+	async changeLastApiReqStatus(status: ApiStatus, title: string){
+		const idx = this.findLastApiRequestIndex();
+		this.clineMessages[idx].status = status;
+		this.clineMessages[idx].title = title;
+		await this.saveClineMessages();
+	}
+
+	getLastApiReqStatus(){
+		const idx = this.findLastApiRequestIndex();
+		return this.clineMessages[idx].status;
 	}
 
 	private async finalizePartialMessage(message: ClineMessage, lastMessage: ClineMessage) {

@@ -1,29 +1,28 @@
 import { ComponentRenderer, ApprovalTool } from './type';
-import { headerStyle, toolIcon } from './common';
 import yaml from 'js-yaml';
 import MarkdownBlock from '../common/MarkdownBlock';
 import { vscode } from '@webview-ui/utils/vscode';
-import { Button, Card, Space, Typography } from 'antd';
+import { Button, Space, Typography } from 'antd';
 import { useState } from 'react';
 import styled from 'styled-components';
+import { colors } from '@webview-ui/components/common/styles';
 
 // 样式组件
-const ApprovalCard = styled(Card)`
+const ApprovalCard = styled.div`
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  margin-bottom: 16px;
+  padding: 32px;
+	margin-top: 16px;
 `;
 
 const HeaderContainer = styled.div`
-  ${headerStyle};
   margin-bottom: 16px;
   display: flex;
   align-items: center;
   gap: 8px;
 `;
 
-const Title = styled(Typography.Title)`
-  margin: 0;
+const Title = styled.div`
 `;
 
 const ContentContainer = styled.div`
@@ -61,8 +60,7 @@ export const AskApprovalComponent: ComponentRenderer = (tool: ApprovalTool) => {
 	return (
 		<ApprovalCard>
 			<HeaderContainer>
-				{toolIcon('question')}
-				<Title level={4}>Roo ask approval:</Title>
+				<Title>Roo ask approval:</Title>
 			</HeaderContainer>
 			
 			<ContentContainer>
@@ -72,7 +70,7 @@ export const AskApprovalComponent: ComponentRenderer = (tool: ApprovalTool) => {
 			{showButtons ? (
 				<ButtonContainer>
 					<Button type="default" onClick={handleDeny}>No</Button>
-					<Button type="primary" onClick={handleApproval}>OK</Button>
+					<Button type="primary" onClick={handleApproval} style={{ background: colors.primary}}>OK</Button>
 				</ButtonContainer>
 			) : (
 				responseMessage && <WarningText>{responseMessage}</WarningText>

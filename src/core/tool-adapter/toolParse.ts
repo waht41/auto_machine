@@ -45,7 +45,8 @@ export function parseYamlToToolCategory(
 			}
 
 			// 检查是否是嵌套工具类别（如navigation, interact等）
-			if (cmdInfo.common_params && Object.keys(cmdInfo).some(key => typeof cmdInfo[key] === 'object' && cmdInfo[key].desc)) {
+			if ((cmdInfo.common_params || Object.keys(cmdInfo).some(key => typeof cmdInfo[key] === 'object' && (cmdInfo[key].desc || cmdInfo[key].description))) && 
+				Object.keys(cmdInfo).some(key => typeof cmdInfo[key] === 'object' && (cmdInfo[key].desc || cmdInfo[key].description))) {
 				// 创建子类别
 				const subCategory: IToolCategory = {
 					id: `${categoryId}.${cmdName}`,

@@ -14,6 +14,7 @@ import messageBus from './store/messageBus';
 import { BACKGROUND_MESSAGE } from '@webview-ui/store/const';
 import { BackgroundMessage } from '@webview-ui/store/type';
 import { Handler } from 'mitt';
+import SideBar from './components/SideBar';
 
 const LoadingContainer = styled.div`
 	display: flex;
@@ -31,6 +32,18 @@ const ErrorContainer = styled.div`
 	height: 100vh;
 	width: 100%;
 	padding: 0 20px;
+`;
+
+const AppContainer = styled.div`
+	display: flex;
+	width: 100%;
+	height: 100vh;
+`;
+
+const ContentContainer = styled.div`
+	flex: 1;
+	height: 100vh;
+	overflow: auto;
 `;
 
 const AppContent = () => {
@@ -68,7 +81,6 @@ const AppContent = () => {
 		console.log(message);
 	}, [navigate]) as Handler<BackgroundMessage>;
 
-
 	// 使用消息总线订阅扩展消息
 	useEffect(() => {
 		// 订阅扩展消息
@@ -79,8 +91,6 @@ const AppContent = () => {
 			messageBus.off(BACKGROUND_MESSAGE, handleMessage);
 		};
 	}, [handleMessage]);
-
-	
 
 	if (!didHydrateState) {
 		if (workerError) {
@@ -127,7 +137,12 @@ const App = () => {
 	return (
 		<ExtensionStateContextProvider>
 			<HashRouter>
-				<AppContent />
+				<AppContainer>
+					<SideBar />
+					<ContentContainer>
+						<AppContent />
+					</ContentContainer>
+				</AppContainer>
 			</HashRouter>
 		</ExtensionStateContextProvider>
 	);

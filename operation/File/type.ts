@@ -28,6 +28,7 @@ export interface EditOptions {
 export interface CreateOptions {
     path: string;
     content?: string;  // Optional file content
+    isFolder?: boolean;
 }
 
 export interface SearchOptions {
@@ -40,6 +41,11 @@ export interface DownloadOptions {
     url: string;           // 文件下载URL
     path: string;   // 保存文件的本地路径
     overwrite?: boolean;   // 是否覆盖现有文件，默认为false
+}
+
+export interface RenameOptions {
+    path: string;       // 原文件或目录的路径
+    name: string;       // 新的文件或目录名称
 }
 
 export type Position = [number, number];  // [row, col]

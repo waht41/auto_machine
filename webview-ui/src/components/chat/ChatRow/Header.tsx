@@ -1,51 +1,40 @@
 import React from 'react';
 import { cancelledColor, errorColor, normalColor, successColor } from '@webview-ui/components/common/styles';
 import { ProgressIndicator } from '@webview-ui/components/chat/ChatRow/ProgressIndicator';
+import { ApiStatus } from '@/shared/type';
+import styled from 'styled-components';
 
-export type ChatStatus =
-	| 'CANCELLED'
-	| 'STREAMING_FAILED'
-	| 'SUCCESS'
-	| 'FAILED'
-	| 'IN_PROGRESS';
-
-const STATUS_CONFIG: Record<ChatStatus, {
+const STATUS_CONFIG: Record<ApiStatus, {
 	icon?: string;
 	iconColor?: string;
 	text: string;
 	textColor: string;
 }> = {
-	CANCELLED: {
+	cancelled: {
 		icon: 'error',
 		iconColor: cancelledColor,
-		text: 'API Request Cancelled',
+		text: 'User Cancelled',
 		textColor: normalColor,
 	},
-	STREAMING_FAILED: {
+	error: {
 		icon: 'error',
 		iconColor: errorColor,
-		text: 'API Streaming Failed',
+		text: 'Error when receiving message',
 		textColor: errorColor,
 	},
-	SUCCESS: {
+	completed: {
 		icon: 'check',
 		iconColor: successColor,
-		text: 'API Request',
+		text: 'Success',
 		textColor: normalColor,
 	},
-	FAILED: {
-		icon: 'error',
-		iconColor: errorColor,
-		text: 'API Request Failed',
-		textColor: errorColor,
-	},
-	IN_PROGRESS: {
-		text: 'API Request...',
+	running: {
+		text: 'Responding...',
 		textColor: normalColor,
 	},
 };
 
-export const StatusIcon = ({ status }: { status: ChatStatus }) => {
+export const StatusIcon = ({ status }: { status: ApiStatus }) => {
 	const config = STATUS_CONFIG[status];
 	return config.icon ? (
 		<div className="icon-container" style={{ width: 16, height: 16 }}>
@@ -63,11 +52,22 @@ export const StatusIcon = ({ status }: { status: ChatStatus }) => {
 	);
 };
 
-export const StatusText = ({ status }: { status: ChatStatus }) => (
-	<span style={{
-		color: STATUS_CONFIG[status].textColor,
-		fontWeight: 'bold'
-	}}>
-		{STATUS_CONFIG[status].text}
-	</span>
+const HeaderLeft = styled.span`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-grow: 1;
+	font-size: 17px;
+	font-weight: 600;
+	//font-family: Roboto;
+`;
+
+export const StatusText = ({ status, title }: { status: ApiStatus, title?: string }) => (
+	<HeaderLeft>
+		{title || STATUS_CONFIG[status].text}
+	</HeaderLeft>
 );
+
+export const AssistantTitle = ()=>{
+	return <div style={{fontSize:'20px', fontWeight: 600, marginBottom:'10px'}}>Roo</div>;
+};

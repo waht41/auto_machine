@@ -1,13 +1,5 @@
 import { ClineMessage } from './ExtensionMessage';
-
-interface ApiMetrics {
-	totalTokensIn: number
-	totalTokensOut: number
-	totalCacheWrites?: number
-	totalCacheReads?: number
-	totalCost: number
-	contextTokens: number // Total tokens in conversation (last message's tokensIn + tokensOut)
-}
+import { ApiMetrics } from '@/shared/type';
 
 /**
  * Calculates API metrics from an array of ClineMessages.

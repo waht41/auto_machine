@@ -1,0 +1,18 @@
+# 用于使用命令行，或者node js等程序
+cmd:
+  description: 使用命令行
+  params:
+    content: 命令行工具中的具体命令
+  example:
+    - tool: coder
+      cmd: cmd
+      content: dir
+
+node:
+  description: 使用node执行js代码
+  params:
+    content: js代码
+  example:
+    - tool: coder
+      cmd: node
+      content: "console.log('hello world')"

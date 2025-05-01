@@ -7,6 +7,10 @@ const envPath = envPaths('auto_machine',{suffix:''});
 
 export const configPath = envPath.config;
 
+export function getPromptPath(): string{
+	return path.join(getAssetPath(),'prompt','en');
+}
+
 export function getAssetPath(): string{
 	return process.env.ASSETS_PATH ?? path.join(process.cwd(), './assets');
 }

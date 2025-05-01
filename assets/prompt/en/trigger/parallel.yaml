@@ -1,0 +1,11 @@
+# This command is only visible when you are a child node. Additionally, as a child node, you are prohibited from using the parallel feature. Also remember that when a task ends, you must use complete_parallel_node to notify the parent node.
+complete_parallel_node:
+  description: Notify the parent node that the current node's task has been completed.
+  params:
+    message: Information to report, such as task completion status, whether tools have been used to write in the child node  #Since message may contain line breaks, it needs to be wrapped in double quotes
+    status: error/completed choose one
+  example:
+    - tool: base
+      cmd: complete_parallel_node
+      message: "Cursor-related information has been successfully written to ./cursor_news.txt"
+      status: completed

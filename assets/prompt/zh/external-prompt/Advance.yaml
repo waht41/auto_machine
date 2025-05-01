@@ -1,0 +1,49 @@
+# 包含agent可能使用的高级操作
+memory:
+  description: 记忆有用的信息
+  add:
+    params:
+      title: 标题
+      keywords: 关键词，数组
+      content: 主要内容
+      category: 分类，会被作为文件存储的路径，目前仅支持工具类型
+      action: 具体的memory操作
+    example:
+      - tool: advance
+        cmd: memory
+        action: add
+        title: 不要在csdn下载内容
+        keywords: [browser,download,csdn]
+        content: csdn之中，大部分资源需要付费解锁，用户不愿意在csdn上付费，所以不能从csdn之中下载资源。
+        category: browser/download
+
+  search:
+    params:
+      keywords: [optional] #关键词
+      category: 类型，目前仅支持和工具类型
+    example:
+      - tool: advance
+        cmd: memory
+        action: search
+        category: browser
+        keywords: [download,csdn]
+
+compress:
+  description: 压缩无用信息，推荐在已知信息超过10k时使用
+  params:
+    history_id: 数组，要被压缩的historyId
+    summary: 被压缩后的内容
+  example:
+    - tool: advance
+      cmd: compress
+      history_id: [3,4,5]
+      summary: 这些信息是浏览器搜索js红宝书的结果，之前已经一一尝试了对应的网址，并成功下载了书籍，所以已经不需要继续保留在对话中了。
+
+parallel:
+  description: 同步开启多个agent，可用于并行完成任务。新的agent没有之前的对话历史，所以记得附带必要信息。注意不要让子node开启parallel
+  params:
+    sub_tasks: [task1,task2,task3...]
+  example:
+    - tool: advance
+      cmd: parallel
+      sub_tasks: ["<var historyId = [2,3,4,5]> 总结浏览器搜索的结果","收集cursor相关的新闻","收集windsurf相关的新闻","收集devin相关的新闻"]

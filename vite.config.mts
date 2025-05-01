@@ -3,6 +3,7 @@ import { resolve } from 'path';
 import { defineConfig } from 'vite';
 import electron, { ElectronOptions } from 'vite-plugin-electron';
 import react from '@vitejs/plugin-react';
+import svgr from 'vite-plugin-svgr';
 
 const pathResolve = (path: string) => resolve(__dirname, path);
 
@@ -60,17 +61,26 @@ export default defineConfig(({ mode }) => ({
 	plugins: [
 		electron(getElectronConfig(mode)),
 		react(),
+		svgr({
+			svgrOptions: {
+				exportType: 'named',
+				ref: true,
+				svgo: false,
+				titleProp: true,
+			},
+			include: '**/*.svg',
+		}),
 	],
+	publicDir: 'public',
 	build: {
 		outDir: 'build',
 		assetsDir: 'assets',
 		rollupOptions: { 
-			external: ['electron', 'antd', 'styled-components'],
+			external: ['electron'],
 		},
 	},
 	optimizeDeps: {
 		exclude: ['puppeteer-chromium-resolver'],
-		include: ['antd', 'styled-components'],
 	},
 	server: {
 		fs: { strict: false },

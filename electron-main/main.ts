@@ -1,15 +1,22 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, screen } from 'electron';
 import * as path from 'path';
 import { createMenu } from './menu';
 import { WorkerManager } from './worker-manager';
 import { ElectronService } from './electron-service';
 import { IpcHandler } from './ipc-handler';
+import { WindowStateManager } from './window-state';
+import { getIcon } from './utils';
+
+// 设置应用程序名称
+app.name = 'Auto Machine';
 
 // 全局变量，用于存储应用程序状态
 let mainWindow: BrowserWindow | null = null;
 let workerManager: WorkerManager | null = null;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 let electronService: ElectronService | null = null;
 let ipcHandler: IpcHandler | null = null;
+let windowStateManager: WindowStateManager | null = null;
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -17,12 +24,51 @@ const isDev = process.env.NODE_ENV === 'development';
  * 创建主窗口
  */
 const createWindow = async () => {
-	mainWindow = new BrowserWindow({
-		width: 1600,
-		height: 600,
+	// 初始化窗口状态管理器
+	windowStateManager = new WindowStateManager();
+	const windowState = windowStateManager.getState();
+	
+	// 获取窗口位置
+	const position = windowStateManager.getWindowPosition();
+	
+	// 使用保存的窗口大小和位置，如果没有则使用默认值
+	const windowOptions: Electron.BrowserWindowConstructorOptions = {
+		width: windowState.bounds?.width || 2400,
+		height: windowState.bounds?.height || 1000,
+		x: position.x,
+		y: position.y,
 		webPreferences: {
 			preload: isDev ? path.join(__dirname, 'preload.js'): path.join(app.getAppPath(), 'build','electron', 'preload.js'),
 			contextIsolation: true,
+		},
+		icon: getIcon(),
+		title: 'Auto Machine',
+		show: false // 先不显示，避免闪烁
+	};
+	
+	mainWindow = new BrowserWindow(windowOptions);
+
+	mainWindow.once('ready-to-show', () => {
+		if (windowState.isMaximized) {
+			mainWindow?.maximize();
+		}
+		mainWindow?.show();
+	});
+
+	// 监听窗口大小和位置变化，保存状态
+	mainWindow.on('close', () => {
+		if (mainWindow && windowStateManager) {
+			const isMaximized = mainWindow.isMaximized();
+			const bounds = isMaximized ? undefined : mainWindow.getBounds();
+			
+			// 获取当前窗口所在的显示器
+			let displayId;
+			if (!isMaximized && bounds) {
+				const display = screen.getDisplayMatching(bounds);
+				displayId = display.id.toString();
+			}
+			
+			windowStateManager.saveState(isMaximized, bounds, displayId);
 		}
 	});
 
@@ -35,7 +81,7 @@ const createWindow = async () => {
 
 	// 创建 IPC 处理器，用于处理进程间通信
 	ipcHandler = new IpcHandler(mainWindow, worker);
-    
+
 	// 设置 WorkerManager 的 IpcHandler
 	workerManager.setIpcHandler(ipcHandler);
 
@@ -57,6 +103,7 @@ const createWindow = async () => {
 		workerManager = null;
 		electronService = null;
 		ipcHandler = null;
+		windowStateManager = null;
 	});
 };
 
@@ -85,6 +132,6 @@ process.on('uncaughtException', (error) => {
 });
 
 // 处理未处理的 Promise 拒绝
-process.on('unhandledRejection', (reason, promise) => {
+process.on('unhandledRejection', (reason) => {
 	console.error('Main process unhandled rejection:', reason);
 });

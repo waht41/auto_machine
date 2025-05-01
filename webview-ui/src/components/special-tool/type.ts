@@ -13,8 +13,9 @@ export type RouteNode = ComponentRenderer | RouteNodeMap;
 export interface BaseTool {
     type: string;
     uuid: string;
-
-    [key: string]: unknown;
+    cmd?: string;
+    askType?: string;
+    action?: string;
 }
 
 export interface LogTool extends BaseTool {
@@ -44,4 +45,27 @@ export interface FollowupTool extends BaseTool {
     question: string;
 }
 
-export type Tool = LogTool | ChoiceTool | ApprovalTool | FollowupTool;
+export interface SearchTool extends BaseTool {
+    complete?: boolean;
+}
+
+export interface ShowTool extends BaseTool {
+    path: string;
+}
+
+export interface BarTool extends BaseTool {
+    keys?: [string, string, string]; // x轴，y轴，label的key，默认是x,y,label
+    bars: {x: number, y: number, label?: string}[];
+}
+
+export interface LineTool extends BaseTool {
+    keys?: [string, string, string]; // x轴，y轴，label的key，默认是x,y,label
+    lines: {x: number, y: number, label?: string}[];
+}
+
+export interface PieTool extends BaseTool {
+    keys?: [string, string]; // pie的名称和值，默认name,value
+    pies: {name: string, value: number}[];
+}
+
+export type Tool = LogTool | ChoiceTool | ApprovalTool | FollowupTool | SearchTool | ShowTool | BarTool | LineTool | PieTool;

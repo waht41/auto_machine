@@ -1,7 +1,11 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { IToolCategory, IToolNode } from '@core/tool-adapter/type';
 import styled from 'styled-components';
-import { Tooltip, TreeSelect } from 'antd';
+import { Tooltip, Button, Popover, Tree } from 'antd';
+import type { DataNode } from 'antd/es/tree';
+import { ReactComponent as ApprovalIcon } from '@webview-ui/assets/approvalIcon.svg';
+import { colors } from '../common/styles';
+import SVGComponent from '@webview-ui/components/common/SVGComponent';
 
 // 使用styled-components定义样式组件
 const Container = styled.div`
@@ -16,7 +20,6 @@ const HeaderContainer = styled.div`
   align-items: center;
   gap: 8px;
   padding: 8px 0;
-  cursor: pointer;
 `;
 
 const HeaderContent = styled.div`
@@ -41,16 +44,40 @@ const Description = styled.div`
   font-size: 12px;
 `;
 
-const StyledHeaderTreeSelect = styled(TreeSelect)`
-  width: 400px;
-  margin-right: 8px;
-  flex: 1;
-  && .ant-select-selection-overflow {
-    width: 100%;
-    flex-wrap: nowrap;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+const PopoverTitle = styled.div`
+  font-size: 20px;
+  color: ${colors.textPrimary};
+`;
+
+const PopoverDescription = styled.p`
+  color: ${colors.textSecondary};
+`;
+
+// 自定义Tree样式，修改checkbox背景色为primary
+const StyledTree = styled(Tree)`
+  .ant-tree-checkbox-checked .ant-tree-checkbox-inner {
+    background-color: ${colors.primary};
+    border-color: ${colors.primary};
+  }
+  
+  .ant-tree-checkbox-indeterminate .ant-tree-checkbox-inner::after {
+    background-color: ${colors.primary} !important;
+  }
+  
+  .ant-tree-checkbox-wrapper:hover .ant-tree-checkbox-inner,
+  .ant-tree-checkbox:hover .ant-tree-checkbox-inner,
+  .ant-tree-checkbox-input:focus + .ant-tree-checkbox-inner {
+    border-color: ${colors.primary} !important;
+	background-color: ${colors.primaryPress} !important;
+  }
+`;
+
+// 创建圆形按钮组件
+const CircleButton = styled(Button)`
+  padding: 4px;
+  &:hover {
+    background-color: ${colors.primaryLight};
+    border-radius: 50%;
   }
 `;
 
@@ -148,6 +175,67 @@ const AutoApproveMenu = ({toolCategories, allowedTools, setAllowedTools}:IProp) 
 	);
 };
 
+interface AutoApprovePopoverProps {
+  allowedTools: string[]
+  treeData: DataNode[]
+  setAllowedTools: (toolId: string[]) => void
+}
+
+// 抽取的Popover组件
+export const AutoApprovePopover = ({ allowedTools, treeData, setAllowedTools }: AutoApprovePopoverProps) => {
+	const [open, setOpen] = useState(false);
+	
+	return (
+		<Popover
+			open={open}
+			onOpenChange={setOpen}
+			trigger="click"
+			content={
+				<div style={{ maxHeight: '50vh', overflow: 'auto', width: 400, overflowY: 'auto', overflowX: 'hidden' }}>
+					<PopoverTitle>Tool Permissions</PopoverTitle>
+					<PopoverDescription>Roo will use selected tools without asking each time</PopoverDescription>
+					<StyledTree
+						checkable
+						checkedKeys={allowedTools}
+						onCheck={(checkedKeys) => {
+							console.log('[waht] menu header',checkedKeys);
+							setAllowedTools(checkedKeys as string[]);
+						}}
+						treeData={treeData}
+						defaultExpandAll={true}
+						checkStrictly={false}
+					/>
+				</div>
+			}
+		>
+			<CircleButton type="text">
+				<SVGComponent component={ApprovalIcon} stroke={open? colors.primary : colors.textSecondary} width={20} height={20}/>
+			</CircleButton>
+		</Popover>
+	);
+};
+
+interface ApprovalButtonProps {
+  allowedTools: string[]
+  toolCategories: IToolCategory[]
+  setAllowedTools: (toolId: string[]) => void
+}
+
+export const ApprovalButton = ({ allowedTools, toolCategories, setAllowedTools }: ApprovalButtonProps) => {
+	// 转换工具数据为 Tree 需要的 DataNode 结构
+	const treeData = useMemo(() => {
+		return convertToNodes(toolCategories);
+	}, [toolCategories]);
+
+	return (
+		<AutoApprovePopover 
+			allowedTools={allowedTools} 
+			treeData={treeData} 
+			setAllowedTools={setAllowedTools} 
+		/>
+	);
+};
+
 interface MenuHeaderProps {
   allowedTools: string[]
   tools: IToolCategory[]
@@ -155,25 +243,14 @@ interface MenuHeaderProps {
 }
 
 const MenuHeader = ({ allowedTools, tools, setAllowedTools }: MenuHeaderProps) => {
-	// 阻止事件冒泡，防止点击 TreeSelect 时触发 HeaderContainer 的点击事件
-	const convertedTools = useMemo(() => convertToNodes(tools), [tools]);
-
 	return (
 		<HeaderContainer>
 			<HeaderContent>
 				<HeaderTitle>Auto-approve:</HeaderTitle>
-				<StyledHeaderTreeSelect
-					treeData={convertedTools}
-					value={allowedTools}
-					onChange={(checked) => {
-						setAllowedTools(checked);
-					}}
-					treeCheckable={true}
-					showCheckedStrategy={TreeSelect.SHOW_CHILD}
-					placeholder="click here to choose tools"
-					dropdownStyle={{ maxHeight: 400, overflow: 'auto' }}
-					treeDefaultExpandAll
-					treeNodeLabelProp="title"
+				<ApprovalButton 
+					allowedTools={allowedTools} 
+					toolCategories={tools} 
+					setAllowedTools={setAllowedTools} 
 				/>
 			</HeaderContent>
 		</HeaderContainer>
@@ -185,17 +262,16 @@ const isCategory = (node: IToolNode): node is IToolCategory => {
 	return 'tools' in node && Array.isArray((node as IToolCategory).tools);
 };
 
-// 将工具数据转换为 TreeSelect 所需的节点格式
-const convertToNodes = (toolCategories: IToolCategory[]): any[] => {
+// 将工具数据转换为 Tree 所需的节点格式
+const convertToNodes = (toolCategories: IToolCategory[]): DataNode[] => {
 	// 递归处理节点
-	const processNode = (node: IToolNode): any => {
-		const processedNode: any = {
+	const processNode = (node: IToolNode): DataNode => {
+		const processedNode: DataNode = {
 			title: (
 				<Tooltip title={node.description}>
 					{node.label}
 				</Tooltip>
 			),
-			value: node.id,
 			key: node.id,
 		};
 
@@ -209,11 +285,10 @@ const convertToNodes = (toolCategories: IToolCategory[]): any[] => {
 	// 创建一个根节点，包含所有工具类别
 	return [{
 		title: (
-			<Tooltip title="所有可用的自动批准工具">
-        所有工具
+			<Tooltip title="all available tools">
+        All
 			</Tooltip>
 		),
-		value: 'all',
 		key: 'all',
 		children: toolCategories.map(category => processNode(category))
 	}];

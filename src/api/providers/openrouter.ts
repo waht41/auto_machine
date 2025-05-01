@@ -1,24 +1,17 @@
 import { Anthropic } from '@anthropic-ai/sdk';
-import axios from 'axios';
 import OpenAI from 'openai';
 import { ApiHandler } from '../';
-import { ApiHandlerOptions, ModelInfo, openRouterDefaultModelId, openRouterDefaultModelInfo } from '../../shared/api';
+import { ApiHandlerOptions, ModelInfo, openRouterDefaultModelId, openRouterDefaultModelInfo } from '@/shared/api';
 import { convertToOpenAiMessages } from '../transform/openai-format';
-import { ApiStreamChunk, ApiStreamUsageChunk } from '../transform/stream';
-import delay from 'delay';
+import { ApiStreamChunk } from '../transform/stream';
+// Add custom interface for OpenRouter usage chunk
+import { SingleCompletionHandler } from '..';
 
 // Add custom interface for OpenRouter params
 type OpenRouterChatCompletionParams = OpenAI.Chat.ChatCompletionCreateParams & {
 	transforms?: string[]
 	include_reasoning?: boolean
 }
-
-// Add custom interface for OpenRouter usage chunk
-interface OpenRouterApiStreamUsageChunk extends ApiStreamUsageChunk {
-	fullResponseText: string
-}
-
-import { SingleCompletionHandler } from '..';
 
 export class OpenRouterHandler implements ApiHandler, SingleCompletionHandler {
 	private options: ApiHandlerOptions;
@@ -120,7 +113,6 @@ export class OpenRouterHandler implements ApiHandler, SingleCompletionHandler {
 		}
 
 		// https://openrouter.ai/docs/transforms
-		let fullResponseText = '';
 		const stream = await this.client.chat.completions.create({
 			model: this.getModel().id,
 			max_tokens: maxTokens,
@@ -154,46 +146,18 @@ export class OpenRouterHandler implements ApiHandler, SingleCompletionHandler {
 				} as ApiStreamChunk;
 			}
 			if (delta?.content) {
-				fullResponseText += delta.content;
 				yield {
 					type: 'text',
 					text: delta.content,
 				} as ApiStreamChunk;
 			}
-			// if (chunk.usage) {
-			// 	yield {
-			// 		type: "usage",
-			// 		inputTokens: chunk.usage.prompt_tokens || 0,
-			// 		outputTokens: chunk.usage.completion_tokens || 0,
-			// 	}
-			// }
-		}
-
-		await delay(500); // FIXME: necessary delay to ensure generation endpoint is ready
-
-		try {
-			const response = await axios.get(`https://openrouter.ai/api/v1/generation?id=${genId}`, {
-				headers: {
-					Authorization: `Bearer ${this.options.openRouterApiKey}`,
-				},
-				timeout: 5_000, // this request hangs sometimes
-			});
-
-			const generation = response.data?.data;
-			console.log('OpenRouter generation details:', response.data);
-			yield {
-				type: 'usage',
-				// cacheWriteTokens: 0,
-				// cacheReadTokens: 0,
-				// openrouter generation endpoint fails often
-				inputTokens: generation?.native_tokens_prompt || 0,
-				outputTokens: generation?.native_tokens_completion || 0,
-				totalCost: generation?.total_cost || 0,
-				fullResponseText,
-			} as OpenRouterApiStreamUsageChunk;
-		} catch (error) {
-			// ignore if fails
-			console.error('Error fetching OpenRouter generation details:', error);
+			if (chunk.usage) {
+				yield {
+					type: 'usage',
+					inputTokens: chunk.usage.prompt_tokens || 0,
+					outputTokens: chunk.usage.completion_tokens || 0,
+				};
+			}
 		}
 	}
 	getModel(): { id: string; info: ModelInfo } {
