@@ -48,33 +48,10 @@ jobs:
       - name: Build Project
         run: npm run build
 
-      - name: test
-        run: |
-          echo "Starting Electron packaging process..."
-          echo "Node version: $(node -v)"
-          echo "NPM version: $(npm -v)"
-          echo "Current directory: $(pwd)"
-          echo "Directory contents:"
-          ls -la
-          env | grep -v -E "CSC_|SECRET|TOKEN|PASSWORD|KEY" | sort
-
       - name: Electron Packaging
         run: |
-          npm run package -- --x64 || {
-            echo "Packaging failed with exit code $?"
-            echo "Last 100 lines of npm logs:"
-            cat ~/.npm/_logs/$(ls -t ~/.npm/_logs | head -n 1) | tail -n 100
-            exit 1
-          }
-
-          echo "Packaging completed. Checking dist directory:"
-          ls -la dist/
+          npm run package -- --x64
         env:
-          # macOS 签名配置
-          CSC_IDENTITY_AUTO_DISCOVERY: false
-          CSC_LINK:
-          CSC_KEY_PASSWORD:
-          DEBUG: electron-builder,electron-builder:*
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
