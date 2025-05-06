@@ -14,8 +14,6 @@ export type RouteNode = {
 // 默认组件属性
 export type DefaultComponentProps = {
 	message: ClineMessage
-	isExpanded: boolean
-	onToggleExpand: () => void
 	isLast: boolean
 	onHeightChange?: (isTaller: boolean) => void
 	isStreaming: boolean,

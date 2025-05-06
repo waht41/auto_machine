@@ -111,10 +111,6 @@ const ChatView = () => {
 		setSelectedImages,
 		clineAsk,
 		setClineAsk,
-		enableButtons,
-		setEnableButtons,
-		expandedRows,
-		setExpandedRows,
 		showScrollToBottom,
 		setShowScrollToBottom,
 		isAtBottom,
@@ -122,7 +118,6 @@ const ChatView = () => {
 		setDisableAutoScroll,
 		handleSendMessage,
 		handleSecondaryButtonClick,
-		toggleRowExpansion,
 		selectImages,
 		getIsStreaming,
 		getPlaceholderText,
@@ -146,7 +141,7 @@ const ChatView = () => {
 	// (since it relies on the content of these messages, we are deep comparing. i.e. the button state after hitting button sets enableButtons to false, and this effect otherwise would have to true again even if messages didn't change
 	const lastMessage = useMemo(() => messages.at(-1), [messages]);
 	const secondLastMessage = useMemo(() => messages.at(-2), [messages]);
-	const isStreaming = useMemo(() => getIsStreaming(), [modifiedMessages, clineAsk, enableButtons]);
+	const isStreaming = useMemo(() => getIsStreaming(), [modifiedMessages, clineAsk]);
 
 	// 初始化消息监听
 	useEffect(() => {
@@ -187,7 +182,6 @@ const ChatView = () => {
 						case 'text':
 							setTextAreaDisabled(isPartial);
 							setClineAsk('text');
-							setEnableButtons(isPartial);
 							break;
 						case 'tool':
 							setTextAreaDisabled(isPartial);
@@ -200,17 +194,13 @@ const ChatView = () => {
 					break;
 			}
 		}
-	}, [lastMessage, secondLastMessage, setTextAreaDisabled, setClineAsk, setEnableButtons]);
+	}, [lastMessage, secondLastMessage, setTextAreaDisabled, setClineAsk]);
 
 	useEffect(() => {
 		if (messages.length === 0) {
 			resetAllState();
 		}
 	}, [messages.length, resetAllState]);
-
-	useEffect(() => {
-		setExpandedRows({});
-	}, [task?.ts, setExpandedRows]);
 
 	const { selectedModelInfo } = useMemo(() => {
 		return normalizeApiConfiguration(apiConfiguration);
@@ -226,14 +216,14 @@ const ChatView = () => {
 
 	useEffect(() => {
 		const timer = setTimeout(() => {
-			if (!textAreaDisabled && !enableButtons) {
+			if (!textAreaDisabled) {
 				textAreaRef.current?.focus();
 			}
 		}, 50);
 		return () => {
 			clearTimeout(timer);
 		};
-	}, [textAreaDisabled, enableButtons]);
+	}, [textAreaDisabled]);
 
 	const visibleMessages = useMemo(() => {
 		return showedMessages.filter((message) => {
@@ -293,65 +283,6 @@ const ChatView = () => {
 		[scrollToBottomSmooth, scrollToBottomAuto],
 	);
 
-	// 处理行展开/折叠
-	const handleToggleRowExpansion = useCallback(
-		(ts: number) => {
-			const isCollapsing = expandedRows[ts] || false;
-			const lastVisibleMessage = visibleMessages.at(-1);
-			
-			// 处理最后一条消息是数组的情况
-			const isLast = Array.isArray(lastVisibleMessage) 
-				? lastVisibleMessage.some(msg => msg.ts === ts)
-				: lastVisibleMessage?.ts === ts;
-				
-			const secondVisibleMessage = visibleMessages.at(-2);
-			const isSecondToLast = Array.isArray(secondVisibleMessage)
-				? secondVisibleMessage.some(msg => msg.ts === ts)
-				: secondVisibleMessage?.ts === ts;
-
-			// 处理最后一条消息是 api_req_started 且未展开的情况
-			let isLastCollapsedApiReq = false;
-			if (Array.isArray(lastVisibleMessage)) {
-				isLastCollapsedApiReq = lastVisibleMessage.some(msg => 
-					msg.ts === ts && msg.say === 'api_req_started' && !expandedRows[msg.ts]
-				);
-			} else {
-				isLastCollapsedApiReq = isLast &&
-					lastVisibleMessage?.say === 'api_req_started' &&
-					!expandedRows[lastVisibleMessage.ts];
-			}
-
-			toggleRowExpansion(ts);
-
-			// 根据展开/折叠状态和位置处理滚动
-			if (isCollapsing && isAtBottom) {
-				const timer = setTimeout(() => {
-					scrollToBottomAuto();
-				}, 0);
-				return () => clearTimeout(timer);
-			} else if (isLast || isSecondToLast) {
-				if (isCollapsing) {
-					if (isSecondToLast && !isLastCollapsedApiReq) {
-						return;
-					}
-					const timer = setTimeout(() => {
-						scrollToBottomAuto();
-					}, 0);
-					return () => clearTimeout(timer);
-				} else {
-					const timer = setTimeout(() => {
-						virtuosoRef.current?.scrollToIndex({
-							index: visibleMessages.length - (isLast ? 1 : 2),
-							align: 'start',
-						});
-					}, 0);
-					return () => clearTimeout(timer);
-				}
-			}
-		},
-		[visibleMessages, expandedRows, scrollToBottomAuto, isAtBottom, toggleRowExpansion],
-	);
-
 	useEffect(() => {
 		if (!disableAutoScrollRef.current) {
 			setTimeout(() => {
@@ -402,8 +333,6 @@ const ChatView = () => {
 				<ChatRow
 					key={ts}
 					message={message}
-					isExpanded={expandedRows[ts] || false}
-					onToggleExpand={() => handleToggleRowExpansion(ts)}
 					isLast={index === visibleMessages.length - 1}
 					onHeightChange={handleRowHeightChange}
 					isStreaming={isStreaming}
@@ -411,10 +340,8 @@ const ChatView = () => {
 			);
 		},
 		[
-			expandedRows,
 			handleRowHeightChange,
 			isStreaming,
-			handleToggleRowExpansion,
 		],
 	);
 

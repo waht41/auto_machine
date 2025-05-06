@@ -34,8 +34,6 @@ const StyledTimeline = styled(Timeline)`
 
 interface ChatRowProps {
   message: ShowedMessage;
-  isExpanded: boolean
-  onToggleExpand: () => void
   isLast: boolean
   onHeightChange: (isTaller: boolean) => void
   isStreaming: boolean
@@ -80,8 +78,7 @@ const ChatRow = memo(
 	(prevProps, nextProps) => {
 		// 只有这些属性变化时才重新渲染
 		return (
-			prevProps.isExpanded === nextProps.isExpanded &&
-      prevProps.isLast === nextProps.isLast &&
+			prevProps.isLast === nextProps.isLast &&
       prevProps.isStreaming === nextProps.isStreaming &&
       deepEqual(prevProps.message, nextProps.message)
 		);
