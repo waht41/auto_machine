@@ -3,14 +3,14 @@ list:
   description: List files in the specified path
   params:
     path: Path
-    recursive: [optional]   # Whether to list recursively, default is false
-    depth: [optional]       # Recursion depth, default is 3, only effective when recursive is true
-    exclude: [optional]     # Excluded folders or files, supports * as wildcard
+    recursive: [ optional ]   # Whether to list recursively, default is false
+    depth: [ optional ]       # Recursion depth, default is 3, only effective when recursive is true
+    exclude: [ optional ]     # Excluded folders or files, supports * as wildcard
   example:
     - tool: file
       cmd: list
       path: /path/to/files
-      exclude: [".git", ".idea", "*.ts"]
+      exclude: [ ".git", ".idea", "*.ts" ]
       recursive: true
       depth: 3
 
@@ -18,8 +18,8 @@ create:
   description: Create file
   params:
     path: Path
-    content: [optional] # File content, remember to wrap content in double quotes
-    isFolder: [optional] # Whether to create a folder or file, default is false. Note that when isFolder is true, content cannot be entered
+    content: [ optional ] # File content, remember to wrap content in double quotes
+    isFolder: [ optional ] # Whether to create a folder or file, default is false. Note that when isFolder is true, content cannot be entered
   example:
     - tool: file
       cmd: create
@@ -43,12 +43,12 @@ edit:
     path: File path                                   # Required
     content: Text content                                # Required for write/insert/overwrite/replace
     start: row,col                                  # Operation start position, default is 1,1 (required for delete/replace)
-    end: [rol,col]                                    # Operation end position (required for delete/replace) [-1,-1] indicates end of file
+    end: [ rol,col ]                                    # Operation end position (required for delete/replace) [-1,-1] indicates end of file
   example:
     - tool: file
       cmd: edit
       action: insert
-      start: [-1,-1]
+      start: [ -1,-1 ]
       content: "Hello, World! Task is <var historyId=1/>"
 
 rename:
@@ -66,24 +66,29 @@ rename:
 search:
   description: Search for files containing keywords in the specified path
   params:
-    path: [optional] # Path, default is current directory
+    path: [ optional ] # Path, default is current directory
     keyword: Keyword  # Can use regex
-    exclude: [optional]
+    exclude: [ optional ]
   example:
     - tool: file
       cmd: search_file
       keyword: /[1-9]/g
 
 download:
-    description: Download file
-    params:
-        url: Download address
-        path: Save path
-    example:
-        - tool: file
-          cmd: download
-          url: https://www.baidu.com/favicon.ico
-          path: ./download/favicon.ico  # Save to the download folder in the current directory
+  description: Download file
+  params:
+    url: Download address
+    path: Save path
+  example:
+    - tool: file
+      cmd: download
+      url: https://www.baidu.com/favicon.ico
+      path: ./download/favicon.ico  # Save to the download folder in the current directory
 
 
 # file has not implemented other common functions, such as copy, move, etc., but you can request to use the command line directly through ```yaml \n tool: external \n request: Coder \n``` to implement these operations.
+#external:
+#  hint: some operation don't implement here but you can execute by other method.
+#  example:
+#    tool: external
+#    request: Coder # target, move file, copy file, watch file meta info,

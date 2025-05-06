@@ -23,8 +23,9 @@ export function getAdditionalPrompt(fileNames: string[]) {
 
 function getCoderAdditional() {
 	const shellInfo = detectShell();
-	return `current platform ${os.platform()}, os version ${os.version()}, current user name: ${os.userInfo().username}，  
-	current shell ${shellInfo.name}, version ${shellInfo.version}`;
+	return `current platform ${os.platform()}, os version ${os.version()}, current user name: ${os.userInfo().username}.
+    current shell ${shellInfo.name}, version ${shellInfo.version || 'unknown'}.
+    Notice that when you want to execute multiple commands at one time, you should use separator accordingly, like & in Windows.`;
 }
 
 function getBasicInfo() {
