@@ -38,8 +38,7 @@ interface IChatViewStore {
   // 操作方法
   handleSendMessage: (text?: string, images?: string[]) => void;
   clearTask: () => void;
-  handlePrimaryButtonClick: () => void;
-  handleSecondaryButtonClick: () => void;
+  handleCancelStream: () => void;
   selectImages: () => void;
   
   // 计算属性
@@ -122,22 +121,9 @@ export const useChatViewStore = create<IChatViewStore>((set, get) => ({
 		vscode.postMessage({ type: 'clearTask' });
 	},
   
-	handlePrimaryButtonClick: () => {
-		const clineAsk = get().clineAsk;
-    
-		switch (clineAsk) {
-			case 'tool':
-				vscode.postMessage({ type: 'askResponse', askResponse: 'yesButtonClicked' });
-				break;
-		}
-    
-		get().resetMessageState();
-	},
-  
-	handleSecondaryButtonClick: () => {
+	handleCancelStream: () => {
 		const isStreaming = get().getIsStreaming();
-		const clineAsk = get().clineAsk;
-    
+
 		if (isStreaming) {
 			vscode.postMessage({ type: 'cancelTask' });
 			set({ 
@@ -147,15 +133,9 @@ export const useChatViewStore = create<IChatViewStore>((set, get) => ({
 			return;
 		}
     
-		switch (clineAsk) {
-			case 'tool':
-				vscode.postMessage({ type: 'askResponse', askResponse: 'noButtonClicked' });
-				break;
-		}
-    
 		get().resetMessageState();
 	},
-  
+
 	selectImages: () => {
 		vscode.postMessage({ type: 'selectImages' });
 	},
@@ -272,8 +252,7 @@ export const useChatViewStore = create<IChatViewStore>((set, get) => ({
 		const {
 			textAreaDisabled,
 			handleSendMessage,
-			handlePrimaryButtonClick,
-			handleSecondaryButtonClick,
+			handleCancelStream,
 			setSelectedImages
 		} = get();
     
@@ -300,11 +279,8 @@ export const useChatViewStore = create<IChatViewStore>((set, get) => ({
 					case 'sendMessage':
 						handleSendMessage(message.text ?? '', message.images ?? []);
 						break;
-					case 'primaryButtonClick':
-						handlePrimaryButtonClick();
-						break;
 					case 'secondaryButtonClick':
-						handleSecondaryButtonClick();
+						handleCancelStream();
 						break;
 				}
 		}

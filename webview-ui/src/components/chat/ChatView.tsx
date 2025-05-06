@@ -117,7 +117,7 @@ const ChatView = () => {
 		setIsAtBottom,
 		setDisableAutoScroll,
 		handleSendMessage,
-		handleSecondaryButtonClick,
+		handleCancelStream,
 		selectImages,
 		getIsStreaming,
 		getPlaceholderText,
@@ -307,11 +307,9 @@ const ChatView = () => {
 
 	// 使用节流函数包装滚动处理函数，减少事件处理频率
 	const throttledHandleWheel = useMemo(() => {
-		// 使用 debounce 库的节流功能，每 100ms 最多执行一次
 		return debounce(handleWheel, 100, { immediate: true });
 	}, [handleWheel]);
 
-	// 使用原生事件监听，而不是 useEvent
 	useEffect(() => {
 		window.addEventListener('wheel', throttledHandleWheel, { passive: true });
 		
@@ -354,7 +352,7 @@ const ChatView = () => {
 		selectedImages,
 		setSelectedImages,
 		onSend: () => handleSendMessage(inputValue, selectedImages),
-		onCancel: handleSecondaryButtonClick,
+		onCancel: handleCancelStream,
 		onSelectImages: selectImages,
 		shouldDisableImages,
 		onHeightChange: () => {
@@ -372,8 +370,7 @@ const ChatView = () => {
 		selectedImages, 
 		setSelectedImages, 
 		handleSendMessage,
-		handleSecondaryButtonClick,
-		selectImages, 
+		selectImages,
 		shouldDisableImages, 
 		isAtBottom, 
 		scrollToBottomAuto, 
