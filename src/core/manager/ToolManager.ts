@@ -10,6 +10,7 @@ import { registerInternalImplementation } from '@core/internal-implementation';
 export class ToolManager {
 	private apiHistoryService!: ApiConversationHistoryService;
 	private executor = new CommandRunner();
+	private lengthLimit = 3000;
 	constructor(private di: DIContainer, middleWares: Middleware[] = []) {
 		registerInternalImplementation(this.executor);
 		for (const middleware of middleWares) {
@@ -22,7 +23,14 @@ export class ToolManager {
 	async applyCommand(command: Command, context?: IInternalContext): Promise<string | null> {
 		console.log('[waht] try apply tool', command);
 		if (this.executor.executorNames.includes(command.type)) {
-			return await this.executor.runCommand(this.parseCommand(command), context) as string | null;
+			const commandResult = await this.executor.runCommand(this.parseCommand(command), context) as string | null;
+			if (typeof commandResult === 'string') {
+				if (commandResult.length > this.lengthLimit){
+					const omittedChars = commandResult.length - this.lengthLimit;
+					return `${commandResult.substring(0, this.lengthLimit)}...\n\n(${omittedChars} characters omitted)`;
+				}
+			}
+			return commandResult;
 		}
 		console.log('[waht]', 'no executor found for', command.type);
 		return null;
