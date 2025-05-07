@@ -109,8 +109,6 @@ const ChatView = () => {
 		setTextAreaDisabled,
 		selectedImages,
 		setSelectedImages,
-		clineAsk,
-		setClineAsk,
 		showScrollToBottom,
 		setShowScrollToBottom,
 		isAtBottom,
@@ -124,13 +122,12 @@ const ChatView = () => {
 		resetAllState,
 		handleMessage,
 		init,
-		getShowedMessage
 	} = useChatViewStore();
 
 	const task = useMemo(() => messages.at(0), [messages]); // leaving this less safe version here since if the first message is not a task, then the extension is in a bad state and needs to be debugged (see Cline.abort)
 	const modifiedMessages = useMemo(() => messages.slice(1), [messages]);
 	// 使用 getShowedMessage 函数处理消息
-	const showedMessages = useMemo(() => getShowedMessage(modifiedMessages), [modifiedMessages, getShowedMessage]);
+	const showedMessages = useClineMessageStore(state => state.getShowedMessage)();
 
 	const textAreaRef = useRef<HTMLTextAreaElement>(null);
 	const virtuosoRef = useRef<VirtuosoHandle>(null);
@@ -141,7 +138,7 @@ const ChatView = () => {
 	// (since it relies on the content of these messages, we are deep comparing. i.e. the button state after hitting button sets enableButtons to false, and this effect otherwise would have to true again even if messages didn't change
 	const lastMessage = useMemo(() => messages.at(-1), [messages]);
 	const secondLastMessage = useMemo(() => messages.at(-2), [messages]);
-	const isStreaming = useMemo(() => getIsStreaming(), [modifiedMessages, clineAsk]);
+	const isStreaming = useMemo(() => getIsStreaming(), [modifiedMessages]);
 
 	// 初始化消息监听
 	useEffect(() => {
@@ -181,11 +178,9 @@ const ChatView = () => {
 					switch (lastMessage.ask) {
 						case 'text':
 							setTextAreaDisabled(isPartial);
-							setClineAsk('text');
 							break;
 						case 'tool':
 							setTextAreaDisabled(isPartial);
-							setClineAsk('tool');
 							break;
 					}
 					break;
@@ -194,7 +189,7 @@ const ChatView = () => {
 					break;
 			}
 		}
-	}, [lastMessage, secondLastMessage, setTextAreaDisabled, setClineAsk]);
+	}, [lastMessage, secondLastMessage, setTextAreaDisabled]);
 
 	useEffect(() => {
 		if (messages.length === 0) {

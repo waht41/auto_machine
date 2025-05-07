@@ -1,12 +1,11 @@
 import { create } from 'zustand';
-import { ClineAsk, ClineMessage, ExtensionMessage } from '@/shared/ExtensionMessage';
+import { ClineMessage, ExtensionMessage } from '@/shared/ExtensionMessage';
 import { findLast } from '@/shared/array';
 import { vscode } from '@webview-ui/utils/vscode';
 import { useClineMessageStore } from './clineMessageStore';
 import messageBus from './messageBus';
 import { BACKGROUND_MESSAGE } from './const';
 import { BackGroundMessageHandler } from './type';
-import { ReplyContent } from '@webview-ui/components/chat/type';
 
 // 定义聊天视图存储的状态类型
 interface IChatViewStore {
@@ -14,7 +13,6 @@ interface IChatViewStore {
   inputValue: string;
   textAreaDisabled: boolean;
   selectedImages: string[];
-  clineAsk: ClineAsk | undefined;
   didClickCancel: boolean;
   
   // 滚动和展示状态
@@ -27,7 +25,6 @@ interface IChatViewStore {
   setInputValue: (value: string) => void;
   setTextAreaDisabled: (disabled: boolean) => void;
   setSelectedImages: (images: string[] | ((prev: string[]) => string[])) => void;
-  setClineAsk: (ask: ClineAsk | undefined) => void;
   setDidClickCancel: (clicked: boolean) => void;
   setShowScrollToBottom: (show: boolean) => void;
   setIsAtBottom: (isBottom: boolean) => void;
@@ -44,8 +41,7 @@ interface IChatViewStore {
   // 计算属性
   getIsStreaming: () => boolean;
   getPlaceholderText: (task: ClineMessage | undefined, shouldDisableImages: boolean) => string;
-  getShowedMessage: (clineMessages: ClineMessage[]) => (ClineMessage | ClineMessage[])[];
-  
+
   // 重置方法
   resetMessageState: () => void;
   resetAllState: () => void;
@@ -64,7 +60,6 @@ export const useChatViewStore = create<IChatViewStore>((set, get) => ({
 	enableButtons: false,
 	secondaryButtonText: undefined,
 	didClickCancel: false,
-	expandedRows: {},
 	showScrollToBottom: false,
 	isAtBottom: false,
 	disableAutoScroll: false,
@@ -76,7 +71,6 @@ export const useChatViewStore = create<IChatViewStore>((set, get) => ({
 	setSelectedImages: (images) => set((state) => ({ 
 		selectedImages: typeof images === 'function' ? images(state.selectedImages) : images 
 	})),
-	setClineAsk: (ask) => set({ clineAsk: ask }),
 	setDidClickCancel: (clicked) => set({ didClickCancel: clicked }),
 	setShowScrollToBottom: (show) => set({ showScrollToBottom: show }),
 	setIsAtBottom: (isBottom) => set({ isAtBottom: isBottom }),
@@ -92,24 +86,11 @@ export const useChatViewStore = create<IChatViewStore>((set, get) => ({
 		text = text?.trim();
 		const getChatMessages = useClineMessageStore.getState().getChatMessages;
 		const messages = getChatMessages();
-		const clineAsk = get().clineAsk;
-      
+
 		if (messages.length === 0) {
 			vscode.postMessage({ type: 'newTask', text, images });
 		} else if (messages.length > 0) {
 			vscode.postMessage({ type: 'resumeTask', text, images });
-		} else if (clineAsk) {
-			switch (clineAsk) {
-				case 'text':
-				case 'tool':
-					vscode.postMessage({
-						type: 'askResponse',
-						askResponse: 'messageResponse',
-						text,
-						images,
-					});
-					break;
-			}
 		}
 		// 重置消息相关状态
 		get().resetMessageState();
@@ -145,15 +126,12 @@ export const useChatViewStore = create<IChatViewStore>((set, get) => ({
 		const getChatMessages = useClineMessageStore.getState().getChatMessages;
 		const messages = getChatMessages();
 		const modifiedMessages = messages.slice(1);
-		const clineAsk = get().clineAsk;
-    
+
 		const lastMessage = modifiedMessages.at(-1);
 		const lastMessageIsAsk = !!lastMessage?.ask;
     
 		// 判断工具是否处于主动提问状态
-		const isToolActive = lastMessageIsAsk &&
-      clineAsk !== undefined; 
-		if (isToolActive) return false;
+		if (lastMessageIsAsk) return false;
     
 		// 检查最后一条消息是否为流式传输中的部分响应
 		if (lastMessage?.partial) return true;
@@ -185,65 +163,12 @@ export const useChatViewStore = create<IChatViewStore>((set, get) => ({
 		return baseText + helpText;
 	},
   
-	getShowedMessage: (clineMessages) => {
-		const replies: ReplyContent[] = [];
-		let currentGroup: ClineMessage[] = [];
-    
-		// 辅助函数：添加当前消息组到结果中
-		const addCurrentGroup = () => {
-			if (currentGroup.length > 0) {
-				// 如果当前组只有一个消息，直接添加该消息
-				if (currentGroup.length === 1) {
-					replies.push(currentGroup[0]);
-				} 
-				// 如果当组有两条消息且第一条是 api_req_started 时，分别添加两条消息
-				else if (currentGroup.length === 2 && currentGroup[0].say === 'api_req_started') {
-					replies.push(currentGroup[0]);
-					replies.push(currentGroup[1]);
-				} 
-				// 其他情况，添加为数组
-				else {
-					replies.push(currentGroup);
-				}
-				currentGroup = [];
-			}
-		};
-    
-		for (const message of clineMessages) {
-			if (message.say === 'text' || message.say === 'tool' || message.say === 'api_req_started' || message.ask === 'tool') {
-				currentGroup.push(message);
-			} else {
-				addCurrentGroup();
-				replies.push(message);
-			}
-		}
-    
-		addCurrentGroup();
-    
-		return replies.filter((message) => {
-			// 如果是消息数组，始终显示
-			if (Array.isArray(message)) {
-				return true;
-			}
-
-			// 对单个消息进行过滤
-			if (message.say === 'text') {
-				// Sometimes cline returns an empty text message, we don't want to render these. (We also use a say text for user messages, so in case they just sent images we still render that)
-				if ((message.text ?? '') === '' && (message.images?.length ?? 0) === 0) {
-					return false;
-				}
-			}
-			return true;
-		});
-	},
-  
 	// 重置方法
 	resetMessageState: () => {
 		set({
 			inputValue: '',
 			textAreaDisabled: true,
 			selectedImages: [],
-			clineAsk: undefined,
 			disableAutoScroll: false
 		});
 	},
@@ -253,7 +178,6 @@ export const useChatViewStore = create<IChatViewStore>((set, get) => ({
 			inputValue: '',
 			textAreaDisabled: false,
 			selectedImages: [],
-			clineAsk: undefined,
 			didClickCancel: false,
 			showScrollToBottom: false,
 			isAtBottom: false,

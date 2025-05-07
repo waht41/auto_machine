@@ -5,6 +5,7 @@ import messageBus from './messageBus';
 import { BACKGROUND_MESSAGE } from '@webview-ui/store/const';
 import { BackGroundMessageHandler } from '@webview-ui/store/type';
 import { SharedClineMessage } from '@/shared/type';
+import { ReplyContent } from '@webview-ui/components/chat/type';
 
 // 定义消息存储的状态类型
 interface IClineMessageStore {
@@ -28,6 +29,7 @@ interface IClineMessageStore {
   getLatestAssistantMessage: () => ClineMessage | undefined;
 	getChatMessages: () => ClineMessage[];
 	getAgentStreamMessages: () => ClineMessage[];
+	getShowedMessage: () => ReplyContent[];
   
   // 初始化方法，用于设置消息处理器
   init: () => void;
@@ -122,6 +124,58 @@ export const useClineMessageStore = create<IClineMessageStore>((set, get) => ({
 			set({ taskId });
 			messageBus.sendToBackground({type: 'setTaskId', taskId});
 		}
+	},
+
+	getShowedMessage: () => {
+		const replies: ReplyContent[] = [];
+		let currentGroup: ClineMessage[] = [];
+
+		// 辅助函数：添加当前消息组到结果中
+		const addCurrentGroup = () => {
+			if (currentGroup.length > 0) {
+				// 如果当前组只有一个消息，直接添加该消息
+				if (currentGroup.length === 1) {
+					replies.push(currentGroup[0]);
+				}
+				// 如果当组有两条消息且第一条是 api_req_started 时，分别添加两条消息
+				else if (currentGroup.length === 2 && currentGroup[0].say === 'api_req_started') {
+					replies.push(currentGroup[0]);
+					replies.push(currentGroup[1]);
+				}
+				// 其他情况，添加为数组
+				else {
+					replies.push(currentGroup);
+				}
+				currentGroup = [];
+			}
+		};
+
+		for (const message of get().getChatMessages().slice(1)) {
+			if (message.say === 'text' || message.say === 'tool' || message.say === 'api_req_started' || message.ask === 'tool') {
+				currentGroup.push(message);
+			} else {
+				addCurrentGroup();
+				replies.push(message);
+			}
+		}
+
+		addCurrentGroup();
+
+		return replies.filter((message) => {
+			// 如果是消息数组，始终显示
+			if (Array.isArray(message)) {
+				return true;
+			}
+
+			// 对单个消息进行过滤
+			if (message.say === 'text') {
+				// Sometimes cline returns an empty text message, we don't want to render these. (We also use a say text for user messages, so in case they just sent images we still render that)
+				if ((message.text ?? '') === '' && (message.images?.length ?? 0) === 0) {
+					return false;
+				}
+			}
+			return true;
+		});
 	},
   
 	// 初始化方法，设置消息处理器
