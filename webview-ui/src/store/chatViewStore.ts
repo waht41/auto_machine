@@ -186,24 +186,14 @@ export const useChatViewStore = create<IChatViewStore>((set, get) => ({
 	},
 
 	// 消息处理
-	handleMessage: (message, textAreaRef) => {
+	handleMessage: (message) => {
 		const {
-			textAreaDisabled,
 			handleSendMessage,
 			handleCancelStream,
 			setSelectedImages
 		} = get();
     
 		switch (message.type) {
-			case 'action':
-				switch (message.action!) {
-					case 'didBecomeVisible':
-						if (!textAreaDisabled && textAreaRef?.current) {
-							textAreaRef.current.focus();
-						}
-						break;
-				}
-				break;
 			case 'selectedImages':
 				const newImages = message.images ?? [];
 				if (newImages.length > 0) {

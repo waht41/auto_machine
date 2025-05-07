@@ -120,7 +120,6 @@ const ChatView = () => {
 		getIsStreaming,
 		getPlaceholderText,
 		resetAllState,
-		handleMessage,
 		init,
 	} = useChatViewStore();
 
@@ -150,22 +149,6 @@ const ChatView = () => {
 			cleanup();
 		};
 	}, [init]);
-	
-	// 提供 textAreaRef 给 handleMessage
-	useEffect(() => {
-		// 创建一个函数，将消息和 textAreaRef 传递给 handleMessage
-		const handleExtensionMessage = (event: MessageEvent) => {
-			handleMessage(event.data, textAreaRef);
-		};
-		
-		// 添加事件监听器
-		window.addEventListener('message', handleExtensionMessage);
-		
-		// 清理函数
-		return () => {
-			window.removeEventListener('message', handleExtensionMessage);
-		};
-	}, [handleMessage]);
 
 	useEffect(() => {
 		// if last message is an ask, show user ask UI
