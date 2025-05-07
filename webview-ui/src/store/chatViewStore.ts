@@ -6,7 +6,7 @@ import { useClineMessageStore } from './clineMessageStore';
 import messageBus from './messageBus';
 import { BACKGROUND_MESSAGE } from './const';
 import { BackGroundMessageHandler } from './type';
-import { ShowedMessage } from '@webview-ui/components/chat/type';
+import { ReplyContent } from '@webview-ui/components/chat/type';
 
 // 定义聊天视图存储的状态类型
 interface IChatViewStore {
@@ -186,7 +186,7 @@ export const useChatViewStore = create<IChatViewStore>((set, get) => ({
 	},
   
 	getShowedMessage: (clineMessages) => {
-		const showedMessages: ShowedMessage[] = [];
+		const replies: ReplyContent[] = [];
 		let currentGroup: ClineMessage[] = [];
     
 		// 辅助函数：添加当前消息组到结果中
@@ -194,16 +194,16 @@ export const useChatViewStore = create<IChatViewStore>((set, get) => ({
 			if (currentGroup.length > 0) {
 				// 如果当前组只有一个消息，直接添加该消息
 				if (currentGroup.length === 1) {
-					showedMessages.push(currentGroup[0]);
+					replies.push(currentGroup[0]);
 				} 
 				// 如果当组有两条消息且第一条是 api_req_started 时，分别添加两条消息
 				else if (currentGroup.length === 2 && currentGroup[0].say === 'api_req_started') {
-					showedMessages.push(currentGroup[0]);
-					showedMessages.push(currentGroup[1]);
+					replies.push(currentGroup[0]);
+					replies.push(currentGroup[1]);
 				} 
 				// 其他情况，添加为数组
 				else {
-					showedMessages.push(currentGroup);
+					replies.push(currentGroup);
 				}
 				currentGroup = [];
 			}
@@ -214,13 +214,27 @@ export const useChatViewStore = create<IChatViewStore>((set, get) => ({
 				currentGroup.push(message);
 			} else {
 				addCurrentGroup();
-				showedMessages.push(message);
+				replies.push(message);
 			}
 		}
     
 		addCurrentGroup();
     
-		return showedMessages;
+		return replies.filter((message) => {
+			// 如果是消息数组，始终显示
+			if (Array.isArray(message)) {
+				return true;
+			}
+
+			// 对单个消息进行过滤
+			if (message.say === 'text') {
+				// Sometimes cline returns an empty text message, we don't want to render these. (We also use a say text for user messages, so in case they just sent images we still render that)
+				if ((message.text ?? '') === '' && (message.images?.length ?? 0) === 0) {
+					return false;
+				}
+			}
+			return true;
+		});
 	},
   
 	// 重置方法

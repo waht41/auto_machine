@@ -5,7 +5,7 @@ import { ClineMessage, ClineSayTool } from '@/shared/ExtensionMessage';
 import { ToolComponent } from '../../special-tool';
 import { Tool } from '../../special-tool/type';
 import { MessageComponent } from '@webview-ui/components/chat/ChatRow/render-block/router';
-import { ShowedMessage } from '@webview-ui/components/chat/type';
+import { ReplyContent } from '@webview-ui/components/chat/type';
 import { Timeline } from 'antd';
 import { AssistantTitle } from '@webview-ui/components/chat/ChatRow/Header';
 import { colors } from '../../common/styles';
@@ -33,7 +33,7 @@ const StyledTimeline = styled(Timeline)`
 `;
 
 interface ChatRowProps {
-  message: ShowedMessage;
+  message: ReplyContent;
   isLast: boolean
   onHeightChange: (isTaller: boolean) => void
   isStreaming: boolean

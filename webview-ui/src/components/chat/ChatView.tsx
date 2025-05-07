@@ -10,7 +10,7 @@ import { normalizeApiConfiguration } from '@webview-ui/components/settings/ApiOp
 import { useClineMessageStore } from '@webview-ui/store/clineMessageStore';
 import { useChatViewStore } from '@webview-ui/store/chatViewStore';
 import NewerExample from '@webview-ui/components/chat/NewerExample';
-import { ShowedMessage } from '@webview-ui/components/chat/type';
+import { ReplyContent } from '@webview-ui/components/chat/type';
 import { colors } from '@webview-ui/components/common/styles';
 
 export const MAX_IMAGES_PER_MESSAGE = 20; // Anthropic limits to 20 images
@@ -33,7 +33,7 @@ const ScrollContainer = styled.div`
 	position: relative; /* 添加相对定位，作为绝对定位按钮的参考点 */
 `;
 
-const VirtuosoContainer = styled(Virtuoso<ShowedMessage, unknown>)`
+const VirtuosoContainer = styled(Virtuoso<ReplyContent, unknown>)`
 	flex: 1 1 auto;
 	height: 100%;
 	overflow-y: scroll; /* always show scrollbar */
@@ -225,24 +225,6 @@ const ChatView = () => {
 		};
 	}, [textAreaDisabled]);
 
-	const visibleMessages = useMemo(() => {
-		return showedMessages.filter((message) => {
-			// 如果是消息数组，始终显示
-			if (Array.isArray(message)) {
-				return true;
-			}
-			
-			// 对单个消息进行过滤
-			if (message.say === 'text') {
-				// Sometimes cline returns an empty text message, we don't want to render these. (We also use a say text for user messages, so in case they just sent images we still render that)
-				if ((message.text ?? '') === '' && (message.images?.length ?? 0) === 0) {
-					return false;
-				}
-			}
-			return true;
-		});
-	}, [showedMessages]);
-
 	// scrolling
 
 	const scrollToBottomSmooth = useMemo(
@@ -290,7 +272,7 @@ const ChatView = () => {
 			}, 50);
 			// return () => clearTimeout(timer) // dont cleanup since if visibleMessages.length changes it cancels.
 		}
-	}, [visibleMessages.length, scrollToBottomSmooth]);
+	}, [showedMessages.length, scrollToBottomSmooth]);
 
 	const handleWheel = useCallback((event: Event) => {
 		const wheelEvent = event as WheelEvent;
@@ -325,13 +307,13 @@ const ChatView = () => {
 	}, [task, shouldDisableImages, getPlaceholderText]);
 
 	const itemContent = useCallback(
-		(index: number, message: ShowedMessage) => {
+		(index: number, message: ReplyContent) => {
 			const ts = Array.isArray(message)? message[0].ts : message.ts;
 			return (
 				<ChatRow
 					key={ts}
 					message={message}
-					isLast={index === visibleMessages.length - 1}
+					isLast={index === showedMessages.length - 1}
 					onHeightChange={handleRowHeightChange}
 					isStreaming={isStreaming}
 				/>
@@ -395,7 +377,7 @@ const ChatView = () => {
 							}}
 							// increasing top by 3_000 to prevent jumping around when user collapses a row
 							increaseViewportBy={{ top: 3_000, bottom: Number.MAX_SAFE_INTEGER }} // hack to make sure the last message is always rendered to get truly perfect scroll to bottom animation when new messages are added (Number.MAX_SAFE_INTEGER is safe for arithmetic operations, which is all virtuoso uses this value for in src/sizeRangeSystem.ts)
-							data={visibleMessages} // messages is the raw format returned by extension, modifiedMessages is the manipulated structure that combines certain messages of related type, and visibleMessages is the filtered structure that removes messages that should not be rendered
+							data={showedMessages} // messages is the raw format returned by extension, modifiedMessages is the manipulated structure that combines certain messages of related type, and visibleMessages is the filtered structure that removes messages that should not be rendered
 							itemContent={itemContent}
 							atBottomStateChange={(atBottom) => {
 								// 避免频繁更新状态，只在状态变化时更新
@@ -409,12 +391,12 @@ const ChatView = () => {
 								}
 							}}
 							atBottomThreshold={10} // anything lower causes issues with followOutput
-							initialTopMostItemIndex={visibleMessages.length - 1}
+							initialTopMostItemIndex={showedMessages.length - 1}
 							// 添加优化选项，减少不必要的渲染
 							overscan={{ main: 5, reverse: 5 }}
 							// 添加缓存优化
 							computeItemKey={(index) => {
-								const message = visibleMessages[index];
+								const message = showedMessages[index];
 								return Array.isArray(message) ? `group-${message[0].ts}` : `message-${message.ts}`;
 							}}
 						/>
