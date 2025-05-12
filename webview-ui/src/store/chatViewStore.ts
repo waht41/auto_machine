@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { ClineMessage, ExtensionMessage } from '@/shared/ExtensionMessage';
 import { findLast } from '@/shared/array';
-import { vscode } from '@webview-ui/utils/vscode';
 import { useClineMessageStore } from './clineMessageStore';
 import messageBus from './messageBus';
 import { BACKGROUND_MESSAGE } from './const';
@@ -34,7 +33,6 @@ interface IChatViewStore {
   
   // 操作方法
   handleSendMessage: (text?: string, images?: string[]) => void;
-  clearTask: () => void;
   handleCancelStream: () => void;
   selectImages: () => void;
   
@@ -88,25 +86,19 @@ export const useChatViewStore = create<IChatViewStore>((set, get) => ({
 		const messages = getChatMessages();
 
 		if (messages.length === 0) {
-			vscode.postMessage({ type: 'newTask', text, images });
+			messageBus.sendToBackground({ type: 'newTask', text, images });
 		} else if (messages.length > 0) {
-			vscode.postMessage({ type: 'resumeTask', text, images });
+			messageBus.sendToBackground({ type: 'resumeTask', text, images });
 		}
 		// 重置消息相关状态
 		get().resetMessageState();
-	},
-  
-	clearTask: () => {
-		const clear = useClineMessageStore.getState().clearClineMessages;
-		clear();
-		vscode.postMessage({ type: 'clearTask' });
 	},
   
 	handleCancelStream: () => {
 		const isStreaming = get().getIsStreaming();
 
 		if (isStreaming) {
-			vscode.postMessage({ type: 'cancelTask' });
+			messageBus.sendToBackground({ type: 'cancelTask' });
 			set({ 
 				didClickCancel: true,
 				textAreaDisabled: false 
@@ -118,7 +110,7 @@ export const useChatViewStore = create<IChatViewStore>((set, get) => ({
 	},
 
 	selectImages: () => {
-		vscode.postMessage({ type: 'selectImages' });
+		messageBus.sendToBackground({ type: 'selectImages' });
 	},
   
 	// 计算属性
@@ -126,13 +118,7 @@ export const useChatViewStore = create<IChatViewStore>((set, get) => ({
 		const getChatMessages = useClineMessageStore.getState().getChatMessages;
 		const messages = getChatMessages();
 		const modifiedMessages = messages.slice(1);
-
 		const lastMessage = modifiedMessages.at(-1);
-		const lastMessageIsAsk = !!lastMessage?.ask;
-    
-		// 判断工具是否处于主动提问状态
-		if (lastMessageIsAsk) return false;
-    
 		// 检查最后一条消息是否为流式传输中的部分响应
 		if (lastMessage?.partial) return true;
     
@@ -144,9 +130,9 @@ export const useChatViewStore = create<IChatViewStore>((set, get) => ({
     
 		if (lastApiRequest?.text) {
 			try {
-				const { cost } = JSON.parse(lastApiRequest.text);
-				// 当cost未定义时表示请求尚未完成
-				return cost === undefined;
+				const { tokensIn } = JSON.parse(lastApiRequest.text);
+				// 还没token表示发送了请求，但还没返回内容
+				return tokensIn === undefined;
 			} catch (e) {
 				console.error('Invalid API request JSON:', lastApiRequest.text);
 			}

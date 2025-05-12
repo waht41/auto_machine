@@ -83,7 +83,6 @@ const EmptyStateContainer = styled.div`
 const WelcomeText = styled.div`
 	font-size: 40px;
 	font-weight: 500;
-	font-family: 'Roboto';
 	margin: 0 auto;
 `;
 
@@ -133,10 +132,6 @@ const ChatView = () => {
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	const disableAutoScrollRef = useRef(false);
 
-	// UI layout depends on the last 2 messages
-	// (since it relies on the content of these messages, we are deep comparing. i.e. the button state after hitting button sets enableButtons to false, and this effect otherwise would have to true again even if messages didn't change
-	const lastMessage = useMemo(() => messages.at(-1), [messages]);
-	const secondLastMessage = useMemo(() => messages.at(-2), [messages]);
 	const isStreaming = useMemo(() => getIsStreaming(), [modifiedMessages]);
 
 	// 初始化消息监听
@@ -151,28 +146,8 @@ const ChatView = () => {
 	}, [init]);
 
 	useEffect(() => {
-		// if last message is an ask, show user ask UI
-		// if user finished a task, then start a new task with a new conversation history since in this moment that the extension is waiting for user response, the user could close the extension and the conversation history would be lost.
-		// basically as long as a task is active, the conversation history will be persisted
-		if (lastMessage) {
-			const isPartial = lastMessage.partial === true;
-			switch (lastMessage.type) {
-				case 'ask':
-					switch (lastMessage.ask) {
-						case 'text':
-							setTextAreaDisabled(isPartial);
-							break;
-						case 'tool':
-							setTextAreaDisabled(isPartial);
-							break;
-					}
-					break;
-				case 'say':
-					setTextAreaDisabled(isPartial || isStreaming);
-					break;
-			}
-		}
-	}, [lastMessage, secondLastMessage, setTextAreaDisabled]);
+		setTextAreaDisabled(isStreaming);
+	}, [isStreaming]);
 
 	useEffect(() => {
 		if (messages.length === 0) {
