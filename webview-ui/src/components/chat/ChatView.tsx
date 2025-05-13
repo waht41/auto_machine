@@ -97,8 +97,7 @@ const ChatView = () => {
 		toolCategories,
 		allowedTools
 	} = useExtensionState();
-	const getChatMessages = useClineMessageStore(state => state.getChatMessages);
-	const messages = getChatMessages();
+	const messages = useClineMessageStore(state => state.chatMessages);
 
 	// 使用 chatViewStore 中的状态和方法
 	const {
@@ -123,16 +122,15 @@ const ChatView = () => {
 	} = useChatViewStore();
 
 	const task = useMemo(() => messages.at(0), [messages]); // leaving this less safe version here since if the first message is not a task, then the extension is in a bad state and needs to be debugged (see Cline.abort)
-	const modifiedMessages = useMemo(() => messages.slice(1), [messages]);
 	// 使用 getShowedMessage 函数处理消息
-	const showedMessages = useClineMessageStore(state => state.getShowedMessage)();
+	const showedMessages = useClineMessageStore(state => state.showedMessages);
 
 	const textAreaRef = useRef<HTMLTextAreaElement>(null);
 	const virtuosoRef = useRef<VirtuosoHandle>(null);
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
 	const disableAutoScrollRef = useRef(false);
 
-	const isStreaming = useMemo(() => getIsStreaming(), [modifiedMessages]);
+	const isStreaming = getIsStreaming();
 
 	// 初始化消息监听
 	useEffect(() => {

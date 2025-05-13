@@ -82,8 +82,7 @@ export const useChatViewStore = create<IChatViewStore>((set, get) => ({
 			return;
 		}
 		text = text?.trim();
-		const getChatMessages = useClineMessageStore.getState().getChatMessages;
-		const messages = getChatMessages();
+		const messages =  useClineMessageStore.getState().chatMessages;
 
 		if (messages.length === 0) {
 			messageBus.sendToBackground({ type: 'newTask', text, images });
@@ -115,8 +114,7 @@ export const useChatViewStore = create<IChatViewStore>((set, get) => ({
   
 	// 计算属性
 	getIsStreaming: () => {
-		const getChatMessages = useClineMessageStore.getState().getChatMessages;
-		const messages = getChatMessages();
+		const messages = useClineMessageStore.getState().chatMessages;
 		const modifiedMessages = messages.slice(1);
 		const lastMessage = modifiedMessages.at(-1);
 		// 检查最后一条消息是否为流式传输中的部分响应

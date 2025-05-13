@@ -10,7 +10,7 @@ import { registerInternalImplementation } from '@core/internal-implementation';
 export class ToolManager {
 	private apiHistoryService!: ApiConversationHistoryService;
 	private executor = new CommandRunner();
-	private lengthLimit = 3000;
+	private lengthLimit = 10_000;
 	constructor(private di: DIContainer, middleWares: Middleware[] = []) {
 		registerInternalImplementation(this.executor);
 		for (const middleware of middleWares) {

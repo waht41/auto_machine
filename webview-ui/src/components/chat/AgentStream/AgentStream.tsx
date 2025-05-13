@@ -114,8 +114,8 @@ const formatTimestamp = (ts: number) => {
 };
 
 const AgentStream = () => {
-	const task = useClineMessageStore(state => state.getTask)();
-	const agentStreamMessages = useClineMessageStore(state => state.getAgentStreamMessages)();
+	const task = useClineMessageStore(state => state.task);
+	const agentStreamMessages = useClineMessageStore(state => state.agentStreamMessages);
 	const setShowAgentStream = useChatViewStore(state => state.setShowAgentStream);
 	const [highlightedIndex, setHighlightedIndex] = useState<number | null>(null);
 
