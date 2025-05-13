@@ -107,16 +107,19 @@ const ChatView = () => {
 		setTextAreaDisabled,
 		selectedImages,
 		setSelectedImages,
+		selectImages,
+		getPlaceholderText,
+		getIsStreaming,
+
 		showScrollToBottom,
 		setShowScrollToBottom,
 		isAtBottom,
 		setIsAtBottom,
+
 		setDisableAutoScroll,
 		handleSendMessage,
 		handleCancelStream,
-		selectImages,
-		getIsStreaming,
-		getPlaceholderText,
+
 		resetAllState,
 		init,
 	} = useChatViewStore();
