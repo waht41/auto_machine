@@ -6,6 +6,7 @@ import WelcomeView from './components/welcome/WelcomeView';
 import { ExtensionStateContextProvider, useExtensionState } from './context/ExtensionStateContext';
 import McpView from './components/mcp/McpView';
 import PromptsView from './components/prompts/PromptsView';
+import AssistantView from './components/assistant/AssistantView';
 import { Alert, Spin } from 'antd';
 import styled from 'styled-components';
 import { HashRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom';
@@ -67,6 +68,10 @@ const AppContent = () => {
 					case 'promptsButtonClicked':
 						navigate('/prompts');
 						break;
+					//@ts-ignore
+					case 'assistantButtonClicked':
+						navigate('/assistant');
+						break;
 					case 'chatButtonClicked':
 						navigate('/');
 						break;
@@ -85,7 +90,7 @@ const AppContent = () => {
 	useEffect(() => {
 		// 订阅扩展消息
 		messageBus.on(BACKGROUND_MESSAGE, handleMessage);
-		
+
 		// 清理函数
 		return () => {
 			messageBus.off(BACKGROUND_MESSAGE, handleMessage);
@@ -105,7 +110,7 @@ const AppContent = () => {
 				</ErrorContainer>
 			);
 		}
-		
+
 		return (
 			<LoadingContainer>
 				<Spin size="large" tip="加载中..." />
@@ -124,6 +129,7 @@ const AppContent = () => {
 			<Route path="/history" element={<HistoryView onDone={() => navigate('/')} />} />
 			<Route path="/mcp" element={<McpView onDone={() => navigate('/')} />} />
 			<Route path="/prompts" element={<PromptsView onDone={() => navigate('/')} />} />
+			<Route path="/assistant" element={<AssistantView onDone={() => navigate('/')} />} />
 			<Route path="*" element={<Navigate to="/" replace />} />
 		</Routes>
 	);
