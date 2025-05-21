@@ -1,4 +1,4 @@
-import { WebviewMessage } from '@/shared/WebviewMessage';
+import { UpdateSupportPromptMessage, ResetSupportPromptMessage, UpdatePromptMessage, EnhancePromptMessage, GetSystemPromptMessage } from '@/shared/WebviewMessage';
 import { type ClineProvider } from '@core/webview/ClineProvider';
 import * as vscode from 'vscode';
 import { singleCompletionHandler } from '@/utils/single-completion-handler';
@@ -7,14 +7,14 @@ import { SYSTEM_PROMPT } from '@core/prompts/system';
 import { ApiConfiguration } from '@/shared/api';
 
 export const promptHandlers = {
-	'updateSupportPrompt': handleUpdateSupportPrompt,
-	'resetSupportPrompt': handleResetSupportPrompt,
-	'updatePrompt': handleUpdatePrompt,
-	'enhancePrompt': handleEnhancePrompt,
-	'getSystemPrompt': handleGetSystemPrompt,
+	updateSupportPrompt: handleUpdateSupportPrompt,
+	resetSupportPrompt: handleResetSupportPrompt,
+	updatePrompt: handleUpdatePrompt,
+	enhancePrompt: handleEnhancePrompt,
+	getSystemPrompt: handleGetSystemPrompt,
 };
 
-export async function handleUpdateSupportPrompt(instance: ClineProvider, message: WebviewMessage) {
+export async function handleUpdateSupportPrompt(instance: ClineProvider, message: UpdateSupportPromptMessage) {
 	try {
 		if (Object.keys(message?.values ?? {}).length === 0) {
 			return;
@@ -35,7 +35,7 @@ export async function handleUpdateSupportPrompt(instance: ClineProvider, message
 	}
 }
 
-export async function handleResetSupportPrompt(instance: ClineProvider, message: WebviewMessage) {
+export async function handleResetSupportPrompt(instance: ClineProvider, message: ResetSupportPromptMessage) {
 	try {
 		if (!message?.text) {
 			return;
@@ -58,7 +58,7 @@ export async function handleResetSupportPrompt(instance: ClineProvider, message:
 	}
 }
 
-export async function handleUpdatePrompt(instance: ClineProvider, message: WebviewMessage) {
+export async function handleUpdatePrompt(instance: ClineProvider, message: UpdatePromptMessage) {
 	if (message.promptMode && message.customPrompt !== undefined) {
 		const existingPrompts = (await instance.getGlobalState('customModePrompts')) || {};
 
@@ -85,7 +85,7 @@ export async function handleUpdatePrompt(instance: ClineProvider, message: Webvi
 	}
 }
 
-export async function handleEnhancePrompt(instance: ClineProvider, message: WebviewMessage) {
+export async function handleEnhancePrompt(instance: ClineProvider, message: EnhancePromptMessage) {
 	if (message.text) {
 		try {
 			const {
@@ -120,9 +120,12 @@ export async function handleEnhancePrompt(instance: ClineProvider, message: Webv
 	}
 }
 
-export async function handleGetSystemPrompt(instance: ClineProvider, message: WebviewMessage) {
+export async function handleGetSystemPrompt(instance: ClineProvider, message: GetSystemPromptMessage) {
 	try {
-		const systemPrompt = await SYSTEM_PROMPT();
+		const systemPrompt = await SYSTEM_PROMPT({
+			defaultExternals: ['Advance'],
+			defaultTriggers: []
+		});
 
 		await instance.messageService.postMessageToWebview({
 			type: 'systemPrompt',

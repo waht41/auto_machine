@@ -13,10 +13,10 @@ import { type ClineProvider } from '@core/webview/ClineProvider';
 import { WebviewMessage } from '@/shared/WebviewMessage';
 import { clineHandler } from '@core/webview/handlers/clineHandler';
 
-interface IHandler {
-	[key:string] : (instance: ClineProvider, message: WebviewMessage) => Promise<void>;
-}
-export const handlers: IHandler = {
+type Handler<T extends WebviewMessage> = (instance: ClineProvider, message: T) => Promise<void> | void;
+export const handlers: {
+	[K in WebviewMessage['type']]: Handler<Extract<WebviewMessage, { type: K }>>
+} = {
 	...taskHandlers,
 	...promptHandlers,
 	...stateHandlers,

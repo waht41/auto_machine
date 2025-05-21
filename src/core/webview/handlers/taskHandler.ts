@@ -1,22 +1,28 @@
-import { WebviewMessage } from '@/shared/WebviewMessage';
+import {
+	DeleteTaskWithIdMessage,
+	ExportTaskWithIdMessage,
+	NewTaskMessage,
+	ResumeTaskMessage,
+	ShowTaskWithIdMessage
+} from '@/shared/WebviewMessage';
 import { type ClineProvider } from '@core/webview/ClineProvider';
 import pWaitFor from 'p-wait-for';
 
 export const taskHandlers = {
-	'newTask': handleNewTask,
-	'resumeTask': handleResumeTask,
-	'clearTask': handleClearTask,
-	'showTaskWithId': handleShowTaskWithId,
-	'deleteTaskWithId': handleDeleteTaskWithId,
-	'exportTaskWithId': handleExportTaskWithId,
-	'cancelTask': handleCancelTask,
+	newTask: handleNewTask,
+	resumeTask: handleResumeTask,
+	clearTask: handleClearTask,
+	showTaskWithId: handleShowTaskWithId,
+	deleteTaskWithId: handleDeleteTaskWithId,
+	exportTaskWithId: handleExportTaskWithId,
+	cancelTask: handleCancelTask,
 };
 
-export async function handleNewTask(instance: ClineProvider, message: WebviewMessage) {
+export async function handleNewTask(instance: ClineProvider, message: NewTaskMessage) {
 	await instance.initClineWithTask(message.text, message.images);
 }
 
-export async function handleResumeTask(instance: ClineProvider, message: WebviewMessage) {
+export async function handleResumeTask(instance: ClineProvider, message: ResumeTaskMessage) {
 	if (instance.cline) {
 		const { historyItem } = await instance.getTaskWithId(instance.cline.taskId);
 		console.log('[waht] history item', historyItem);
@@ -31,16 +37,16 @@ export async function handleClearTask(instance: ClineProvider) {
 	await instance.postStateToWebview();
 }
 
-export async function handleShowTaskWithId(instance: ClineProvider, message: WebviewMessage) {
-	await instance.showTaskWithId(message.text!);
+export async function handleShowTaskWithId(instance: ClineProvider, message: ShowTaskWithIdMessage) {
+	await instance.showTaskWithId(message.text);
 }
 
-export async function handleDeleteTaskWithId(instance: ClineProvider, message: WebviewMessage) {
-	await instance.deleteTaskWithId(message.text!);
+export async function handleDeleteTaskWithId(instance: ClineProvider, message: DeleteTaskWithIdMessage) {
+	await instance.deleteTaskWithId(message.text);
 }
 
-export async function handleExportTaskWithId(instance: ClineProvider, message: WebviewMessage) {
-	await instance.exportTaskWithId(message.text!);
+export async function handleExportTaskWithId(instance: ClineProvider, message: ExportTaskWithIdMessage) {
+	await instance.exportTaskWithId(message.text);
 }
 
 export async function handleCancelTask(instance: ClineProvider) {

@@ -1,4 +1,14 @@
-import { WebviewMessage } from '@/shared/WebviewMessage';
+import {
+	AlwaysApproveResubmitMessage,
+	AutoApprovalEnabledMessage,
+	BrowserViewportSizeMessage,
+	EnhancementApiConfigIdMessage,
+	PreferredLanguageMessage,
+	RequestDelaySecondsMessage,
+	ScreenshotQualityMessage,
+	TerminalOutputLineLimitMessage,
+	WriteDelayMsMessage
+} from '@/shared/WebviewMessage';
 import { type ClineProvider } from '@core/webview/ClineProvider';
 import { IConfig } from '@core/storage/type';
 
@@ -22,22 +32,38 @@ const stateUpdateConfigs: Record<string, StateUpdateConfig> = {
 	'browserViewportSize': { stateKey: 'browserViewportSize', valueKey: 'text', defaultValue: '900x600' },
 };
 
+// 定义状态消息类型的联合类型
+type StateMessage =
+  | PreferredLanguageMessage
+  | WriteDelayMsMessage
+  | TerminalOutputLineLimitMessage
+  | ScreenshotQualityMessage
+  | EnhancementApiConfigIdMessage
+  | AutoApprovalEnabledMessage
+  | AlwaysApproveResubmitMessage
+  | RequestDelaySecondsMessage
+  | BrowserViewportSizeMessage;
+
 // 通用的状态更新处理函数
-export async function handleStateUpdate(instance: ClineProvider, message: WebviewMessage) {
-	if (!message.type) return;
-    
+export async function handleStateUpdate(instance: ClineProvider, message: StateMessage) {
 	const config = stateUpdateConfigs[message.type];
 	if (!config) return;
-    
+
 	let value;
 	if (config.valueKey === 'bool') {
-		value = message.bool ?? config.defaultValue;
+		// 使用类型断言来处理不同的消息类型
+		const boolMessage = message as { bool?: boolean };
+		value = boolMessage.bool ?? config.defaultValue;
 	} else if (config.valueKey === 'value') {
-		value = message[config.valueKey] ?? config.defaultValue;
+		// 使用类型断言来处理不同的消息类型
+		const valueMessage = message as { value?: number };
+		value = valueMessage.value ?? config.defaultValue;
 	} else {
-		value = message[config.valueKey] ?? config.defaultValue;
+		// 使用类型断言来处理不同的消息类型
+		const textMessage = message as { text?: string };
+		value = textMessage.text ?? config.defaultValue;
 	}
-    
+
 	await instance.updateConfig(config.stateKey, value);
 	await instance.postStateToWebview();
 }
@@ -51,8 +77,14 @@ export async function handleResetState(instance: ClineProvider) {
 
 // 导出所有支持的状态更新处理器
 export const stateHandlers = {
-	...Object.fromEntries(
-		Object.keys(stateUpdateConfigs).map(type => [type, handleStateUpdate])
-	),
-	'resetState': handleResetState
+	preferredLanguage: handleStateUpdate,
+	writeDelayMs: handleStateUpdate,
+	terminalOutputLineLimit: handleStateUpdate,
+	screenshotQuality: handleStateUpdate,
+	enhancementApiConfigId: handleStateUpdate,
+	autoApprovalEnabled: handleStateUpdate,
+	alwaysApproveResubmit: handleStateUpdate,
+	requestDelaySeconds: handleStateUpdate,
+	browserViewportSize: handleStateUpdate,
+	resetState: handleResetState
 };

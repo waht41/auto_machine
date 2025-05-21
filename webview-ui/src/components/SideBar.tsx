@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from 'antd';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
-import { PlusOutlined, HistoryOutlined, SettingOutlined, GlobalOutlined } from '@ant-design/icons';
+import { PlusOutlined, HistoryOutlined, SettingOutlined, GlobalOutlined, RobotOutlined } from '@ant-design/icons';
 import { useClineMessageStore } from '@webview-ui/store/clineMessageStore';
 import HistoryPreviewNew from './history/HistoryPreviewNew';
 import { useExtensionState } from '../context/ExtensionStateContext';
@@ -111,6 +111,13 @@ const SideBar: React.FC = () => {
 					onClick={() => navigate('/history')}
 				>
 					History
+				</NavButton>
+
+				<NavButton 
+					icon={<RobotOutlined />}
+					onClick={() => navigate('/assistant')}
+				>
+					Assistant
 				</NavButton>
 
 				<NavButton 
