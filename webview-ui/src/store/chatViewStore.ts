@@ -19,6 +19,9 @@ interface IChatViewStore {
   isAtBottom: boolean;
   disableAutoScroll: boolean;
   showAgentStream: boolean;
+
+
+	assistantName?: string;
   
   // 设置方法
   setInputValue: (value: string) => void;
@@ -30,6 +33,7 @@ interface IChatViewStore {
   setDisableAutoScroll: (disable: boolean) => void;
   setShowAgentStream: (show: boolean) => void;
   toggleAgentStream: () => void;
+	setAssistantName: (assistantName?: string) => void;
   
   // 操作方法
   handleSendMessage: (text?: string, images?: string[]) => void;
@@ -62,6 +66,7 @@ export const useChatViewStore = create<IChatViewStore>((set, get) => ({
 	isAtBottom: false,
 	disableAutoScroll: false,
 	showAgentStream: false,
+	assistantName: undefined,
   
 	// 设置方法
 	setInputValue: (value) => set({ inputValue: value }),
@@ -74,6 +79,7 @@ export const useChatViewStore = create<IChatViewStore>((set, get) => ({
 	setIsAtBottom: (isBottom) => set({ isAtBottom: isBottom }),
 	setDisableAutoScroll: (disable) => set({ disableAutoScroll: disable }),
 	setShowAgentStream: (show) => set({ showAgentStream: show }),
+	setAssistantName: (assistantName?: string) => set({ assistantName: assistantName }),
 	toggleAgentStream: () => set((state) => ({ showAgentStream: !state.showAgentStream })),
   
 	// 操作方法
@@ -83,9 +89,10 @@ export const useChatViewStore = create<IChatViewStore>((set, get) => ({
 		}
 		text = text?.trim();
 		const messages =  useClineMessageStore.getState().chatMessages;
+		const assistantName = get().assistantName;
 
 		if (messages.length === 0) {
-			messageBus.sendToBackground({ type: 'newTask', text, images });
+			messageBus.sendToBackground({ type: 'newTask', text, images, assistantName });
 		} else if (messages.length > 0) {
 			messageBus.sendToBackground({ type: 'resumeTask', text, images });
 		}

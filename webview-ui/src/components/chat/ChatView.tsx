@@ -12,6 +12,7 @@ import { useChatViewStore } from '@webview-ui/store/chatViewStore';
 import NewerExample from '@webview-ui/components/chat/NewerExample';
 import { ReplyContent } from '@webview-ui/components/chat/type';
 import { colors } from '@webview-ui/components/common/styles';
+import AssistantSelector from '@webview-ui/components/chat/AssistantSelector';
 
 export const MAX_IMAGES_PER_MESSAGE = 20; // Anthropic limits to 20 images
 
@@ -386,6 +387,7 @@ const ChatView = () => {
 					/>
 				</ChatTextAreaWrapper>
 				<NewerExample/>
+				<AssistantSelector/>
 			</EmptyStateContainer>}
 		</ChatViewContainer>
 

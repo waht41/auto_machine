@@ -16,6 +16,7 @@ import { BACKGROUND_MESSAGE } from '@webview-ui/store/const';
 import { BackgroundMessage } from '@webview-ui/store/type';
 import { Handler } from 'mitt';
 import SideBar from './components/SideBar';
+import { useStateStore } from '@webview-ui/store/stateStore';
 
 const LoadingContainer = styled.div`
 	display: flex;
@@ -90,6 +91,7 @@ const AppContent = () => {
 	useEffect(() => {
 		// 订阅扩展消息
 		messageBus.on(BACKGROUND_MESSAGE, handleMessage);
+		useStateStore.getState().init();
 
 		// 清理函数
 		return () => {

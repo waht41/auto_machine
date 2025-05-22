@@ -3,7 +3,7 @@ import fs from 'fs';
 import process from 'node:process';
 import path from 'path';
 
-const envPath = envPaths('auto_machine',{suffix:''});
+const envPath = envPaths('Auto Machine',{suffix:''});
 
 export const configPath = envPath.config;
 

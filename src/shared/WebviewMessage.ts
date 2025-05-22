@@ -12,6 +12,7 @@ export type NewTaskMessage = {
   type: 'newTask';
   text?: string;
   images?: string[];
+  assistantName?: string;
 }
 
 export type ResumeTaskMessage = {
