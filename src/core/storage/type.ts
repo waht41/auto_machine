@@ -50,5 +50,19 @@ export type IConfig = {
   taskDirRoot: string;
   openRouterModelInfo?: ModelInfo;
   glamaModelInfo?: ModelInfo;
+  assistants?: AssistantStructure[];
+}
 
+export type AssistantConfig = {
+  assistants: AssistantStructure[];
+};
+
+export type AssistantStructure = {
+  name: string,
+  description?: string,
+  prompt: string,
+  files: {
+    fileName: string,
+    content: string
+  }[]
 }

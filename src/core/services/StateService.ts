@@ -4,15 +4,17 @@ import { configPath } from '@core/storage/common';
 import { SecretStorage } from '@core/storage/secret';
 import { SecretKey } from '@core/webview/type';
 import { ApiConfiguration } from '@/shared/api';
-import { IConfig, secretKeys } from '@core/storage/type';
+import { AssistantStructure, IConfig, secretKeys } from '@core/storage/type';
 import { GlobalFileNames } from '@core/webview/const';
 import { TaskHistoryStorage } from '@core/storage/taskHistory';
 import { HistoryItem } from '@/shared/HistoryItem';
+import { Assistant } from '@core/storage/assistant';
 
 export class StateService {
 	private static _instance: StateService;
 	private _secrets = new SecretStorage(path.join(configPath, GlobalFileNames.secrets));
 	private _config = new Config(path.join(configPath, GlobalFileNames.config));
+	private _assistant = new Assistant(path.join(configPath, GlobalFileNames.assistant));
 	private _taskHistory: TaskHistoryStorage = new TaskHistoryStorage(this._config.get('taskDirRoot'));
 
 	private constructor() {
@@ -30,11 +32,13 @@ export class StateService {
 	}
 
 	public async getState() : Promise<IConfig> {
-		const [globalStates, secrets] = await Promise.all([
+		const [globalStates, secrets,  assistants] = await Promise.all([
 			this.getAllConfig(),
-			this.getSecrets()
+			this.getSecrets(),
+			this.getAssistants()
 		]);
 		globalStates.apiConfiguration = {...globalStates.apiConfiguration, ...secrets};
+		globalStates.assistants = assistants;
 		return globalStates;
 	}
 
@@ -89,5 +93,24 @@ export class StateService {
 
 	public async deleteTaskHistory(id: string) {
 		await this._taskHistory.deleteTaskHistory(id);
+	}
+
+	public async upsertAssistant(assistant: AssistantStructure) {
+		await this._assistant.upsertAssistant(assistant);
+	}
+
+	public async removeAssistant(assistantName: string) {
+		await this._assistant.removeAssistant(assistantName);
+	}
+
+	public async getAssistants() {
+		return this._assistant.get('assistants');
+	}
+
+	public async getAssistant(name?:string){
+		if (!name){
+			return undefined;
+		}
+		return this._assistant.getAssistant(name);
 	}
 }

@@ -44,6 +44,7 @@ import { InterClineMessage } from '@core/services/type';
 import { EventEmitter } from 'events';
 import { AllowedToolTree } from '@core/tool-adapter/AllowedToolTree';
 import { isAutoApproval as isAutoApprovalX } from '@core/internal-implementation/middleware';
+import { AssistantStructure } from '@core/storage/type';
 
 const cwd = process.cwd();
 
@@ -62,7 +63,8 @@ interface IProp {
 	mcpHub?: McpHub
 	taskParentDir: string,
 	memoryDir: string,
-	allowedToolTree: AllowedToolTree
+	allowedToolTree: AllowedToolTree,
+	assistant?: AssistantStructure,
 }
 
 export class Cline {
@@ -106,7 +108,8 @@ export class Cline {
 			historyItem,
 			middleWares = [],
 			mcpHub,
-			taskParentDir
+			taskParentDir,
+			assistant
 		} = prop;
 		this.taskId = historyItem ? historyItem.id : crypto.randomUUID();
 		this.api = buildApiHandler(apiConfiguration);
@@ -116,7 +119,7 @@ export class Cline {
 		this.diffViewProvider = new DiffViewProvider(cwd);
 		this.mcpHub = mcpHub;
 		this.taskDir = path.join(taskParentDir, this.taskId);
-		this.streamChatManager = new StreamChatManager(this.di,this.api, this.taskId);
+		this.streamChatManager = new StreamChatManager(this.di,this.api, this.taskId, assistant);
 		this.toolManager = new ToolManager(this.di, middleWares);
 		this.allowedToolTree = prop.allowedToolTree;
 

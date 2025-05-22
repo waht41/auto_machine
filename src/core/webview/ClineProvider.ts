@@ -167,7 +167,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		return cline.taskId;
 	}
 
-	private async createCline(historyItem?:HistoryItem, subCline?:boolean){
+	private async createCline(historyItem?:HistoryItem, subCline?:boolean, assistantName?: string){
 		const {
 			apiConfiguration,
 			customModePrompts,
@@ -192,7 +192,8 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 				mcpHub: this.mcpHub,
 				taskParentDir: taskDirRoot,
 				memoryDir: path.join(getUserDataPath(),'memory'),
-				allowedToolTree: this.allowedToolTree
+				allowedToolTree: this.allowedToolTree,
+				assistant: await this.stateService.getAssistant(assistantName ?? historyItem?.assistantName)
 			}
 		);
 		await cline.init();

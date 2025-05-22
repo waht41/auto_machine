@@ -14,6 +14,7 @@ import { PlanService } from '@core/services/planService';
 import { DIContainer } from '@core/services/di';
 import { PostService } from '@core/services/postService';
 import { ApiStatus } from '@/shared/type';
+import { AssistantStructure } from '@core/storage/type';
 
 
 export class StreamChatManager {
@@ -26,7 +27,7 @@ export class StreamChatManager {
 	private postService!: PostService;
 
 
-	constructor(private di: DIContainer,private api: ApiHandler, private taskId: string) {}
+	constructor(private di: DIContainer,private api: ApiHandler, private taskId: string, private assistant?:AssistantStructure) {}
 
 	async init() {
 		this.planService = await this.di.getByType(PlanService);
@@ -93,6 +94,7 @@ export class StreamChatManager {
 			cacheWrites: apiMetrics.totalCacheWrites,
 			cacheReads: apiMetrics.totalCacheReads,
 			totalCost: apiMetrics.totalCost,
+			assistantName: this.assistant?.name
 		};
 	}
 
@@ -128,7 +130,7 @@ export class StreamChatManager {
 		// 1. Converting to Anthropic.MessageParam by spreading only the API-required properties
 		// 2. Converting image blocks to text descriptions if model doesn't support images
 		const cleanConversationHistory = this.convertToConversation();
-		const stream = this.api.createMessage(systemPrompt, cleanConversationHistory);
+		const stream = this.api.createMessage(this.assistant ? this.generateAssistantPrompt() : systemPrompt, cleanConversationHistory);
 		const iterator = stream[Symbol.asyncIterator]();
 		try {
 			const firstChunk = await iterator.next();
@@ -139,6 +141,31 @@ export class StreamChatManager {
 		}
 
 		yield* iterator;
+	}
+
+	public generateAssistantPrompt(){
+		const assistant = this.assistant;
+		if (assistant) {
+			let finalPrompt = assistant.prompt;
+
+			// Concatenate file contents if available
+			if (assistant.files && assistant.files.length > 0) {
+				for (const file of assistant.files) {
+					finalPrompt += `\n\nFile: ${file.fileName}\n\`\`\`\n${file.content}\n\`\`\`\n`;
+				}
+			}
+
+			// Truncate if exceeds 10,000 characters
+			const MAX_LENGTH = 10000;
+			if (finalPrompt.length > MAX_LENGTH) {
+				const truncatedChars = finalPrompt.length - MAX_LENGTH;
+				finalPrompt = finalPrompt.substring(0, MAX_LENGTH);
+				finalPrompt += `\n\n${truncatedChars} characters have been truncated.`;
+			}
+
+			return finalPrompt;
+		}
+		return '';
 	}
 
 	private convertToConversation() {

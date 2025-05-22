@@ -11,4 +11,5 @@ export type HistoryItem = {
 	newImages?: string[]
 	children?: string[]
 	parent?: string;
+	assistantName?:string
 }

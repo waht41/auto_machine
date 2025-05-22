@@ -40,6 +40,8 @@ export class ElectronService {
 				return this.handleOpenFile(message);
 			case 'openFolder':
 				return this.handleOpenFolder(message);
+			case 'readFile':
+				return this.handleReadFile(message);
 			default:
 				return { success: false, error: `Unknown message type: ${message.type}` };
 		}
@@ -64,18 +66,18 @@ export class ElectronService {
 
 			const selectedPath = result.filePaths[0];
 			const filePath = path.join(selectedPath, message.title);
-      
+
 			fs.writeFileSync(filePath, message.content);
-      
-			return { 
-				success: true, 
-				filePath 
+
+			return {
+				success: true,
+				filePath
 			};
 		} catch (error) {
 			console.error('Export error:', error);
-			return { 
-				success: false, 
-				error: error.message || 'Failed to export file' 
+			return {
+				success: false,
+				error: error.message || 'Failed to export file'
 			};
 		}
 	}
@@ -95,16 +97,16 @@ export class ElectronService {
 			};
 
 			const result = await dialog.showOpenDialog(this.win, options);
-			return { 
-				success: true, 
+			return {
+				success: true,
 				canceled: result.canceled,
-				filePaths: result.filePaths 
+				filePaths: result.filePaths
 			};
 		} catch (error) {
 			console.error('Open dialog error:', error);
-			return { 
-				success: false, 
-				error: error.message || 'Failed to open dialog' 
+			return {
+				success: false,
+				error: error.message || 'Failed to open dialog'
 			};
 		}
 	}
@@ -125,7 +127,7 @@ export class ElectronService {
 			};
 
 			const result = await dialog.showSaveDialog(this.win, options);
-      
+
 			if (result.canceled || !result.filePath) {
 				return { success: false, canceled: true };
 			}
@@ -133,16 +135,16 @@ export class ElectronService {
 			if (message.content) {
 				fs.writeFileSync(result.filePath, message.content);
 			}
-      
-			return { 
-				success: true, 
-				filePath: result.filePath 
+
+			return {
+				success: true,
+				filePath: result.filePath
 			};
 		} catch (error) {
 			console.error('Save dialog error:', error);
-			return { 
-				success: false, 
-				error: error.message || 'Failed to save file' 
+			return {
+				success: false,
+				error: error.message || 'Failed to save file'
 			};
 		}
 	}
@@ -160,9 +162,9 @@ export class ElectronService {
 			return { success: true };
 		} catch (error) {
 			console.error('Open external error:', error);
-			return { 
-				success: false, 
-				error: error.message || 'Failed to open URL' 
+			return {
+				success: false,
+				error: error.message || 'Failed to open URL'
 			};
 		}
 	}
@@ -182,13 +184,13 @@ export class ElectronService {
 				const text = clipboard.readText();
 				return { success: true, text };
 			}
-      
+
 			return { success: false, error: 'Invalid clipboard action' };
 		} catch (error) {
 			console.error('Clipboard error:', error);
-			return { 
-				success: false, 
-				error: error.message || 'Failed to perform clipboard operation' 
+			return {
+				success: false,
+				error: error.message || 'Failed to perform clipboard operation'
 			};
 		}
 	}
@@ -216,9 +218,9 @@ export class ElectronService {
 			};
 		} catch (error) {
 			console.error('System info error:', error);
-			return { 
-				success: false, 
-				error: error.message || 'Failed to get system information' 
+			return {
+				success: false,
+				error: error.message || 'Failed to get system information'
 			};
 		}
 	}
@@ -235,9 +237,9 @@ export class ElectronService {
 			};
 		} catch (error) {
 			console.error('Theme info error:', error);
-			return { 
-				success: false, 
-				error: error.message || 'Failed to get theme information' 
+			return {
+				success: false,
+				error: error.message || 'Failed to get theme information'
 			};
 		}
 	}
@@ -274,7 +276,7 @@ export class ElectronService {
 			}
 
 			const filePath = message.path;
-			
+
 			// 检查路径是否存在
 			if (!fs.existsSync(filePath)) {
 				return {success: false, error: 'Path does not exist'};
@@ -282,10 +284,10 @@ export class ElectronService {
 
 			// 判断是文件还是文件夹
 			const stats = fs.statSync(filePath);
-			
+
 			if (stats.isFile()) {
 				// 如果是文件，打开所在文件夹并聚焦该文件
-				
+
 				// 在 Windows 上使用 explorer.exe 命令作为备选方案
 				if (process.platform === 'win32') {
 					try {
@@ -306,13 +308,63 @@ export class ElectronService {
 			} else {
 				return {success: false, error: 'Path is neither a file nor a directory'};
 			}
-			
+
 			return {success: true};
 		} catch (error) {
 			console.error('Open folder error:', error);
 			return {
 				success: false,
 				error: error.message || 'Failed to open folder'
+			};
+		}
+	}
+
+	/**
+   * 添加文件
+   * 选择源文件并返回文件内容和路径
+   */
+	private async handleReadFile(): Promise<any> {
+		if (!this.win || this.win.isDestroyed()) {
+			return { success: false, error: 'Window is not available' };
+		}
+
+		try {
+			// 选择源文件
+			const sourceResult = await dialog.showOpenDialog(this.win, {
+				title: 'choose file you want to add',
+				buttonLabel: 'choose',
+				properties: ['openFile']
+			});
+
+			if (sourceResult.canceled || sourceResult.filePaths.length === 0) {
+				return { success: false, canceled: true };
+			}
+
+			const sourcePath = sourceResult.filePaths[0];
+
+			// 读取文件内容
+			let content = '';
+			try {
+				// 尝试读取为文本
+				content = fs.readFileSync(sourcePath, 'utf-8');
+			} catch (readError) {
+				console.warn('Could not read file as text, returning empty content:', readError);
+				return {
+					success: false,
+					error: 'Could not read file as text',
+				};
+			}
+
+			return {
+				success: true,
+				filePath: sourcePath,
+				content: content
+			};
+		} catch (error) {
+			console.error('Add file error:', error);
+			return {
+				success: false,
+				error: error.message || 'Failed to add file'
 			};
 		}
 	}

@@ -9,6 +9,7 @@ import { soundHandlers } from './soundHandler';
 import { launchHandlers } from './launchHandler';
 import { diffHandlers } from './diffHandler';
 import { chatHandlers } from './chatHandler';
+import { assistantHandlers } from './assistantHandler';
 import { type ClineProvider } from '@core/webview/ClineProvider';
 import { WebviewMessage } from '@/shared/WebviewMessage';
 import { clineHandler } from '@core/webview/handlers/clineHandler';
@@ -28,5 +29,6 @@ export const handlers: {
 	...launchHandlers,
 	...diffHandlers,
 	...chatHandlers,
+	...assistantHandlers,
 	...clineHandler
 };

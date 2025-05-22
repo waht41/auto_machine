@@ -7,4 +7,5 @@ export const GlobalFileNames = {
 	config: 'auto_machine_config.json',
 	secrets: 'auto_machine_secrets.json',
 	taskHistory: 'task_history.json',
+	assistant: 'assistant.json',
 };

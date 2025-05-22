@@ -1,6 +1,7 @@
 import { ApiConfiguration } from './api';
 import { Mode, PromptComponent } from './modes';
 import { SetTaskIdEvent } from '@/shared/ExtensionMessage';
+import { AssistantStructure } from '@core/storage/type';
 
 export type PromptMode = Mode | 'enhance'
 
@@ -36,6 +37,21 @@ export type DeleteTaskWithIdMessage = {
 export type ExportTaskWithIdMessage = {
   type: 'exportTaskWithId';
   text: string;
+}
+
+// Assistant related message types
+export type GetAssistantsMessage = {
+  type: 'getAssistants';
+}
+
+export type UpsertAssistantMessage = {
+  type: 'upsertAssistant';
+  assistant: AssistantStructure;
+}
+
+export type RemoveAssistantMessage = {
+  type: 'removeAssistant';
+  assistantName: string;
 }
 
 export type CancelTaskMessage = {
@@ -116,6 +132,7 @@ export type SetAllowedToolsMessage = { type: 'setAllowedTools'; toolId?: string 
 
 // Combine all message types into a union type
 export type WebviewMessage =
+  | CancelTaskMessage
   | NewTaskMessage
   | ResumeTaskMessage
   | ClearTaskMessage
@@ -159,4 +176,7 @@ export type WebviewMessage =
   | AnswerMessage
   | UserApprovalMessage
   | SetAllowedToolsMessage
+  | GetAssistantsMessage
+  | UpsertAssistantMessage
+  | RemoveAssistantMessage
   | SetTaskIdEvent;

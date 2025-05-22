@@ -2,6 +2,7 @@ import mitt, { Emitter, Handler } from 'mitt';
 import { ExtensionMessage } from '@/shared/ExtensionMessage';
 import { APP_MESSAGE, BACKGROUND_MESSAGE } from '@webview-ui/store/const';
 import { AppMessage, BackgroundMessage } from '@webview-ui/store/type';
+import { WebviewMessage } from '@/shared/WebviewMessage';
 
 // 定义消息事件类型
 export type MessageEvents = {
@@ -123,7 +124,26 @@ class MessageBus {
 		}
 	}
 
-	sendToBackground(message: unknown): void {
+	/**
+   * 向Electron发送请求并等待响应
+   * @param message 消息内容
+   * @returns 响应结果的Promise
+   */
+	async invokeElectron<T = any>(message: unknown): Promise<T> {
+		try {
+			if (!window.electronApi){
+				console.error('electron api undefined');
+				throw new Error('Electron API is not available');
+			}
+			// 使用invoke方法发送请求并等待响应
+			return await window.electronApi.invoke('electron', message);
+		} catch (error) {
+			console.error('Failed to invoke electron method', error);
+			throw error;
+		}
+	}
+
+	sendToBackground(message: WebviewMessage): void {
 		window.electronApi.send('message', message);
 	}
 }
