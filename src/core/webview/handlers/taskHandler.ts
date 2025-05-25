@@ -19,7 +19,7 @@ export const taskHandlers = {
 };
 
 export async function handleNewTask(instance: ClineProvider, message: NewTaskMessage) {
-	await instance.initClineWithTask(message.text, message.images, message.assistantName);
+	await instance.initClineWithTask(message.text, message.images, message.assistantId);
 }
 
 export async function handleResumeTask(instance: ClineProvider, message: ResumeTaskMessage) {

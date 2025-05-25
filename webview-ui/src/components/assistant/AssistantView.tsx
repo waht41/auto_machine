@@ -5,6 +5,7 @@ import { FileAddOutlined } from '@ant-design/icons';
 import messageBus from '@webview-ui/store/messageBus';
 import { useStateStore } from '@webview-ui/store/stateStore';
 import { InternalPrompt } from '@webview-ui/store/type';
+import { AssistantStructure } from '@core/storage/type';
 
 const { Title } = Typography;
 
@@ -82,13 +83,13 @@ const AssistantView: React.FC<AssistantViewProps> = ({ onDone }) => {
 		}
 
 		// Create assistant config in the format expected by the backend
-		const assistant = {
+		const assistant: AssistantStructure = {
 			id: uuid,
 			name: values.name,
 			description: values.description,
 			prompt: values.prompt,
 			files: filesArray,
-			internalPrompt: selectedPrompts
+			internalPrompts: selectedPrompts
 		};
 
 		console.log('Complete assistant config:', assistant);

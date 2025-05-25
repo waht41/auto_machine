@@ -37,15 +37,15 @@ const AssistantItem = styled.div<{ $isSelected: boolean }>`
 
 const AssistantSelector = () => {
 	const assistants = useStateStore(state => state.assistants);
-	const assistantName = useChatViewStore(state => state.assistantName);
-	const setAssistantName = useChatViewStore(state => state.setAssistantName);
+	const assistantId = useChatViewStore(state => state.assistantId);
+	const setAssistantId = useChatViewStore(state => state.setAssistantId);
 	
-	const handleAssistantClick = (name: string) => {
+	const handleAssistantClick = (id: string) => {
 		// 如果已选中，再次点击则取消选择
-		if (assistantName === name) {
-			setAssistantName(undefined);
+		if (assistantId === id) {
+			setAssistantId(undefined);
 		} else {
-			setAssistantName(name);
+			setAssistantId(id);
 		}
 	};
 	
@@ -54,12 +54,12 @@ const AssistantSelector = () => {
 			{assistants.map((assistant: AssistantStructure) => (
 				<Tooltip 
 					key={assistant.name} 
-					title={assistant.description || '无描述'} 
+					title={assistant.description || ''}
 					placement="top"
 				>
 					<AssistantItem 
-						$isSelected={assistantName === assistant.name}
-						onClick={() => handleAssistantClick(assistant.name)}
+						$isSelected={assistantId === assistant.id}
+						onClick={() => handleAssistantClick(assistant.id)}
 					>
 						{assistant.name}
 					</AssistantItem>

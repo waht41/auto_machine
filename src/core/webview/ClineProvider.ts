@@ -213,10 +213,10 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		return cline;
 	}
 
-	public async initClineWithTask(task?: string, images?: string[], assistantName? :string) {
+	public async initClineWithTask(task?: string, images?: string[], assistantId? :string) {
 		await this.clearTask();
 		console.log('initClineWithTask task', task);
-		const cline = await this.createCline(undefined, undefined, assistantName);
+		const cline = await this.createCline(undefined, undefined, assistantId);
 		await cline.start({task,images});
 		await this.postMessageToWebview({type: 'openTab', taskId: cline.taskId, task: task??'empty task'});
 	}

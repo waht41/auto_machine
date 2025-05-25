@@ -12,7 +12,7 @@ export type NewTaskMessage = {
   type: 'newTask';
   text?: string;
   images?: string[];
-  assistantName?: string;
+  assistantId?: string;
 }
 
 export type ResumeTaskMessage = {
