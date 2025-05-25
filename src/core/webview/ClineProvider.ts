@@ -418,7 +418,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 				.filter((item: HistoryItem) => item.ts && item.task)
 				.sort((a: HistoryItem, b: HistoryItem) => b.ts - a.ts),
 			shouldShowAnnouncement: lastShownAnnouncementId !== this.latestAnnouncementId,
-			internalPrompt: getInternalPrompt(),
+			internalPrompt: await getInternalPrompt(),
 			...restState
 		};
 	}

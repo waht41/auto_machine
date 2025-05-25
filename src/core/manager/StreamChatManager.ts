@@ -148,6 +148,12 @@ export class StreamChatManager {
 		if (assistant) {
 			let finalPrompt = assistant.prompt;
 
+			if (assistant.internalPrompts && assistant.internalPrompts.length > 0) {
+				for (const { name, content } of assistant.internalPrompts) {
+					finalPrompt += `\n\n${name}\n${content}`;
+				}
+			}
+
 			// Concatenate file contents if available
 			if (assistant.files && assistant.files.length > 0) {
 				for (const file of assistant.files) {

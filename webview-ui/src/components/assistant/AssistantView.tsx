@@ -1,16 +1,15 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { Button, Card, Form, Input, Space, Typography, message, Tag, Tooltip, Dropdown } from 'antd';
-import { FileAddOutlined, DownOutlined } from '@ant-design/icons';
+import { Button, Card, Checkbox, Form, Input, message, Space, Tag, Tooltip, Typography } from 'antd';
+import { FileAddOutlined } from '@ant-design/icons';
 import messageBus from '@webview-ui/store/messageBus';
-import crypto from 'crypto';
 import { useStateStore } from '@webview-ui/store/stateStore';
 import { InternalPrompt } from '@webview-ui/store/type';
 
-const { Title, Paragraph } = Typography;
+const { Title } = Typography;
 
 interface AssistantViewProps {
-  onDone: () => void;
+	onDone: () => void;
 }
 
 const Container = styled.div`
@@ -48,10 +47,11 @@ interface Files {
 
 const AssistantView: React.FC<AssistantViewProps> = ({ onDone }) => {
 	const internalPrompts = useStateStore(state => state.internalPrompt);
+	console.log('[waht]', 'internalPrompts', internalPrompts);
 	const [form] = Form.useForm();
 	const [files, setFiles] = useState<Files>({});
 
-	const handleSubmit = (values: any) => {
+	const handleSubmit = async (values: any) => {
 		console.log('Assistant form submitted:', values);
 
 		// Convert files object to array format expected by the backend
@@ -60,13 +60,35 @@ const AssistantView: React.FC<AssistantViewProps> = ({ onDone }) => {
 			content: fileData.content
 		}));
 
+		// 获取选中的提示模板名称
+		const selectedPromptNames = values.selectedPrompts || [];
+
+		// 获取选中的完整提示模板对象
+		const selectedPrompts = internalPrompts.filter(p =>
+			selectedPromptNames.includes(p.name)
+		);
+
+		// 通过 Electron 获取 UUID
+		let uuid = '';
+		try {
+			const result = await messageBus.invokeElectron({
+				type: 'generateUUID'
+			});
+			uuid = result.uuid || `assistant-${Date.now()}`;
+		} catch (error) {
+			// 如果 Electron 调用失败，使用时间戳作为备选方案
+			uuid = `assistant-${Date.now()}`;
+			console.error('Failed to generate UUID:', error);
+		}
+
 		// Create assistant config in the format expected by the backend
 		const assistant = {
-			id: crypto.randomUUID(),
+			id: uuid,
 			name: values.name,
 			description: values.description,
 			prompt: values.prompt,
-			files: filesArray
+			files: filesArray,
+			internalPrompt: selectedPrompts
 		};
 
 		console.log('Complete assistant config:', assistant);
@@ -136,7 +158,7 @@ const AssistantView: React.FC<AssistantViewProps> = ({ onDone }) => {
 			<HeaderContainer>
 				<Title level={2}>Assistant Configuration</Title>
 				<Button type="primary" onClick={onDone}>
-          Back
+					Back
 				</Button>
 			</HeaderContainer>
 
@@ -150,6 +172,7 @@ const AssistantView: React.FC<AssistantViewProps> = ({ onDone }) => {
 							name: '',
 							description: '',
 							prompt: '',
+							selectedPrompts: []
 						}}
 					>
 						<Form.Item
@@ -174,32 +197,27 @@ const AssistantView: React.FC<AssistantViewProps> = ({ onDone }) => {
 						<Form.Item
 							name="prompt"
 							label="System Prompt"
-							rules={[{ required: true, message: 'Please enter a system prompt' }]}
+							rules={[{ required: false, message: 'Please enter a system prompt' }]}
 						>
-							<div style={{ marginBottom: '8px' }}>
-								<Dropdown
-									menu={{
-										items: internalPrompts.map((prompt: InternalPrompt) => ({
-											key: prompt.name,
-											label: (
-												<Tooltip title={prompt.description}>
-													<span>{prompt.name}</span>
-												</Tooltip>
-											)
-										})),
-										onClick: (info) => {
-											const selectedPrompt = internalPrompts.find(p => p.name === info.key);
-											if (selectedPrompt) {
-												form.setFieldsValue({ prompt: selectedPrompt.content });
-												message.success(`Loaded prompt: ${selectedPrompt.name}`);
-											}
-										}
-									}}
-								>
-									<Button style={{ marginBottom: '8px' }}>
-										Select Prompt Template <DownOutlined />
-									</Button>
-								</Dropdown>
+							<div style={{ marginBottom: '16px' }}>
+								<Form.Item name="selectedPrompts" noStyle>
+									<Checkbox.Group
+										style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}
+										onChange={(checkedValues) => {
+											// 保存选中的提示模板名称，不进行内容提取和拼接
+											const selectedPromptNames = checkedValues as string[];
+
+											// 更新表单中的selectedPrompts字段
+											form.setFieldsValue({ selectedPrompts: selectedPromptNames });
+										}}
+									>
+										{internalPrompts.map((prompt: InternalPrompt) => (
+											<Tooltip key={prompt.name} title={prompt.description}>
+												<Checkbox value={prompt.name}>{prompt.name}</Checkbox>
+											</Tooltip>
+										))}
+									</Checkbox.Group>
+								</Form.Item>
 							</div>
 							<Input.TextArea
 								placeholder="Enter the system prompt for your assistant"
@@ -235,22 +253,14 @@ const AssistantView: React.FC<AssistantViewProps> = ({ onDone }) => {
 						<Form.Item>
 							<Space>
 								<Button type="primary" htmlType="submit">
-                  Save Assistant
+									Save Assistant
 								</Button>
 								<Button onClick={onDone}>
-                  Cancel
+									Cancel
 								</Button>
 							</Space>
 						</Form.Item>
 					</Form>
-				</StyledCard>
-
-				<StyledCard>
-					<Title level={4}>Assistant Templates</Title>
-					<Paragraph>
-            Choose from pre-configured assistant templates or create your own custom assistant.
-					</Paragraph>
-					{/* Template cards would go here */}
 				</StyledCard>
 			</ContentContainer>
 		</Container>

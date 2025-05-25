@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
 import { exec } from 'child_process';
+import * as crypto from 'crypto';
 
 /**
  * Electron 服务类 - 集中管理所有 Electron 相关功能
@@ -41,7 +42,9 @@ export class ElectronService {
 			case 'openFolder':
 				return this.handleOpenFolder(message);
 			case 'readFile':
-				return this.handleReadFile(message);
+				return this.handleReadFile();
+			case 'generateUUID':
+				return this.handleGenerateUUID();
 			default:
 				return { success: false, error: `Unknown message type: ${message.type}` };
 		}
@@ -365,6 +368,25 @@ export class ElectronService {
 			return {
 				success: false,
 				error: error.message || 'Failed to add file'
+			};
+		}
+	}
+
+	/**
+	 * 生成 UUID
+	 */
+	private handleGenerateUUID(): any {
+		try {
+			const uuid = crypto.randomUUID();
+			return {
+				success: true,
+				uuid
+			};
+		} catch (error) {
+			console.error('Generate UUID error:', error);
+			return {
+				success: false,
+				error: error.message || 'Failed to generate UUID'
 			};
 		}
 	}

@@ -1,5 +1,6 @@
 import { ApiConfiguration, ModelInfo } from '@/shared/api';
 import { SecretKey } from '@core/webview/type';
+import { InternalPrompt } from '../../../webview-ui/src/store/type';
 
 export type ISecret = {
   apiKey?: string;
@@ -62,6 +63,7 @@ export type AssistantStructure = {
   name: string,
   description?: string,
   prompt: string,
+  internalPrompts?: InternalPrompt[],
   files: {
     fileName: string,
     content: string

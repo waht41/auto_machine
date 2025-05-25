@@ -60,7 +60,8 @@ createListeners<IStateStore>(
 	[
 		{
 			target: [
-				'assistants'
+				'assistants',
+				'internalPrompt'
 			],
 			sources: 'state',
 			compute: (current) => {
