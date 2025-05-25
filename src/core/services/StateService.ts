@@ -99,18 +99,18 @@ export class StateService {
 		await this._assistant.upsertAssistant(assistant);
 	}
 
-	public async removeAssistant(assistantName: string) {
-		await this._assistant.removeAssistant(assistantName);
+	public async removeAssistant(assistantId: string) {
+		await this._assistant.removeAssistant(assistantId);
 	}
 
 	public async getAssistants() {
 		return this._assistant.get('assistants');
 	}
 
-	public async getAssistant(name?:string){
-		if (!name){
+	public async getAssistant(assistantId?:string){
+		if (!assistantId){
 			return undefined;
 		}
-		return this._assistant.getAssistant(name);
+		return this._assistant.getAssistant(assistantId);
 	}
 }

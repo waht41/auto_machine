@@ -19,8 +19,8 @@ export async function handleUpsertAssistant(instance: ClineProvider, message: Up
 }
 
 export async function handleRemoveAssistant(instance: ClineProvider, message: RemoveAssistantMessage) {
-	if (message.assistantName) {
-		await instance.stateService.removeAssistant(message.assistantName);
+	if (message.assistantId) {
+		await instance.stateService.removeAssistant(message.assistantId);
 		await instance.postStateToWebview();
 	}
 }

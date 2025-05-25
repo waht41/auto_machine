@@ -15,6 +15,13 @@ export type AppMessage = AgentStreamJumpState;
 
 export type AppMessageHandler = (data: AppMessage) => void;
 
+export type InternalPrompt = {
+	name: string;
+	description: string;
+	content: string;
+}
+
 export type SharedContext = {
 	assistants?: AssistantStructure[]
+	internalPrompt:InternalPrompt[]
 }

@@ -58,6 +58,7 @@ export type AssistantConfig = {
 };
 
 export type AssistantStructure = {
+  id: string,
   name: string,
   description?: string,
   prompt: string,

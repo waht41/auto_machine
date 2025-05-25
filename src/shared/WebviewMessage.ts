@@ -52,7 +52,7 @@ export type UpsertAssistantMessage = {
 
 export type RemoveAssistantMessage = {
   type: 'removeAssistant';
-  assistantName: string;
+  assistantId: string;
 }
 
 export type CancelTaskMessage = {

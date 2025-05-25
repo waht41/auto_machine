@@ -28,6 +28,7 @@ import { IConfig } from '@core/storage/type';
 import logger from '@/utils/logger';
 import { handlers } from '@core/webview/handlers';
 import { InterClineMessage } from '@core/services/type';
+import { getInternalPrompt } from '@core/prompts/utils';
 
 /*
 https://github.com/microsoft/vscode-webview-ui-toolkit-samples/blob/main/default/weather-webview/src/providers/WeatherViewProvider.ts
@@ -167,7 +168,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		return cline.taskId;
 	}
 
-	private async createCline(historyItem?:HistoryItem, subCline?:boolean, assistantName?: string){
+	private async createCline(historyItem?:HistoryItem, subCline?:boolean, assistantId?: string){
 		const {
 			apiConfiguration,
 			customModePrompts,
@@ -193,7 +194,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 				taskParentDir: taskDirRoot,
 				memoryDir: path.join(getUserDataPath(),'memory'),
 				allowedToolTree: this.allowedToolTree,
-				assistant: await this.stateService.getAssistant(assistantName ?? historyItem?.assistantName)
+				assistant: await this.stateService.getAssistant(assistantId ?? historyItem?.assistantId)
 			}
 		);
 		await cline.init();
@@ -409,6 +410,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 		const state = await this.getState();
 		const { lastShownAnnouncementId, ...restState } = state;
 		const taskHistory = this.stateService.getTaskHistory();
+
 		return {
 			version: process.env?.version ?? '',
 			uriScheme: vscode.env.uriScheme,
@@ -416,6 +418,7 @@ export class ClineProvider implements vscode.WebviewViewProvider {
 				.filter((item: HistoryItem) => item.ts && item.task)
 				.sort((a: HistoryItem, b: HistoryItem) => b.ts - a.ts),
 			shouldShowAnnouncement: lastShownAnnouncementId !== this.latestAnnouncementId,
+			internalPrompt: getInternalPrompt(),
 			...restState
 		};
 	}

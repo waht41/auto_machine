@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { Button, Card, Form, Input, Space, Typography, message, Tag, Tooltip } from 'antd';
-import { FileAddOutlined } from '@ant-design/icons';
+import { Button, Card, Form, Input, Space, Typography, message, Tag, Tooltip, Dropdown } from 'antd';
+import { FileAddOutlined, DownOutlined } from '@ant-design/icons';
 import messageBus from '@webview-ui/store/messageBus';
+import crypto from 'crypto';
+import { useStateStore } from '@webview-ui/store/stateStore';
+import { InternalPrompt } from '@webview-ui/store/type';
 
 const { Title, Paragraph } = Typography;
 
@@ -44,6 +47,7 @@ interface Files {
 }
 
 const AssistantView: React.FC<AssistantViewProps> = ({ onDone }) => {
+	const internalPrompts = useStateStore(state => state.internalPrompt);
 	const [form] = Form.useForm();
 	const [files, setFiles] = useState<Files>({});
 
@@ -58,6 +62,7 @@ const AssistantView: React.FC<AssistantViewProps> = ({ onDone }) => {
 
 		// Create assistant config in the format expected by the backend
 		const assistant = {
+			id: crypto.randomUUID(),
 			name: values.name,
 			description: values.description,
 			prompt: values.prompt,
@@ -171,6 +176,31 @@ const AssistantView: React.FC<AssistantViewProps> = ({ onDone }) => {
 							label="System Prompt"
 							rules={[{ required: true, message: 'Please enter a system prompt' }]}
 						>
+							<div style={{ marginBottom: '8px' }}>
+								<Dropdown
+									menu={{
+										items: internalPrompts.map((prompt: InternalPrompt) => ({
+											key: prompt.name,
+											label: (
+												<Tooltip title={prompt.description}>
+													<span>{prompt.name}</span>
+												</Tooltip>
+											)
+										})),
+										onClick: (info) => {
+											const selectedPrompt = internalPrompts.find(p => p.name === info.key);
+											if (selectedPrompt) {
+												form.setFieldsValue({ prompt: selectedPrompt.content });
+												message.success(`Loaded prompt: ${selectedPrompt.name}`);
+											}
+										}
+									}}
+								>
+									<Button style={{ marginBottom: '8px' }}>
+										Select Prompt Template <DownOutlined />
+									</Button>
+								</Dropdown>
+							</div>
 							<Input.TextArea
 								placeholder="Enter the system prompt for your assistant"
 								rows={6}

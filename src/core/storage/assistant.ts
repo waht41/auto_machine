@@ -23,7 +23,7 @@ export class Assistant {
 		const assistants = this.memento.get('assistants') as AssistantStructure[] || [];
 
 		// Check if assistant with the same name already exists
-		const existingIndex = assistants.findIndex(a => a.name === assistant.name);
+		const existingIndex = assistants.findIndex(a => a.id === assistant.id);
 
 		if (existingIndex !== -1) {
 			// Update existing assistant
@@ -36,14 +36,14 @@ export class Assistant {
 		await this.memento.update('assistants', assistants);
 	}
 
-	async removeAssistant(assistantName: string){
+	async removeAssistant(assistantId: string){
 		const assistants = this.memento.get('assistants') as AssistantStructure[] || [];
-		const filteredAssistants = assistants.filter(assistant => assistant.name !== assistantName);
+		const filteredAssistants = assistants.filter(assistant => assistant.id !== assistantId);
 		await this.memento.update('assistants', filteredAssistants);
 	}
 
-	async getAssistant(name: string) {
+	async getAssistant(assistantId: string) {
 		const assistants = this.memento.get('assistants') as AssistantStructure[] || [];
-		return assistants.find(assistant => assistant.name === name);
+		return assistants.find(assistant => assistant.id === assistantId);
 	}
 }
