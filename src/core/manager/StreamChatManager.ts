@@ -94,7 +94,7 @@ export class StreamChatManager {
 			cacheWrites: apiMetrics.totalCacheWrites,
 			cacheReads: apiMetrics.totalCacheReads,
 			totalCost: apiMetrics.totalCost,
-			assistantId: this.assistant?.name
+			assistantId: this.assistant?.id
 		};
 	}
 

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import styled from 'styled-components';
 import { Button, Card, Checkbox, Form, Input, message, Space, Tag, Tooltip, Typography } from 'antd';
 import { FileAddOutlined } from '@ant-design/icons';
@@ -48,9 +49,44 @@ interface Files {
 
 const AssistantView: React.FC<AssistantViewProps> = ({ onDone }) => {
 	const internalPrompts = useStateStore(state => state.internalPrompt);
+	const location = useLocation();
 	console.log('[waht]', 'internalPrompts', internalPrompts);
 	const [form] = Form.useForm();
 	const [files, setFiles] = useState<Files>({});
+	const [isEditing, setIsEditing] = useState(false);
+	const [editingAssistantId, setEditingAssistantId] = useState<string | null>(null);
+	
+	// Check if we're editing an existing assistant using location state
+	useEffect(() => {
+		const state = location.state as { assistantToEdit?: AssistantStructure } | null;
+		const assistantToEdit = state?.assistantToEdit;
+		
+		if (assistantToEdit) {
+			// Set form values
+			form.setFieldsValue({
+				name: assistantToEdit.name,
+				description: assistantToEdit.description || '',
+				prompt: assistantToEdit.prompt || '',
+				selectedPrompts: assistantToEdit.internalPrompts?.map(p => p.name) || []
+			});
+			
+			// Convert file array to object format for the component
+			if (assistantToEdit.files && assistantToEdit.files.length > 0) {
+				const filesObj: Files = {};
+				assistantToEdit.files.forEach(file => {
+					filesObj[file.fileName] = {
+						content: file.content,
+						path: file.fileName // Use filename as path since we don't have the original path
+					};
+				});
+				setFiles(filesObj);
+			}
+			
+			// Set editing state
+			setIsEditing(true);
+			setEditingAssistantId(assistantToEdit.id);
+		}
+	}, [form, location]);
 
 	const handleSubmit = async (values: any) => {
 		console.log('Assistant form submitted:', values);
@@ -69,17 +105,19 @@ const AssistantView: React.FC<AssistantViewProps> = ({ onDone }) => {
 			selectedPromptNames.includes(p.name)
 		);
 
-		// 通过 Electron 获取 UUID
-		let uuid = '';
-		try {
-			const result = await messageBus.invokeElectron({
-				type: 'generateUUID'
-			});
-			uuid = result.uuid || `assistant-${Date.now()}`;
-		} catch (error) {
-			// 如果 Electron 调用失败，使用时间戳作为备选方案
-			uuid = `assistant-${Date.now()}`;
-			console.error('Failed to generate UUID:', error);
+		// Use existing ID if editing, otherwise generate a new one
+		let uuid = editingAssistantId || '';
+		if (!uuid) {
+			try {
+				const result = await messageBus.invokeElectron({
+					type: 'generateUUID'
+				});
+				uuid = result.uuid || `assistant-${Date.now()}`;
+			} catch (error) {
+				// 如果 Electron 调用失败，使用时间戳作为备选方案
+				uuid = `assistant-${Date.now()}`;
+				console.error('Failed to generate UUID:', error);
+			}
 		}
 
 		// Create assistant config in the format expected by the backend
@@ -100,6 +138,13 @@ const AssistantView: React.FC<AssistantViewProps> = ({ onDone }) => {
 			assistant
 		});
 
+		// Show success message based on whether we were editing or creating
+		if (isEditing) {
+			message.success(`Assistant "${values.name}" updated successfully`);
+		} else {
+			message.success(`Assistant "${values.name}" created successfully`);
+		}
+		
 		// Close the assistant configuration view
 		onDone();
 	};
@@ -157,7 +202,7 @@ const AssistantView: React.FC<AssistantViewProps> = ({ onDone }) => {
 	return (
 		<Container>
 			<HeaderContainer>
-				<Title level={2}>Assistant Configuration</Title>
+				<Title level={2}>{isEditing ? 'Edit Assistant' : 'Create Assistant'}</Title>
 				<Button type="primary" onClick={onDone}>
 					Back
 				</Button>

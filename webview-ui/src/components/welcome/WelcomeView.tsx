@@ -21,7 +21,7 @@ const WelcomeView = () => {
 	}, [apiConfiguration]);
 
 	return (
-		<div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, padding: '0 20px' }}>
+		<div style={{padding: '0 20px' }}>
 			<h2>Hi, I'm Roo!</h2>
 			<p>
 				I can do all kinds of tasks thanks to the latest breakthroughs in agentic coding capabilities and access

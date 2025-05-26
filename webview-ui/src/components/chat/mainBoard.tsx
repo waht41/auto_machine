@@ -60,7 +60,7 @@ const MainBoard = () => {
 	const showAgentStream = useChatViewStore(state => state.showAgentStream);
 	const isShowAgentStream = !!task && showAgentStream;
 
-	
+
 	// 计算 API 指标
 	const apiMetrics = useMemo(() => getApiMetrics(clineMessages), [clineMessages]);
 
