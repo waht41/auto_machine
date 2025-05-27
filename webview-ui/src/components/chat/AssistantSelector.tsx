@@ -13,7 +13,7 @@ const AssistantSelectorContainer = styled.div`
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-bottom: 16px;
+  margin: 16px 32px;
 `;
 
 const AssistantItem = styled.div<{ $isSelected: boolean }>`
