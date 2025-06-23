@@ -241,30 +241,32 @@ const AssistantView: React.FC<AssistantViewProps> = ({ onDone }) => {
 						</Form.Item>
 
 						<Form.Item
+							name="selectedPrompts"
+							label="内置提示模板"
+						>
+							<Checkbox.Group
+								style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}
+								onChange={(checkedValues) => {
+									// 保存选中的提示模板名称，不进行内容提取和拼接
+									const selectedPromptNames = checkedValues as string[];
+
+									// 更新表单中的selectedPrompts字段
+									form.setFieldsValue({ selectedPrompts: selectedPromptNames });
+								}}
+							>
+								{internalPrompts.map((prompt: InternalPrompt) => (
+									<Tooltip key={prompt.name} title={prompt.description}>
+										<Checkbox value={prompt.name}>{prompt.name}</Checkbox>
+									</Tooltip>
+								))}
+							</Checkbox.Group>
+						</Form.Item>
+
+						<Form.Item
 							name="prompt"
 							label="System Prompt"
 							rules={[{ required: false, message: 'Please enter a system prompt' }]}
 						>
-							<div style={{ marginBottom: '16px' }}>
-								<Form.Item name="selectedPrompts" noStyle>
-									<Checkbox.Group
-										style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}
-										onChange={(checkedValues) => {
-											// 保存选中的提示模板名称，不进行内容提取和拼接
-											const selectedPromptNames = checkedValues as string[];
-
-											// 更新表单中的selectedPrompts字段
-											form.setFieldsValue({ selectedPrompts: selectedPromptNames });
-										}}
-									>
-										{internalPrompts.map((prompt: InternalPrompt) => (
-											<Tooltip key={prompt.name} title={prompt.description}>
-												<Checkbox value={prompt.name}>{prompt.name}</Checkbox>
-											</Tooltip>
-										))}
-									</Checkbox.Group>
-								</Form.Item>
-							</div>
 							<Input.TextArea
 								placeholder="Enter the system prompt for your assistant"
 								rows={6}
